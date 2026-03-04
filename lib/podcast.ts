@@ -1,9 +1,10 @@
 import { XMLParser } from 'fast-xml-parser';
+import { unstable_cache } from 'next/cache';
 
 const DEFAULT_PODCAST_RSS_FEED_URL = 'https://feeds.simplecast.com/Sci7Fqgp';
 const FEED_ACCEPT_HEADER = 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.1';
-const REVALIDATE_FLOOR_SECONDS = 60;
 const DEFAULT_LIST_DESCRIPTION_MAX_LENGTH = 520;
+const PODCAST_FEED_REVALIDATE_SECONDS = 900;
 
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
@@ -34,6 +35,8 @@ type GetPodcastEpisodesOptions = {
   limit?: number | null;
 };
 
+type GetPodcastEpisodeBySlugOptions = Omit<GetPodcastEpisodesOptions, 'limit'>;
+
 type ParsedFeed = {
   rss?: {
     channel?: {
@@ -42,6 +45,11 @@ type ParsedFeed = {
       'itunes:image'?: { href?: string } | string;
     };
   };
+};
+
+type CachedPodcastEpisode = Omit<PodcastEpisode, 'description' | 'descriptionHtml'> & {
+  fullDescription: string;
+  descriptionSource: string;
 };
 
 function toArray<T>(value: T | T[] | null | undefined): T[] {
@@ -251,18 +259,6 @@ function resolveChannelArtwork(feed: ParsedFeed): string | null {
   return fromStandard || null;
 }
 
-function secondsUntilNextFivePast(now = new Date()): number {
-  const next = new Date(now);
-  next.setUTCMinutes(5, 0, 0);
-
-  while (next.getTime() <= now.getTime()) {
-    next.setUTCHours(next.getUTCHours() + 1);
-  }
-
-  const seconds = Math.floor((next.getTime() - now.getTime()) / 1000);
-  return Math.max(seconds, REVALIDATE_FLOOR_SECONDS);
-}
-
 export function getPodcastFeedUrl(): string {
   return process.env.PODCAST_RSS_FEED_URL || DEFAULT_PODCAST_RSS_FEED_URL;
 }
@@ -278,20 +274,14 @@ export function formatEpisodeDate(isoDate: string): string {
   }).format(parsed);
 }
 
-export async function getPodcastEpisodes(options: GetPodcastEpisodesOptions = {}): Promise<PodcastEpisode[]> {
-  const {
-    includeDescriptionHtml = false,
-    descriptionMaxLength = DEFAULT_LIST_DESCRIPTION_MAX_LENGTH,
-    limit = null
-  } = options;
-
+async function fetchAndParsePodcastFeed(): Promise<CachedPodcastEpisode[]> {
   const feedUrl = getPodcastFeedUrl();
   const response = await fetch(feedUrl, {
     headers: {
       Accept: FEED_ACCEPT_HEADER
     },
     next: {
-      revalidate: secondsUntilNextFivePast()
+      revalidate: PODCAST_FEED_REVALIDATE_SECONDS
     }
   });
 
@@ -317,8 +307,6 @@ export async function getPodcastEpisodes(options: GetPodcastEpisodesOptions = {}
         getNodeText(item['itunes:summary']) ||
         getNodeText(item['itunes:subtitle']);
       const fullDescription = htmlToPlainText(descriptionSource);
-      const description = truncateText(fullDescription, descriptionMaxLength);
-      const descriptionHtml = includeDescriptionHtml ? toSafeHtml(descriptionSource) : '';
       const enclosure = item.enclosure && typeof item.enclosure === 'object' ? (item.enclosure as { url?: unknown }) : null;
       const audioUrl = getNodeText(enclosure?.url);
       const guid = getNodeText(item.guid);
@@ -338,20 +326,67 @@ export async function getPodcastEpisodes(options: GetPodcastEpisodesOptions = {}
         seasonNumber,
         episodeNumber,
         publishedAt: pubDate,
-        description,
-        descriptionHtml,
+        fullDescription,
+        descriptionSource,
         audioUrl,
         artworkUrl: resolveArtworkUrl(item, channelArtwork),
         duration,
         sourceUrl
-      } satisfies PodcastEpisode;
+      } satisfies CachedPodcastEpisode;
     })
     .filter((episode) => Boolean(episode.audioUrl));
 
   episodes.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+  return episodes;
+}
+
+const getCachedParsedPodcastFeed = unstable_cache(fetchAndParsePodcastFeed, ['podcast-feed-v1'], {
+  revalidate: PODCAST_FEED_REVALIDATE_SECONDS
+});
+
+export async function getPodcastEpisodes(options: GetPodcastEpisodesOptions = {}): Promise<PodcastEpisode[]> {
+  const {
+    includeDescriptionHtml = false,
+    descriptionMaxLength = DEFAULT_LIST_DESCRIPTION_MAX_LENGTH,
+    limit = null
+  } = options;
+  const cachedEpisodes = await getCachedParsedPodcastFeed();
+
+  const episodes = cachedEpisodes.map((episode) => ({
+    id: episode.id,
+    slug: episode.slug,
+    title: episode.title,
+    seasonNumber: episode.seasonNumber,
+    episodeNumber: episode.episodeNumber,
+    publishedAt: episode.publishedAt,
+    description: truncateText(episode.fullDescription, descriptionMaxLength),
+    descriptionHtml: includeDescriptionHtml ? toSafeHtml(episode.descriptionSource) : '',
+    audioUrl: episode.audioUrl,
+    artworkUrl: episode.artworkUrl,
+    duration: episode.duration,
+    sourceUrl: episode.sourceUrl
+  }));
+
   if (typeof limit === 'number' && Number.isFinite(limit) && limit > 0) {
     return episodes.slice(0, limit);
   }
 
   return episodes;
+}
+
+export async function getPodcastEpisodeBySlug(
+  slug: string,
+  options: GetPodcastEpisodeBySlugOptions = {
+    includeDescriptionHtml: true,
+    descriptionMaxLength: null
+  }
+): Promise<PodcastEpisode | null> {
+  const normalizedSlug = `${slug || ''}`.trim();
+  if (!normalizedSlug) return null;
+
+  const episodes = await getPodcastEpisodes({
+    includeDescriptionHtml: options.includeDescriptionHtml ?? true,
+    descriptionMaxLength: options.descriptionMaxLength ?? null
+  });
+  return episodes.find((episode) => episode.slug === normalizedSlug) ?? null;
 }

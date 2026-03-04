@@ -1,10 +1,12 @@
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { formatEpisodeDate, getPodcastEpisodes } from '@/lib/podcast';
+import { formatEpisodeDate, getPodcastEpisodeBySlug } from '@/lib/podcast';
 import { BackButton } from '@/components/back-button';
 import { EpisodeMediaPlayer } from '@/components/episode-media-player';
 import { getPublicSiteUrl } from '@/lib/site-url';
+
+export const revalidate = 900;
 
 function toMetaDescription(value: string): string {
   const normalized = `${value || ''}`.replace(/\s+/g, ' ').trim();
@@ -27,8 +29,10 @@ type Params = {
 };
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const episodes = await getPodcastEpisodes({ includeDescriptionHtml: true, descriptionMaxLength: null });
-  const episode = episodes.find((item) => item.slug === params.slug);
+  const episode = await getPodcastEpisodeBySlug(params.slug, {
+    includeDescriptionHtml: true,
+    descriptionMaxLength: null
+  });
 
   if (!episode) {
     return {
@@ -74,8 +78,10 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 export default async function EpisodeDetailPage({ params }: { params: Params }) {
-  const episodes = await getPodcastEpisodes({ includeDescriptionHtml: true, descriptionMaxLength: null });
-  const episode = episodes.find((item) => item.slug === params.slug);
+  const episode = await getPodcastEpisodeBySlug(params.slug, {
+    includeDescriptionHtml: true,
+    descriptionMaxLength: null
+  });
 
   if (!episode) notFound();
 
@@ -118,9 +124,11 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
                 src={episode.artworkUrl}
                 alt={`Artwork for ${episode.title}`}
                 fill
-                sizes="(max-width: 768px) 100vw, 340px"
+                sizes="(max-width: 768px) calc(100vw - 2.5rem), 340px"
                 className="object-cover"
                 quality={72}
+                priority
+                fetchPriority="high"
               />
             ) : (
               <div className="flex h-full items-center justify-center px-6 text-center text-sm font-semibold text-white/80">

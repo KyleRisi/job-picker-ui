@@ -46,7 +46,7 @@ function PodcastJsonLd({ episodes }: { episodes: PodcastEpisode[] }) {
     description:
       'A weekly variety podcast that gives you everything you need to know on a topic to help stand your ground at a social gathering. True crime, historical events, and incredible people.',
     url: siteUrl,
-    image: `${siteUrl}/The Compendium Main.jpg`,
+    image: `${siteUrl}/The%20Compendium%20Main.jpg`,
     author: [
       { '@type': 'Person', name: 'Kyle Risi' },
       { '@type': 'Person', name: 'Adam Cox' }

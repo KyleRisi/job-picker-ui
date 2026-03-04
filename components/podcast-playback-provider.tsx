@@ -435,6 +435,96 @@ export function PodcastPlaybackProvider({ children }: { children: ReactNode }) {
     audioRef.current.playbackRate = playbackRate;
   }, [playbackRate]);
 
+  // ── Media Session API — powers lock-screen / control-center artwork & controls ──
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+    if (!activeEpisode) return;
+
+    const artwork: MediaImage[] = [];
+    if (activeEpisode.artworkUrl) {
+      artwork.push({ src: activeEpisode.artworkUrl, sizes: '3000x3000', type: 'image/jpeg' });
+    }
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: activeEpisode.title,
+      artist: 'The Compendium',
+      album: activeEpisode.episodeNumber != null ? `Episode ${activeEpisode.episodeNumber}` : undefined,
+      artwork
+    });
+  }, [activeEpisode]);
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+
+    const audio = audioRef.current;
+
+    navigator.mediaSession.setActionHandler('play', async () => {
+      if (audio && audio.paused) {
+        playbackIntentRef.current = true;
+        audio.muted = false;
+        await tryPlayWithFallback(audio);
+      }
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      if (audio && !audio.paused) {
+        playbackIntentRef.current = false;
+        audio.pause();
+      }
+    });
+    navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+      if (!audio) return;
+      const skipTime = details.seekOffset ?? 10;
+      audio.currentTime = Math.max(audio.currentTime - skipTime, 0);
+      setCurrentTime(audio.currentTime);
+    });
+    navigator.mediaSession.setActionHandler('seekforward', (details) => {
+      if (!audio) return;
+      const skipTime = details.seekOffset ?? 10;
+      const max = Number.isFinite(audio.duration) ? audio.duration : Number.MAX_SAFE_INTEGER;
+      audio.currentTime = Math.min(audio.currentTime + skipTime, max);
+      setCurrentTime(audio.currentTime);
+    });
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      if (!audio || details.seekTime == null) return;
+      const max = Number.isFinite(audio.duration) ? audio.duration : Number.MAX_SAFE_INTEGER;
+      audio.currentTime = Math.min(Math.max(details.seekTime, 0), max);
+      setCurrentTime(audio.currentTime);
+    });
+    navigator.mediaSession.setActionHandler('stop', () => {
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+      playbackIntentRef.current = false;
+      setIsPlaying(false);
+    });
+
+    return () => {
+      navigator.mediaSession.setActionHandler('play', null);
+      navigator.mediaSession.setActionHandler('pause', null);
+      navigator.mediaSession.setActionHandler('seekbackward', null);
+      navigator.mediaSession.setActionHandler('seekforward', null);
+      navigator.mediaSession.setActionHandler('seekto', null);
+      navigator.mediaSession.setActionHandler('stop', null);
+    };
+  }, [tryPlayWithFallback]);
+
+  // ── Keep Media Session position state in sync ──
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+    if (!activeEpisode) return;
+
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+
+    if (Number.isFinite(duration) && duration > 0) {
+      navigator.mediaSession.setPositionState({
+        duration,
+        playbackRate,
+        position: Math.min(currentTime, duration)
+      });
+    }
+  }, [activeEpisode, isPlaying, currentTime, duration, playbackRate]);
+
   useEffect(() => {
     return () => {
       if (sleepTimerRef.current) clearTimeout(sleepTimerRef.current);

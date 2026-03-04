@@ -112,6 +112,13 @@ Notes:
 3. Set environment variables in Netlify UI (same as `.env.example`).
 4. Build command: `npm run build` (already in `netlify.toml`).
 5. Plugin `@netlify/plugin-nextjs` is configured in `netlify.toml`.
+6. After each production deploy, run chunk integrity check:
+   - `npm run deploy:integrity`
+   - Optional target override:
+     - `npm run deploy:integrity -- https://main--compendium-circus-hr.netlify.app/`
+     - `DEPLOY_URL=https://www.thecompendiumpodcast.com npm run deploy:integrity`
+
+This check fetches the homepage HTML, extracts `/_next/static/chunks/*.js` references, and fails if any chunk `HEAD` request is non-`200`.
 
 ## Resend domain verification (required custom sender domain)
 

@@ -7,6 +7,7 @@
     "dev:stable": "bash scripts/dev-stable.sh",
     "netlify:dev": "netlify dev --port 8888 --target-port 3000",
     "netlify:stable": "bash scripts/netlify-stable.sh",
+    "deploy:integrity": "node scripts/check-deploy-integrity.mjs",
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint",
@@ -24,6 +25,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@netlify/plugin-lighthouse": "^6.0.4",
     "@netlify/plugin-nextjs": "^5.10.4",
     "@types/node": "^20.17.16",
     "@types/react": "^18.3.18",

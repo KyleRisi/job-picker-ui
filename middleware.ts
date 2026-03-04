@@ -18,11 +18,11 @@ type CacheEntry = {
 const LOOKUP_TIMEOUT_MS = 1200;
 const CACHE_TTL_MS = 30_000;
 const cache = new Map<string, CacheEntry>();
+const NETLIFY_DEPLOY_PREVIEW_HOST_RE = /^deploy-preview-\d+--.+\.netlify\.app$/;
 
 function shouldNoindexHost(req: NextRequest): boolean {
-  const host = (req.headers.get('host') || '').toLowerCase();
-  // Netlify preview/branch/unique deploy URLs include a double-dash subdomain.
-  return host.endsWith('.netlify.app') && host.includes('--');
+  const host = (req.headers.get('host') || '').toLowerCase().split(':')[0];
+  return NETLIFY_DEPLOY_PREVIEW_HOST_RE.test(host);
 }
 
 function withConditionalNoindex(req: NextRequest, response: NextResponse): NextResponse {

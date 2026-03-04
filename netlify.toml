@@ -5,6 +5,15 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+[[plugins]]
+  package = "@netlify/plugin-lighthouse"
+
+[[redirects]]
+  from = "https://compendium-circus-hr.netlify.app/*"
+  to = "https://www.thecompendiumpodcast.com/:splat"
+  status = 301
+  force = true
+
 [dev]
   command = "npm run dev"
   framework = "next"

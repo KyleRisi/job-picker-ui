@@ -19,6 +19,14 @@ const LOOKUP_TIMEOUT_MS = 1200;
 const CACHE_TTL_MS = 30_000;
 const cache = new Map<string, CacheEntry>();
 const NETLIFY_DEPLOY_PREVIEW_HOST_RE = /^deploy-preview-\d+--.+\.netlify\.app$/;
+const SECURITY_HEADERS: Record<string, string> = {
+  'x-content-type-options': 'nosniff',
+  'referrer-policy': 'strict-origin-when-cross-origin',
+  'x-frame-options': 'DENY',
+  'permissions-policy': 'camera=(), microphone=(), geolocation=()',
+  'content-security-policy-report-only':
+    "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests"
+};
 
 function shouldNoindexHost(req: NextRequest): boolean {
   const host = (req.headers.get('host') || '').toLowerCase().split(':')[0];
@@ -30,6 +38,18 @@ function withConditionalNoindex(req: NextRequest, response: NextResponse): NextR
     response.headers.set('x-robots-tag', 'noindex, nofollow');
   }
   return response;
+}
+
+function withSecurityHeaders(req: NextRequest, response: NextResponse): NextResponse {
+  if (shouldNoindexHost(req)) return response;
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+    response.headers.set(name, value);
+  }
+  return response;
+}
+
+function withBaselineHeaders(req: NextRequest, response: NextResponse): NextResponse {
+  return withSecurityHeaders(req, withConditionalNoindex(req, response));
 }
 
 function readFromCache(path: string): ResolveItem | null | undefined {
@@ -85,13 +105,13 @@ async function resolveRedirect(req: NextRequest, normalizedPath: string): Promis
 
 export async function middleware(req: NextRequest) {
   const method = req.method.toUpperCase();
-  if (method !== 'GET' && method !== 'HEAD') return withConditionalNoindex(req, NextResponse.next());
+  if (method !== 'GET' && method !== 'HEAD') return withBaselineHeaders(req, NextResponse.next());
 
   const normalizedPath = normalizePath(req.nextUrl.pathname);
-  if (shouldSkipRedirectLookup(normalizedPath)) return withConditionalNoindex(req, NextResponse.next());
+  if (shouldSkipRedirectLookup(normalizedPath)) return withBaselineHeaders(req, NextResponse.next());
 
   const match = await resolveRedirect(req, normalizedPath);
-  if (!match) return withConditionalNoindex(req, NextResponse.next());
+  if (!match) return withBaselineHeaders(req, NextResponse.next());
 
   const destination = buildRedirectLocation({
     requestUrl: req.nextUrl,
@@ -104,10 +124,10 @@ export async function middleware(req: NextRequest) {
 
   const destinationUrl = new URL(destination);
   if (destinationUrl.toString() === req.nextUrl.toString()) {
-    return withConditionalNoindex(req, NextResponse.next());
+    return withBaselineHeaders(req, NextResponse.next());
   }
 
-  return withConditionalNoindex(req, NextResponse.redirect(destinationUrl, match.status_code));
+  return withBaselineHeaders(req, NextResponse.redirect(destinationUrl, match.status_code));
 }
 
 export const config = {

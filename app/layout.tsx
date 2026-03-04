@@ -18,6 +18,17 @@ export const metadata: Metadata = {
   },
   description:
     'Browse open circus roles in The Compendium universe and apply for your chance to be featured on the podcast.',
+  icons: {
+    icon: [
+      { url: '/Favicon/favicon16.jpg', sizes: '16x16', type: 'image/jpeg' },
+      { url: '/Favicon/favicon32.jpg', sizes: '32x32', type: 'image/jpeg' },
+      { url: '/Favicon/favicon48.jpg', sizes: '48x48', type: 'image/jpeg' },
+      { url: '/pwa-icon.png', sizes: '192x192', type: 'image/png' },
+      { url: '/pwa-icon-512.png', sizes: '512x512', type: 'image/png' }
+    ],
+    shortcut: '/Favicon/favicon48.jpg',
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }]
+  },
   alternates: {
     canonical: '/'
   },

@@ -25,7 +25,7 @@ const SECURITY_HEADERS: Record<string, string> = {
   'x-frame-options': 'DENY',
   'permissions-policy': 'camera=(), microphone=(), geolocation=()',
   'content-security-policy-report-only':
-    "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests"
+    "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'"
 };
 
 function shouldNoindexHost(req: NextRequest): boolean {

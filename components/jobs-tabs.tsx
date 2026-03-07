@@ -79,10 +79,19 @@ export function JobsTabs({
         role="tabpanel"
         id={tab === 'available' ? 'panel-available' : 'panel-filled'}
         aria-labelledby={tab === 'available' ? 'tab-available' : 'tab-filled'}
-        className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+        className="grid gap-4 px-1 sm:px-0 md:grid-cols-2 xl:grid-cols-3"
       >
         {tab === 'available'
-          ? available.map((job) => <JobCard key={job.id} job={job} filledBy={null} applicationsClosed={applicationsClosed} />)
+          ? available.map((job) => (
+              <JobCard
+                key={job.id}
+                job={job}
+                filledBy={null}
+                applicationsClosed={applicationsClosed}
+                clickableToDetails
+                showApplyButton={false}
+              />
+            ))
           : filled.map((job) => (
               <JobCard
                 key={job.id}

@@ -1,5 +1,17 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false
+    }
+  }
+};
 
 export default function NotFound() {
   return (
@@ -18,8 +30,8 @@ export default function NotFound() {
       <div className="relative flex min-h-[calc(100vh-7rem)] flex-col items-center justify-center px-4 text-center text-white">
         <p className="text-7xl font-black leading-none sm:text-8xl md:text-9xl">404</p>
         <h1 className="mt-3 text-3xl font-black sm:text-4xl">Oopsie daisy!</h1>
-        <Link href="/" className="btn-primary mt-8 rounded-full px-8 py-4 text-base font-black uppercase tracking-wide">
-          Go Home
+        <Link href="/episodes" className="btn-primary mt-8 rounded-full px-8 py-4 text-base font-black uppercase tracking-wide">
+          View Episodes
         </Link>
       </div>
     </section>

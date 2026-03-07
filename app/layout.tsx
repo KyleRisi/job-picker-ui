@@ -5,6 +5,7 @@ import Script from 'next/script';
 import { PodcastPlaybackProvider } from '@/components/podcast-playback-provider';
 import { AppShell } from '@/components/app-shell';
 import { DevExtensionErrorGuard } from '@/components/dev-extension-error-guard';
+import { MixpanelProvider } from '@/components/mixpanel-provider';
 import { getPublicSiteUrl } from '@/lib/site-url';
 
 const poppins = Poppins({
@@ -59,6 +60,17 @@ const DEV_RUNTIME_NOISE_GUARD_SCRIPT = `
     event.preventDefault();
   }, true);
 })();
+`;
+
+const HOTJAR_TRACKING_SCRIPT = `
+    (function(h,o,t,j,a,r){
+        h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
+        h._hjSettings={hjid:5098440,hjsv:6};
+        a=o.getElementsByTagName('head')[0];
+        r=o.createElement('script');r.async=1;
+        r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
+        a.appendChild(r);
+    })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
 `;
 
 export const metadata: Metadata = {
@@ -146,6 +158,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={poppins.className}>
+        {process.env.NODE_ENV === 'production' ? (
+          <Script id="hotjar-tracking" strategy="beforeInteractive">
+            {HOTJAR_TRACKING_SCRIPT}
+          </Script>
+        ) : null}
         {process.env.NODE_ENV !== 'production' ? (
           <Script id="dev-runtime-noise-guard" strategy="beforeInteractive">
             {DEV_RUNTIME_NOISE_GUARD_SCRIPT}
@@ -153,6 +170,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ) : null}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }} />
         <DevExtensionErrorGuard />
+        <MixpanelProvider />
         <PodcastPlaybackProvider>
           <AppShell>{children}</AppShell>
         </PodcastPlaybackProvider>

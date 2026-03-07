@@ -19,7 +19,7 @@ export function AdminApplicationActionsMenu({
   const [broadcasted, setBroadcasted] = useState(broadcastedOnShow);
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() || '/admin';
   const searchParams = useSearchParams();
 
   function closeMenu() {

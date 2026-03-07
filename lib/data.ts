@@ -120,6 +120,35 @@ export async function getJobsForPublic() {
   });
 }
 
+export async function getActiveTeamMembers() {
+  const supabase = createSupabaseAdminClient();
+  const { data: assignments, error } = await supabase
+    .from('assignments')
+    .select('id,full_name,created_at,profile_photo_data_url,jobs(title)')
+    .eq('active', true)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  return (assignments || []).map((row) => {
+    const jobRelation =
+      row.jobs as { title?: string } | Array<{ title?: string }> | null | undefined;
+    const relation = Array.isArray(jobRelation) ? jobRelation[0] : jobRelation;
+    const relationTitle = relation?.title;
+    const fullName = sanitizeReplacementChars(`${row.full_name || ''}`.trim());
+    const jobTitle = sanitizeReplacementChars(`${relationTitle || ''}`.trim()) || 'Circus Performer';
+    const photo = `${row.profile_photo_data_url || ''}`.trim() || null;
+
+    return {
+      id: `${row.id || ''}`,
+      full_name: fullName,
+      job_title: jobTitle,
+      profile_photo_data_url: photo,
+      created_at: `${row.created_at || ''}`
+    };
+  });
+}
+
 export async function getJobById(id: string) {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase.from('jobs').select('*').eq('id', id).single();

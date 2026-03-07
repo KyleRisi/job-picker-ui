@@ -88,7 +88,7 @@ export async function sendApplicationConfirmationEmail(input: {
           <td class="email-header" style="padding:20px 24px;background:#f7f7fa;border-bottom:1px solid #e6e6ee;">
             <div style="margin:0 0 10px 0;">${logoMarkup}</div>
             <p class="email-eyebrow" style="margin:0;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#c91f16;">Official Appointment Notice</p>
-            <p class="email-title" style="margin:6px 0 4px 0;font-size:24px;line-height:1.15;font-weight:900;color:#1b1a3b;word-break:break-word;overflow-wrap:anywhere;">The Compendium Circus</p>
+            <p class="email-title" style="margin:6px 0 4px 0;font-size:24px;line-height:1.15;font-weight:900;color:#1b1a3b;word-break:break-word;overflow-wrap:anywhere;">The Compendium Podcast</p>
             <p class="email-copy" style="margin:0;font-size:14px;line-height:1.5;color:#50506a;font-weight:600;">Human Resources, Compliance &amp; Incident Liaison Division</p>
           </td>
         </tr>
@@ -241,7 +241,7 @@ export async function sendReferenceRecoveryEmail(input: {
     <p><a href="${input.manageLink}">Manage your role</a></p>
   `;
 
-  return sendEmail(input.to, 'Compendium Circus HR reference recovery', html);
+  return sendEmail(input.to, 'The Compendium Podcast reference recovery', html);
 }
 
 export async function sendEmailChangeConfirmation(input: {
@@ -255,7 +255,7 @@ export async function sendEmailChangeConfirmation(input: {
     <p><a href="${input.confirmLink}">Confirm email change</a></p>
   `;
 
-  return sendEmail(input.to, 'Confirm your Compendium Circus HR email change', html);
+  return sendEmail(input.to, 'Confirm your email change for The Compendium Podcast', html);
 }
 
 export async function sendNewReviewNotificationEmail(input: {

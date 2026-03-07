@@ -7,7 +7,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 export function JobsApplicationSuccessModal() {
   const params = useSearchParams();
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() || '/jobs';
 
   if (params.get('applied') !== '1') return null;
 

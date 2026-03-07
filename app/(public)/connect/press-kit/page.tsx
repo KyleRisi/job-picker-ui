@@ -33,7 +33,9 @@ const STARTER_EPISODE_ANGLES = [
 ];
 
 export const metadata: Metadata = {
-  title: 'Press Kit | The Compendium Podcast',
+  title: {
+    absolute: 'Press Kit | The Compendium Podcast'
+  },
   description: 'Official press kit for The Compendium Podcast with show boilerplate, media-ready stats, featured episodes, and press enquiries.',
   alternates: { canonical: '/connect/press-kit' },
   openGraph: {

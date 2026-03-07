@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
+import { identifyMixpanel, trackMixpanel } from '@/lib/mixpanel-browser';
 
 export function BlogAdminLoginForm({ adminEmail }: { adminEmail: string }) {
   const [email, setEmail] = useState(adminEmail);
@@ -15,6 +16,11 @@ export function BlogAdminLoginForm({ adminEmail }: { adminEmail: string }) {
     const supabase = createSupabaseBrowserClient();
     const normalized = email.trim().toLowerCase();
     if (!normalized || normalized !== adminEmail.toLowerCase()) {
+      trackMixpanel('Sign In', {
+        user_id: normalized,
+        login_method: 'magic_link',
+        success: false
+      });
       setMessage('Use the configured admin email for blog access.');
       setLoading(false);
       return;
@@ -26,10 +32,23 @@ export function BlogAdminLoginForm({ adminEmail }: { adminEmail: string }) {
       }
     });
     if (error) {
+      trackMixpanel('Sign In', {
+        user_id: normalized,
+        login_method: 'magic_link',
+        success: false
+      });
       setMessage(error.message);
       setLoading(false);
       return;
     }
+    trackMixpanel('Sign In', {
+      user_id: normalized,
+      login_method: 'magic_link',
+      success: true
+    });
+    identifyMixpanel(normalized, {
+      $email: normalized
+    });
     setMessage('Check your email for the Supabase magic link.');
     setLoading(false);
   }

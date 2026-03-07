@@ -19,7 +19,7 @@ export function AdminQuerySelectFilter({
   options: Option[];
 }) {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() || '/';
   const searchParams = useSearchParams();
 
   function onChange(nextValue: string) {

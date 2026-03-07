@@ -3,6 +3,7 @@
 set -u
 
 PORT="${PORT:-3000}"
+NEXT_DIST_DIR="${NEXT_DIST_DIR:-.next-dev}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 cleanup_port() {
@@ -27,8 +28,8 @@ cd "$ROOT_DIR"
 cleanup_port
 
 while true; do
-  echo "[dev-stable] Starting Next dev server on :$PORT"
-  ./node_modules/.bin/next dev -p "$PORT"
+  echo "[dev-stable] Starting Next dev server on :$PORT using dist dir $NEXT_DIST_DIR"
+  NEXT_DIST_DIR="$NEXT_DIST_DIR" ./node_modules/.bin/next dev -p "$PORT"
   code=$?
   if [ "$code" -eq 0 ]; then
     echo "[dev-stable] Exited normally."

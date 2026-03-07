@@ -41,6 +41,7 @@ function withConditionalNoindex(req: NextRequest, response: NextResponse): NextR
 }
 
 function withSecurityHeaders(req: NextRequest, response: NextResponse): NextResponse {
+  if (process.env.NODE_ENV !== 'production') return response;
   if (shouldNoindexHost(req)) return response;
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
     response.headers.set(name, value);

@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Q1_OPTIONS, Q2_OPTIONS, Q3_OPTIONS } from '@/lib/constants';
+import { identifyMixpanel, trackMixpanel } from '@/lib/mixpanel-browser';
 
 export function ApplyForm({
   jobId,
@@ -195,6 +196,23 @@ export function ApplyForm({
       if (data?.assignmentRef && typeof data.assignmentRef === 'string') {
         setAssignmentRef(data.assignmentRef);
       }
+      const trackedAssignmentRef = data?.assignmentRef && typeof data.assignmentRef === 'string'
+        ? data.assignmentRef
+        : assignmentRef;
+      const trackedEmail = `${payload.email || ''}`.trim().toLowerCase();
+      const userId = trackedAssignmentRef || trackedEmail;
+      const utmParams = new URLSearchParams(window.location.search);
+      trackMixpanel('Sign Up', {
+        user_id: userId,
+        email: trackedEmail,
+        signup_method: 'application_form',
+        utm_source: utmParams.get('utm_source') || '',
+        utm_medium: utmParams.get('utm_medium') || '',
+        utm_campaign: utmParams.get('utm_campaign') || ''
+      });
+      identifyMixpanel(userId, {
+        $email: trackedEmail
+      });
       setValidationHeading('');
       setValidationItems([]);
       setFieldErrors({});

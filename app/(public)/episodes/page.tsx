@@ -3,21 +3,23 @@ import { EpisodesBrowser } from '@/components/episodes-browser';
 import { getPodcastEpisodes, type PodcastEpisode } from '@/lib/podcast';
 
 export const metadata: Metadata = {
-  title: 'All Episodes',
+  title: {
+    absolute: 'All Episodes | The Compendium Podcast'
+  },
   description:
     'Browse every Compendium podcast episode in one place. Search by title or episode number, listen inline, and open full episode notes.',
   alternates: {
     canonical: '/episodes'
   },
   openGraph: {
-    title: 'All Episodes | Compendium Circus HR',
+    title: 'All Episodes | The Compendium Podcast',
     description:
       'Browse every Compendium podcast episode in one place. Search by title or episode number, listen inline, and open full episode notes.',
     url: '/episodes'
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'All Episodes | Compendium Circus HR',
+    title: 'All Episodes | The Compendium Podcast',
     description:
       'Browse every Compendium podcast episode in one place. Search by title or episode number, listen inline, and open full episode notes.'
   }

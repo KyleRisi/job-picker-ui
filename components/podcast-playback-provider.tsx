@@ -759,7 +759,7 @@ export function PodcastPlaybackProvider({ children }: { children: ReactNode }) {
                       fill
                       sizes="40px"
                       className="object-cover"
-                      quality={56}
+                      unoptimized
                     />
                   ) : null}
                 </div>
@@ -958,7 +958,7 @@ export function PodcastPlaybackProvider({ children }: { children: ReactNode }) {
                   fill
                   sizes="67px"
                   className="object-cover"
-                  quality={56}
+                  unoptimized
                 />
               ) : (
                 <span className="flex h-full w-full items-center justify-center text-sm font-black text-carnival-ink">EP</span>
@@ -985,7 +985,7 @@ export function PodcastPlaybackProvider({ children }: { children: ReactNode }) {
                   fill
                   sizes="56px"
                   className="object-cover"
-                  quality={56}
+                  unoptimized
                 />
               ) : (
                 <span className="flex h-full w-full items-center justify-center text-sm font-black text-carnival-ink">EP</span>

@@ -7,12 +7,14 @@ import { getVisibleReviews, getVisibleReviewsCount } from '@/lib/reviews';
 import { getPublicSiteUrl } from '@/lib/site-url';
 
 export const metadata: Metadata = {
-  title: 'The Compendium Podcast | True Crime, Historical Events & Incredible People',
+  title: {
+    absolute: 'The Compendium Podcast | True Crime, History & Incredible People'
+  },
   description:
     'A weekly variety podcast covering true crime, forgotten historical events, and incredible people. Hosted by Kyle Risi and Adam Cox. Listen on Spotify, Apple Podcasts, and more.',
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'The Compendium Podcast | An Assembly of Fascinating Things',
+    title: 'The Compendium Podcast | True Crime, History & Incredible People',
     description:
       'A weekly variety podcast covering true crime, forgotten historical events, and incredible people. New episodes every week.',
     url: '/',
@@ -22,7 +24,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'The Compendium Podcast | An Assembly of Fascinating Things',
+    title: 'The Compendium Podcast | True Crime, History & Incredible People',
     description: 'True crime, historical events, and incredible people — a new episode every week.',
     images: ['/The Compendium Main.jpg']
   }
@@ -178,7 +180,7 @@ export default async function HomePage() {
                 <div className="relative mx-auto flex max-w-3xl flex-col items-center gap-10 px-4 text-center">
                   <div>
                     <span className="inline-block rounded-full bg-carnival-red px-4 py-1.5 text-xs font-black uppercase tracking-widest text-white">
-                      The Compendium Circus
+                      The Compendium Podcast
                     </span>
                     <h2 className="mt-3 text-4xl font-black tracking-tight text-white md:text-5xl">
                       We&apos;re Hiring

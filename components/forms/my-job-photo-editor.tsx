@@ -13,6 +13,10 @@ type Props = {
 };
 
 export function MyJobPhotoEditor({ assignmentId, fullName, imageUrl, accessEmail, accessRef }: Props) {
+  const previewWidth = 216;
+  const previewHeight = 264;
+  const exportWidth = 360;
+  const exportHeight = 440;
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [preview, setPreview] = useState(imageUrl || '');
@@ -77,10 +81,8 @@ export function MyJobPhotoEditor({ assignmentId, fullName, imageUrl, accessEmail
   async function renderEditedImageToDataUrl(): Promise<string> {
     if (!editorSrc) return '';
     const canvas = document.createElement('canvas');
-    const outW = 360;
-    const outH = 440;
-    canvas.width = outW;
-    canvas.height = outH;
+    canvas.width = exportWidth;
+    canvas.height = exportHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) return '';
 
@@ -89,11 +91,20 @@ export function MyJobPhotoEditor({ assignmentId, fullName, imageUrl, accessEmail
 
     return new Promise<string>((resolve) => {
       img.onload = () => {
-        ctx.clearRect(0, 0, outW, outH);
+        const coverScale = Math.max(exportWidth / img.width, exportHeight / img.height);
+        const offsetScaleX = exportWidth / previewWidth;
+        const offsetScaleY = exportHeight / previewHeight;
+
+        ctx.clearRect(0, 0, exportWidth, exportHeight);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.save();
-        ctx.translate(outW / 2 + offsetX, outH / 2 + offsetY);
+        ctx.translate(
+          exportWidth / 2 + offsetX * offsetScaleX,
+          exportHeight / 2 + offsetY * offsetScaleY
+        );
         ctx.rotate((rotation * Math.PI) / 180);
-        ctx.scale(zoom, zoom);
+        ctx.scale(coverScale * zoom, coverScale * zoom);
         ctx.drawImage(img, -img.width / 2, -img.height / 2);
         ctx.restore();
         resolve(canvas.toDataURL('image/jpeg', 0.92));

@@ -49,11 +49,10 @@ export function JobContextReadMore({ jobTitle }: { jobTitle: string }) {
             however, offer a deeply memorable workplace culture, intermittent snacks, and the rare privilege of being able to
             say: &ldquo;Yeah, that happened to me at work.&rdquo;
           </p>
-          <p>Further terms and conditions follow below, written in the traditional dialect of friendly legal dread.</p>
+          <p className="font-bold">Thank you for your attention to this matter.</p>
           <p className="pt-1">
-            Signed off,<br />
             <span className="font-bold">Sue</span><br />
-            <span className="font-semibold">HR Compliance &amp; Incident Liaison Coordinator</span>
+            <span className="font-semibold">Ministry of Human Affairs</span>
           </p>
           <button
             type="button"

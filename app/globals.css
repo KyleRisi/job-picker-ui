@@ -258,6 +258,102 @@ textarea.input {
   position: relative;
 }
 
+.blog-rich a {
+  color: var(--brand-red);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.blog-rich h2,
+.blog-rich h3,
+.blog-rich h4,
+.blog-rich h5,
+.blog-rich h6 {
+  line-height: 1.15;
+}
+
+.blog-rich ul {
+  list-style-type: disc;
+}
+
+.blog-rich ol {
+  list-style-type: decimal;
+}
+
+.blog-editor-preview .ProseMirror {
+  color: #231d46;
+  line-height: 1.75;
+}
+
+.blog-editor-preview .ProseMirror > * + * {
+  margin-top: 1.25rem;
+}
+
+.blog-editor-preview .ProseMirror h2,
+.blog-editor-preview .ProseMirror h3,
+.blog-editor-preview .ProseMirror h4,
+.blog-editor-preview .ProseMirror h5,
+.blog-editor-preview .ProseMirror h6 {
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin-top: 1.4rem;
+  margin-bottom: 0.45rem;
+}
+
+.blog-editor-preview .ProseMirror ul,
+.blog-editor-preview .ProseMirror ol {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-left: 1.35rem;
+  list-style-position: outside;
+}
+
+.blog-editor-preview .ProseMirror ul {
+  list-style-type: disc;
+}
+
+.blog-editor-preview .ProseMirror ol {
+  list-style-type: decimal;
+}
+
+.blog-editor-preview .ProseMirror li {
+  display: list-item;
+}
+
+.blog-editor-preview .ProseMirror li + li {
+  margin-top: 0.35rem;
+}
+
+.blog-editor-preview .ProseMirror blockquote {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--brand-gold);
+  border-radius: 1rem;
+  background: #1b1635;
+  color: #ffffff;
+  padding: 1.25rem 1.5rem;
+  font-size: 1.25rem;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1.55;
+  box-shadow: 0 18px 50px rgba(23, 17, 45, 0.28);
+  caret-color: #ffffff;
+}
+
+.blog-editor-preview .ProseMirror blockquote p {
+  margin: 0;
+}
+
+.blog-editor-preview .ProseMirror blockquote p + p {
+  margin-top: 0.75rem;
+}
+
+.blog-editor-preview .ProseMirror p.is-editor-empty:first-child::before {
+  color: #9ea7c0;
+}
+
 .mobile-player-range-shell::before {
   content: '';
   position: absolute;

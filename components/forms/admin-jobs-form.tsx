@@ -58,7 +58,7 @@ export function AdminJobsForm({
   const [broadcastSubmitting, setBroadcastSubmitting] = useState(false);
   const actionsContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() || '/admin/jobs';
   const searchParams = useSearchParams();
   const statusFilter = (searchParams.get('status') || 'ALL').toUpperCase();
 

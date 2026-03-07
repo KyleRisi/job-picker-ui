@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
+import { identifyMixpanel, trackMixpanel } from '@/lib/mixpanel-browser';
 
 export function RequestLinkForm() {
   const [msg, setMsg] = useState('');
@@ -14,6 +15,7 @@ export function RequestLinkForm() {
     setLoading(true);
     setMsg('');
     const formData = new FormData(e.currentTarget);
+    const email = `${formData.get('email') || ''}`.trim().toLowerCase();
     const res = await fetch('/api/my-job/request-link', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -21,9 +23,22 @@ export function RequestLinkForm() {
     });
     const data = await res.json();
     if (res.ok && data.redirectTo) {
+      trackMixpanel('Sign In', {
+        user_id: email,
+        login_method: 'email_reference',
+        success: true
+      });
+      identifyMixpanel(email, {
+        $email: email
+      });
       window.location.assign(data.redirectTo);
       return;
     }
+    trackMixpanel('Sign In', {
+      user_id: email,
+      login_method: 'email_reference',
+      success: false
+    });
     setMsg(data.message || data.error || 'Done');
     setLoading(false);
   }

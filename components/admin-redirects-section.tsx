@@ -100,7 +100,6 @@ export function AdminRedirectsSection({ showBypassBanner }: { showBypassBanner: 
         onTotalChange={setViewCount}
         panelMode={panelMode}
         onClosePanel={() => setPanelMode('none')}
-        onOpenCreatePanel={() => setPanelMode('create')}
       />
     </section>
   );

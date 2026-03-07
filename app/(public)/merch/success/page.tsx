@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { MerchPurchaseTracker } from '@/components/merch-purchase-tracker';
 
 export const metadata: Metadata = {
   title: 'Order Confirmed | Merch',
@@ -12,9 +13,16 @@ export const metadata: Metadata = {
   }
 };
 
-export default function MerchSuccessPage() {
+export default function MerchSuccessPage({
+  searchParams
+}: {
+  searchParams?: { session_id?: string };
+}) {
+  const sessionId = `${searchParams?.session_id || ''}`.trim();
+
   return (
     <section className="full-bleed relative -mt-8 -mb-8 overflow-hidden bg-carnival-ink py-16 md:py-24">
+      <MerchPurchaseTracker sessionId={sessionId} />
       <div className="pointer-events-none absolute inset-0" aria-hidden="true">
         <div className="absolute left-1/2 top-0 h-[440px] w-[700px] -translate-x-1/2 rounded-full bg-carnival-gold/10 blur-[140px]" />
       </div>

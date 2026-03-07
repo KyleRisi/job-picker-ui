@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 export function AdminActionMenu() {
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() || '/admin/jobs';
   const searchParams = useSearchParams();
 
   function closeMenu() {

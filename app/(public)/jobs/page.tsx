@@ -2,26 +2,27 @@ import { JobsTabs } from '@/components/jobs-tabs';
 import { JobsApplicationSuccessModal } from '@/components/jobs-application-success-modal';
 import { unstable_noStore as noStore } from 'next/cache';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { getJobsForPublic, getSettings } from '@/lib/data';
 
 export const metadata: Metadata = {
   title: 'Circus Openings',
   description:
-    'Browse open and rehiring roles at Compendium Circus HR and apply to join The Compendium universe.',
+    'Browse open and rehiring roles at The Compendium Podcast and apply to join The Compendium universe.',
   alternates: {
     canonical: '/jobs'
   },
   openGraph: {
-    title: 'Circus Openings | Compendium Circus HR',
+    title: 'Circus Openings | The Compendium Podcast',
     description:
-      'Browse open and rehiring roles at Compendium Circus HR and apply to join The Compendium universe.',
+      'Browse open and rehiring roles at The Compendium Podcast and apply to join The Compendium universe.',
     url: '/jobs'
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Circus Openings | Compendium Circus HR',
+    title: 'Circus Openings | The Compendium Podcast',
     description:
-      'Browse open and rehiring roles at Compendium Circus HR and apply to join The Compendium universe.'
+      'Browse open and rehiring roles at The Compendium Podcast and apply to join The Compendium universe.'
   }
 };
 
@@ -36,7 +37,14 @@ export default async function JobsPage() {
     <section>
       <JobsApplicationSuccessModal />
       <h1 className="mb-2 text-4xl font-black">Circus Openings</h1>
-      <p className="mb-6">Browse available and filled positions.</p>
+      <p className="mb-6">
+        Pick a job and apply to join the team then submit a wacky performance review and get
+        featured on a future episode. All freaks who submit a photo will be featured on the{' '}
+        <Link href="/meet-the-team" className="font-bold text-carnival-red underline underline-offset-2">
+          Meet the Team page
+        </Link>
+        .
+      </p>
       {settings.disable_new_signups ? (
         <p className="mb-6 rounded-md border border-carnival-red/25 bg-carnival-red/10 px-4 py-3 text-center font-semibold text-carnival-ink">
           Due to a bear mauling, we are not accepting any new applications.

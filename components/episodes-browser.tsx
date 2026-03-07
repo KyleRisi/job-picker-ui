@@ -8,6 +8,7 @@ import { type PodcastEpisode, formatEpisodeDate } from '@/lib/podcast-shared';
 import { usePodcastPlayback } from '@/components/podcast-playback-provider';
 import { LiveSearchInput } from '@/components/live-search-input';
 import { FeaturedEpisodeShowcase } from '@/components/featured-episode-showcase';
+import { trackMixpanel } from '@/lib/mixpanel-browser';
 
 function toExcerpt(value: string, maxLength: number): string {
   const normalized = `${value || ''}`.replace(/\s+/g, ' ').trim();
@@ -458,6 +459,7 @@ export function EpisodesBrowser({ episodes, showSearch = true, initialCount = IN
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
   const [viewModeReady, setViewModeReady] = useState(false);
+  const lastTrackedSearchRef = useRef('');
 
   const handleSortOrderChange = (nextOrder: SortOrder) => {
     if (nextOrder === sortOrder) return;
@@ -508,6 +510,27 @@ export function EpisodesBrowser({ episodes, showSearch = true, initialCount = IN
       return inTitle || inEpisodeNumber;
     });
   }, [episodes, normalizedQuery, sortOrder]);
+
+  useEffect(() => {
+    if (!normalizedQuery) {
+      lastTrackedSearchRef.current = '';
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      const signature = `${normalizedQuery}::${filteredEpisodes.length}`;
+      if (signature === lastTrackedSearchRef.current) return;
+      lastTrackedSearchRef.current = signature;
+
+      trackMixpanel('Search', {
+        search_query: normalizedQuery,
+        user_id: null,
+        results_count: filteredEpisodes.length
+      });
+    }, 350);
+
+    return () => window.clearTimeout(timeout);
+  }, [normalizedQuery, filteredEpisodes.length]);
 
   const featuredEpisode = useMemo(() => {
     if (normalizedQuery) return null;

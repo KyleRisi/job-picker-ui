@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { identifyMixpanel, trackMixpanel } from '@/lib/mixpanel-browser';
 
 export function AdminLoginForm() {
   const [message, setMessage] = useState('');
@@ -12,6 +13,7 @@ export function AdminLoginForm() {
     e.preventDefault();
     setLoading(true);
     const body = Object.fromEntries(new FormData(e.currentTarget).entries());
+    const normalizedEmail = `${body.email || ''}`.trim().toLowerCase();
     const res = await fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -19,11 +21,24 @@ export function AdminLoginForm() {
     });
     const data = await res.json();
     if (res.ok) {
+      trackMixpanel('Sign In', {
+        user_id: normalizedEmail,
+        login_method: 'email_password',
+        success: true
+      });
+      identifyMixpanel(normalizedEmail, {
+        $email: normalizedEmail
+      });
       setMessage('Signed in. Redirecting…');
       router.push('/admin');
       router.refresh();
       return;
     }
+    trackMixpanel('Sign In', {
+      user_id: normalizedEmail,
+      login_method: 'email_password',
+      success: false
+    });
     setMessage(data.message || data.error || 'Done');
     setLoading(false);
   }

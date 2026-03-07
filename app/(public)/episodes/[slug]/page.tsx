@@ -48,13 +48,15 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const canonicalPath = `/episodes/${episode.slug}`;
 
   return {
-    title: `${episode.title}`,
+    title: {
+      absolute: `${episode.title} | The Compendium Podcast`
+    },
     description,
     alternates: {
       canonical: canonicalPath
     },
     openGraph: {
-      title: `${episode.title} | All Episodes`,
+      title: `${episode.title} | The Compendium Podcast`,
       description,
       url: canonicalPath,
       images: episode.artworkUrl
@@ -70,7 +72,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${episode.title} | All Episodes`,
+      title: `${episode.title} | The Compendium Podcast`,
       description,
       images: episode.artworkUrl ? [episode.artworkUrl] : undefined
     }
@@ -126,7 +128,7 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
                 fill
                 sizes="(max-width: 768px) calc(100vw - 2.5rem), 340px"
                 className="object-cover"
-                quality={72}
+                unoptimized
                 priority
                 fetchPriority="high"
               />

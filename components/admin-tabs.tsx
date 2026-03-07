@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-export type AdminTabKey = 'dashboard' | 'jobs' | 'episodes' | 'reviews' | 'contacts' | 'redirects' | 'exports' | 'settings';
+export type AdminTabKey = 'dashboard' | 'blog' | 'jobs' | 'episodes' | 'analytics' | 'reviews' | 'contacts' | 'redirects' | 'exports' | 'settings';
 
 const TABS: Array<{ key: AdminTabKey; href: string; label: string }> = [
   { key: 'dashboard', href: '/admin', label: 'Dashboard' },
+  { key: 'blog', href: '/admin/blog', label: 'Blog' },
   { key: 'jobs', href: '/admin/jobs', label: 'Jobs' },
   { key: 'episodes', href: '/admin/episodes', label: 'Episodes' },
+  { key: 'analytics', href: '/admin/analytics', label: 'Analytics' },
   { key: 'reviews', href: '/admin/reviews', label: 'Reviews' },
   { key: 'contacts', href: '/admin/contacts', label: 'Contacts' },
   { key: 'redirects', href: '/admin/redirects', label: 'Redirects' },
@@ -38,12 +40,31 @@ function TabIcon({ tab }: { tab: AdminTabKey }) {
       </svg>
     );
   }
+  if (tab === 'blog') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 0-3 3V4Z" />
+        <path d="M8 20V7a3 3 0 0 0-3-3" />
+        <path d="M11 9h5M11 13h5M11 17h3" />
+      </svg>
+    );
+  }
   if (tab === 'episodes') {
     return (
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
         <circle cx="8" cy="8" r="2" />
         <circle cx="8" cy="16" r="2" />
         <path d="M12 8h9M12 16h9" />
+      </svg>
+    );
+  }
+  if (tab === 'analytics') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <path d="M4 20V8" />
+        <path d="M10 20V4" />
+        <path d="M16 20v-9" />
+        <path d="M22 20V12" />
       </svg>
     );
   }
@@ -90,25 +111,31 @@ function TabIcon({ tab }: { tab: AdminTabKey }) {
 }
 
 export function AdminTabs({ current }: { current: AdminTabKey }) {
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(ADMIN_NAV_COLLAPSED_KEY) === '1';
-  });
+  const [collapsed, setCollapsed] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
 
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
   useEffect(() => {
+    try {
+      setCollapsed(window.localStorage.getItem(ADMIN_NAV_COLLAPSED_KEY) === '1');
+    } catch {
+      setCollapsed(false);
+    }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(ADMIN_NAV_COLLAPSED_KEY, collapsed ? '1' : '0');
+    try {
+      window.localStorage.setItem(ADMIN_NAV_COLLAPSED_KEY, collapsed ? '1' : '0');
+    } catch {
+      // Ignore storage write failures in constrained browser contexts.
+    }
   }, [collapsed, hydrated]);
 
   useEffect(() => {
@@ -206,6 +233,7 @@ export function AdminTabs({ current }: { current: AdminTabKey }) {
                   <Link
                     key={tab.key}
                     href={tab.href}
+                    prefetch={false}
                     className={`${active ? 'btn-primary' : 'btn-secondary'} !justify-start w-full gap-3 text-left`}
                     onClick={() => setMobileOpen(false)}
                   >
@@ -271,6 +299,7 @@ export function AdminTabs({ current }: { current: AdminTabKey }) {
               <Link
                 key={tab.key}
                 href={tab.href}
+                prefetch={false}
                 className={className}
                 title={collapsed ? tab.label : undefined}
                 aria-label={collapsed ? tab.label : undefined}

@@ -10,13 +10,22 @@ export function MainNav() {
   const instagramUrl = 'https://www.instagram.com/thecompendiumpodcast/';
   const youtubeUrl = 'https://www.youtube.com/@CompendiumPodcast';
   const youtubeMusicUrl = 'https://music.youtube.com/channel/UCQR5hWsxuu9wh7QvR60qmIw';
+  const moreItems = [
+    { href: '/connect', label: 'Connect', prefetch: true },
+    { href: '/meet-the-team', label: 'The Team', prefetch: true },
+    { href: '/reviews', label: 'Reviews', prefetch: false },
+    { href: '/blog', label: 'Blog', prefetch: false }
+  ];
   const [open, setOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
-  const pathname = usePathname();
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname() || '';
   const isAdminRoute = pathname.startsWith('/admin');
 
   useEffect(() => {
     setOpen(false);
+    setMoreOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -24,11 +33,13 @@ export function MainNav() {
       const target = event.target as Node | null;
       if (!target) return;
       if (open && !drawerRef.current?.contains(target)) setOpen(false);
+      if (moreOpen && !moreMenuRef.current?.contains(target)) setMoreOpen(false);
     }
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         setOpen(false);
+        setMoreOpen(false);
       }
     }
 
@@ -40,7 +51,7 @@ export function MainNav() {
       document.removeEventListener('touchstart', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [open]);
+  }, [open, moreOpen]);
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname.startsWith(href);
@@ -58,6 +69,12 @@ export function MainNav() {
         ? 'text-carnival-red underline underline-offset-4 decoration-2'
         : 'text-carnival-ink/70 hover:text-carnival-red'
     }`;
+  const isMoreActive = moreItems.some((item) => isActive(item.href));
+  const moreNavLinkClass = `inline-flex items-center gap-1 text-base font-bold transition-colors ${
+    isMoreActive || moreOpen
+      ? 'text-carnival-red underline underline-offset-4 decoration-2'
+      : 'text-carnival-ink/70 hover:text-carnival-red'
+  }`;
 
   return (
     <nav
@@ -90,18 +107,60 @@ export function MainNav() {
               <Link href="/episodes" className={navLinkClass('/episodes')} prefetch={false}>
                 Episodes
               </Link>
-              <Link href="/reviews" className={navLinkClass('/reviews')} prefetch={false}>
-                Reviews
-              </Link>
-              <Link href="/connect" className={navLinkClass('/connect')}>
-                Connect
-              </Link>
               <Link href="/merch" className={navLinkClass('/merch')}>
                 Merch
               </Link>
               <Link href="/jobs" className={navLinkClass('/jobs')}>
                 Jobs
               </Link>
+              <div className="relative" ref={moreMenuRef}>
+                <button
+                  type="button"
+                  className={moreNavLinkClass}
+                  aria-haspopup="menu"
+                  aria-expanded={moreOpen}
+                  onClick={() => setMoreOpen((current) => !current)}
+                >
+                  More
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`transition-transform ${moreOpen ? 'rotate-180' : ''}`}
+                    aria-hidden="true"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+                {moreOpen ? (
+                  <div
+                    role="menu"
+                    className="absolute right-0 z-[90] mt-2 min-w-[12rem] rounded-xl border border-carnival-ink/20 bg-carnival-cream p-2 shadow-card"
+                  >
+                    {moreItems.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        prefetch={item.prefetch}
+                        className={`block rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                          isActive(item.href)
+                            ? 'bg-carnival-red/10 text-carnival-red'
+                            : 'text-carnival-ink/80 hover:bg-carnival-gold/25 hover:text-carnival-ink'
+                        }`}
+                        onClick={() => setMoreOpen(false)}
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
               <a href={patreonUrl} target="_blank" rel="noopener noreferrer" className="btn-primary">
                 Patreon
               </a>
@@ -178,18 +237,23 @@ export function MainNav() {
               <Link href="/episodes" className={mobileNavLinkClass('/episodes')} prefetch={false} onClick={() => setOpen(false)}>
                 Episodes
               </Link>
-              <Link href="/reviews" className={mobileNavLinkClass('/reviews')} prefetch={false} onClick={() => setOpen(false)}>
-                Reviews
-              </Link>
-              <Link href="/connect" className={mobileNavLinkClass('/connect')} onClick={() => setOpen(false)}>
-                Connect
-              </Link>
               <Link href="/merch" className={mobileNavLinkClass('/merch')} onClick={() => setOpen(false)}>
                 Merch
               </Link>
               <Link href="/jobs" className={mobileNavLinkClass('/jobs')} onClick={() => setOpen(false)}>
                 Jobs
               </Link>
+              {moreItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  prefetch={item.prefetch}
+                  className={mobileNavLinkClass(item.href)}
+                  onClick={() => setOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
               <a href={patreonUrl} target="_blank" rel="noopener noreferrer" className="btn-primary flex w-full justify-center">
                 Patreon
               </a>

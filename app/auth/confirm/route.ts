@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { env } from '@/lib/env';
 
+function markNoindex(response: NextResponse) {
+  response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  return response;
+}
+
 export async function GET(req: NextRequest) {
   const tokenHash = req.nextUrl.searchParams.get('token_hash');
   const type = req.nextUrl.searchParams.get('type') as 'magiclink' | null;
@@ -10,7 +15,7 @@ export async function GET(req: NextRequest) {
   const next = nextParam || (isAdminFlow ? '/admin' : '/my-job/file');
 
   if (tokenHash && type) {
-    const successRedirect = NextResponse.redirect(new URL(next, req.url));
+    const successRedirect = markNoindex(NextResponse.redirect(new URL(next, req.url)));
     const supabase = createServerClient(env.supabaseUrl, env.supabaseAnonKey, {
       cookies: {
         getAll() {
@@ -30,5 +35,5 @@ export async function GET(req: NextRequest) {
   }
 
   const fallbackPath = isAdminFlow ? '/admin?error=Magic link failed or expired' : '/my-job?error=Magic link failed or expired';
-  return NextResponse.redirect(new URL(fallbackPath, req.url));
+  return markNoindex(NextResponse.redirect(new URL(fallbackPath, req.url)));
 }

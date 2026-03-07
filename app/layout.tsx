@@ -1,8 +1,10 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';
-import { MainNav } from '@/components/main-nav';
+import Script from 'next/script';
 import { PodcastPlaybackProvider } from '@/components/podcast-playback-provider';
+import { AppShell } from '@/components/app-shell';
+import { DevExtensionErrorGuard } from '@/components/dev-extension-error-guard';
 import { getPublicSiteUrl } from '@/lib/site-url';
 
 const poppins = Poppins({
@@ -10,14 +12,63 @@ const poppins = Poppins({
   weight: ['400', '500', '600', '700', '800', '900']
 });
 
+const DEV_RUNTIME_NOISE_GUARD_SCRIPT = `
+(() => {
+  if (typeof window === 'undefined') return;
+  if (window.__compendiumDevNoiseGuardInstalled) return;
+  window.__compendiumDevNoiseGuardInstalled = true;
+
+  const patterns = [
+    'runtime.lasterror',
+    'could not establish connection',
+    'receiving end does not exist',
+    'chrome-extension://',
+    'moz-extension://',
+    'metamask',
+    'inpage.js',
+    'lockdown-install.js',
+    '_next/webpack-hmr'
+  ];
+
+  const toText = (value) => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (value instanceof Error) return value.message + '\\n' + (value.stack || '');
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  };
+
+  const isNoise = (value) => {
+    const text = String(value || '').toLowerCase();
+    return patterns.some((pattern) => text.includes(pattern));
+  };
+
+  window.addEventListener('error', (event) => {
+    const details = [event.message, event.filename, toText(event.error)].join('\\n');
+    if (!isNoise(details)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+
+  window.addEventListener('unhandledrejection', (event) => {
+    const details = toText(event.reason);
+    if (!isNoise(details)) return;
+    event.preventDefault();
+  }, true);
+})();
+`;
+
 export const metadata: Metadata = {
   metadataBase: new URL(getPublicSiteUrl()),
   title: {
-    default: 'Compendium Circus HR | The Compendium Podcast',
-    template: '%s | Compendium Circus HR'
+    default: 'The Compendium Podcast',
+    template: '%s | The Compendium Podcast'
   },
   description:
-    'Browse open circus roles in The Compendium universe and apply for your chance to be featured on the podcast.',
+    'The Compendium Podcast site with episodes, blog posts, reviews, merch, and listener resources.',
   icons: {
     icon: [
       { url: '/Favicon/favicon16.jpg', sizes: '16x16', type: 'image/jpeg' },
@@ -33,11 +84,11 @@ export const metadata: Metadata = {
     canonical: '/'
   },
   openGraph: {
-    title: 'Compendium Circus HR',
+    title: 'The Compendium Podcast',
     description:
-      'Browse open circus roles in The Compendium universe and apply for your chance to be featured on the podcast.',
+      'The Compendium Podcast site with episodes, blog posts, reviews, merch, and listener resources.',
     url: '/',
-    siteName: 'Compendium Circus HR',
+    siteName: 'The Compendium Podcast',
     type: 'website',
     images: [
       {
@@ -50,9 +101,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Compendium Circus HR',
+    title: 'The Compendium Podcast',
     description:
-      'Browse open circus roles in The Compendium universe and apply for your chance to be featured on the podcast.',
+      'The Compendium Podcast site with episodes, blog posts, reviews, merch, and listener resources.',
     images: ['/The Compendium Main.jpg']
   },
   robots: {
@@ -62,20 +113,48 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const siteUrl = getPublicSiteUrl();
+  const siteJsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        name: 'The Compendium Podcast',
+        url: siteUrl,
+        logo: `${siteUrl}/The Compendium Main.jpg`,
+        sameAs: [
+          'https://www.patreon.com/cw/TheCompendiumPodcast',
+          'https://www.instagram.com/thecompendiumpodcast/',
+          'https://www.youtube.com/@CompendiumPodcast',
+          'https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ',
+          'https://podcasts.apple.com/gb/podcast/the-compendium-an-assembly-of-fascinating-things/id1676817109'
+        ]
+      },
+      {
+        '@type': 'WebSite',
+        name: 'The Compendium Podcast',
+        url: siteUrl,
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: `${siteUrl}/blog/search?q={search_term_string}`,
+          'query-input': 'required name=search_term_string'
+        }
+      }
+    ]
+  };
+
   return (
     <html lang="en">
       <body className={poppins.className}>
+        {process.env.NODE_ENV !== 'production' ? (
+          <Script id="dev-runtime-noise-guard" strategy="beforeInteractive">
+            {DEV_RUNTIME_NOISE_GUARD_SCRIPT}
+          </Script>
+        ) : null}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }} />
+        <DevExtensionErrorGuard />
         <PodcastPlaybackProvider>
-          <header
-            className="sticky top-0 z-50 border-b-4"
-            style={{
-              borderBottomColor: 'var(--brand-red)',
-              background: 'var(--brand-gold)'
-            }}
-          >
-            <MainNav />
-          </header>
-          <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+          <AppShell>{children}</AppShell>
         </PodcastPlaybackProvider>
       </body>
     </html>

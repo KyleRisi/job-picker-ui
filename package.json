@@ -16,7 +16,17 @@
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.49.1",
+    "@tiptap/core": "^2.27.2",
+    "@tiptap/extension-color": "^2.27.2",
+    "@tiptap/extension-link": "^2.11.5",
+    "@tiptap/extension-placeholder": "^2.11.5",
+    "@tiptap/extension-text-align": "^2.27.2",
+    "@tiptap/extension-text-style": "^2.27.2",
+    "@tiptap/extension-underline": "^2.11.5",
+    "@tiptap/react": "^2.11.5",
+    "@tiptap/starter-kit": "^2.11.5",
     "fast-xml-parser": "^4.5.4",
+    "marked": "^15.0.12",
     "next": "^14.2.35",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -25,6 +35,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@netlify/functions": "^3.1.8",
     "@netlify/plugin-lighthouse": "^6.0.4",
     "@netlify/plugin-nextjs": "^5.10.4",
     "@types/node": "^20.17.16",

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { unstable_noStore as noStore } from 'next/cache';
 import { AdminLoginForm } from '@/components/forms/admin-login-form';
+import { BlogAdminLoginForm } from '@/components/forms/blog-admin-login-form';
 import { AdminTabs } from '@/components/admin-tabs';
 import { env } from '@/lib/env';
 import { createSupabaseAdminClient } from '@/lib/supabase';
@@ -173,8 +174,16 @@ function DashboardView({
   );
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
+}) {
   noStore();
+
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const errorParam = resolvedSearchParams.error;
+  const blogAuthError = (Array.isArray(errorParam) ? errorParam[0] : errorParam) === 'blog-auth';
 
   if (env.adminAuthDisabled) {
     const admin = createSupabaseAdminClient();
@@ -197,7 +206,10 @@ export default async function AdminPage() {
       <section className="space-y-4">
         <h1 className="text-4xl font-black">Admin Dashboard</h1>
         <p>Only the configured admin email can access this dashboard.</p>
-        <AdminLoginForm />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <AdminLoginForm />
+          <BlogAdminLoginForm adminEmail={env.adminEmail} />
+        </div>
       </section>
     );
   }
@@ -209,10 +221,21 @@ export default async function AdminPage() {
   ]);
 
   return (
-    <DashboardView
-      archives={archives}
-      exits={exits}
-      showBypassBanner={false}
-    />
+    <div className="space-y-4">
+      {blogAuthError ? (
+        <div className="card space-y-2 border-2 border-amber-400 bg-amber-50">
+          <h2 className="text-xl font-bold">Blog sign-in required</h2>
+          <p className="text-sm text-carnival-ink/80">
+            You are signed into the legacy admin, but the blog CMS uses Supabase Auth separately.
+          </p>
+          <BlogAdminLoginForm adminEmail={env.adminEmail} />
+        </div>
+      ) : null}
+      <DashboardView
+        archives={archives}
+        exits={exits}
+        showBypassBanner={false}
+      />
+    </div>
   );
 }

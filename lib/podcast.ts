@@ -1,5 +1,7 @@
 import { XMLParser } from 'fast-xml-parser';
 import { unstable_cache } from 'next/cache';
+import { formatEpisodeDate, type PodcastEpisode } from './podcast-shared';
+export type { PodcastEpisode } from './podcast-shared';
 
 const DEFAULT_PODCAST_RSS_FEED_URL = 'https://feeds.simplecast.com/Sci7Fqgp';
 const FEED_ACCEPT_HEADER = 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.1';
@@ -13,21 +15,6 @@ const xmlParser = new XMLParser({
   parseTagValue: false,
   trimValues: true
 });
-
-export type PodcastEpisode = {
-  id: string;
-  slug: string;
-  title: string;
-  seasonNumber: number | null;
-  episodeNumber: number | null;
-  publishedAt: string;
-  description: string;
-  descriptionHtml: string;
-  audioUrl: string;
-  artworkUrl: string | null;
-  duration: string | null;
-  sourceUrl: string | null;
-};
 
 type GetPodcastEpisodesOptions = {
   includeDescriptionHtml?: boolean;
@@ -263,16 +250,7 @@ export function getPodcastFeedUrl(): string {
   return process.env.PODCAST_RSS_FEED_URL || DEFAULT_PODCAST_RSS_FEED_URL;
 }
 
-export function formatEpisodeDate(isoDate: string): string {
-  const parsed = new Date(isoDate);
-  if (Number.isNaN(parsed.getTime())) return 'Unknown date';
-
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  }).format(parsed);
-}
+export { formatEpisodeDate };
 
 async function fetchAndParsePodcastFeed(): Promise<CachedPodcastEpisode[]> {
   const feedUrl = getPodcastFeedUrl();
@@ -344,7 +322,50 @@ const getCachedParsedPodcastFeed = unstable_cache(fetchAndParsePodcastFeed, ['po
   revalidate: PODCAST_FEED_REVALIDATE_SECONDS
 });
 
+async function getPodcastEpisodesFromDatabase(
+  options: GetPodcastEpisodesOptions = {}
+): Promise<PodcastEpisode[] | null> {
+  try {
+    const { createSupabaseAdminClient } = await import('./supabase');
+    const supabase = createSupabaseAdminClient();
+    const { data, error } = await supabase
+      .from('podcast_episodes')
+      .select('*')
+      .eq('is_visible', true)
+      .eq('is_archived', false)
+      .order('published_at', { ascending: false });
+    if (error) return null;
+    if (!data || data.length === 0) return null;
+
+    const episodes = data.map((episode) => ({
+      id: episode.id,
+      slug: episode.slug,
+      title: episode.title,
+      seasonNumber: null,
+      episodeNumber: null,
+      publishedAt: episode.published_at || new Date(0).toISOString(),
+      description: truncateText(episode.description_plain, options.descriptionMaxLength ?? DEFAULT_LIST_DESCRIPTION_MAX_LENGTH),
+      descriptionHtml: options.includeDescriptionHtml ? toSafeHtml(episode.description_html) : '',
+      audioUrl: episode.audio_url,
+      artworkUrl: episode.artwork_url,
+      duration: null,
+      sourceUrl: null
+    }));
+
+    if (typeof options.limit === 'number' && Number.isFinite(options.limit) && options.limit > 0) {
+      return episodes.slice(0, options.limit);
+    }
+
+    return episodes;
+  } catch {
+    return null;
+  }
+}
+
 export async function getPodcastEpisodes(options: GetPodcastEpisodesOptions = {}): Promise<PodcastEpisode[]> {
+  const databaseEpisodes = await getPodcastEpisodesFromDatabase(options);
+  if (databaseEpisodes) return databaseEpisodes;
+
   const {
     includeDescriptionHtml = false,
     descriptionMaxLength = DEFAULT_LIST_DESCRIPTION_MAX_LENGTH,
@@ -383,6 +404,14 @@ export async function getPodcastEpisodeBySlug(
 ): Promise<PodcastEpisode | null> {
   const normalizedSlug = `${slug || ''}`.trim();
   if (!normalizedSlug) return null;
+
+  const databaseEpisodes = await getPodcastEpisodesFromDatabase({
+    includeDescriptionHtml: options.includeDescriptionHtml ?? true,
+    descriptionMaxLength: options.descriptionMaxLength ?? null
+  });
+  if (databaseEpisodes) {
+    return databaseEpisodes.find((episode) => episode.slug === normalizedSlug) ?? null;
+  }
 
   const episodes = await getPodcastEpisodes({
     includeDescriptionHtml: options.includeDescriptionHtml ?? true,

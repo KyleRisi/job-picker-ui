@@ -11,7 +11,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from('redirects')
-    .select('id,source_path,target_url,status_code,match_type,is_active,priority,notes,created_at,updated_at')
+    .select('id,source_path,target_url,status_code,match_type,is_active,priority,notes,source_type,source_ref,created_at,updated_at')
     .eq('id', params.id)
     .maybeSingle();
 
@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       .from('redirects')
       .update(payload)
       .eq('id', params.id)
-      .select('id,source_path,target_url,status_code,match_type,is_active,priority,notes,created_at,updated_at')
+      .select('id,source_path,target_url,status_code,match_type,is_active,priority,notes,source_type,source_ref,created_at,updated_at')
       .maybeSingle();
 
     if (update.error) return badRequest(update.error.message);

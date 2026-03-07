@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
   const matchType = (params.get('match_type') || '').trim();
   const statusCodeRaw = (params.get('status_code') || '').trim();
   const activeRaw = (params.get('is_active') || '').trim().toLowerCase();
+  const sourceType = (params.get('source_type') || '').trim();
 
   if (matchType && !REDIRECT_MATCH_TYPES.includes(matchType as (typeof REDIRECT_MATCH_TYPES)[number])) {
     return badRequest('Invalid match_type filter.');
@@ -52,7 +53,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from('redirects')
-    .select('id,source_path,target_url,status_code,match_type,is_active,priority,notes,created_at,updated_at', { count: 'exact' })
+    .select('id,source_path,target_url,status_code,match_type,is_active,priority,notes,source_type,source_ref,created_at,updated_at', { count: 'exact' })
     .order('priority', { ascending: false })
     .order('updated_at', { ascending: false })
     .range(from, to);
@@ -65,6 +66,7 @@ export async function GET(req: NextRequest) {
   if (matchType) query = query.eq('match_type', matchType);
   if (statusCode) query = query.eq('status_code', statusCode);
   if (activeRaw) query = query.eq('is_active', activeRaw === 'true');
+  if (sourceType) query = query.eq('source_type', sourceType);
 
   const { data, error, count } = await query;
   if (error) return badRequest(error.message);
@@ -95,7 +97,7 @@ export async function POST(req: NextRequest) {
     const insert = await supabase
       .from('redirects')
       .insert(payload)
-      .select('id,source_path,target_url,status_code,match_type,is_active,priority,notes,created_at,updated_at')
+      .select('id,source_path,target_url,status_code,match_type,is_active,priority,notes,source_type,source_ref,created_at,updated_at')
       .single();
 
     if (insert.error) return badRequest(insert.error.message);

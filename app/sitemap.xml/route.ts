@@ -1,6 +1,5 @@
-import { STATUS } from '@/lib/constants';
-import { getJobsForPublic } from '@/lib/data';
 import { getPodcastEpisodes } from '@/lib/podcast';
+import { listAuthorArchive, listPublishedBlogPosts, listTaxonomy } from '@/lib/blog/data';
 import { getPublicSiteUrl } from '@/lib/site-url';
 
 type ChangeFrequency = 'daily' | 'weekly';
@@ -56,6 +55,12 @@ async function getEntries(): Promise<SitemapEntry[]> {
       priority: 0.85
     },
     {
+      url: `${siteUrl}/blog`,
+      lastModified: now,
+      changeFrequency: 'daily',
+      priority: 0.9
+    },
+    {
       url: `${siteUrl}/reviews`,
       lastModified: now,
       changeFrequency: 'weekly',
@@ -63,6 +68,12 @@ async function getEntries(): Promise<SitemapEntry[]> {
     },
     {
       url: `${siteUrl}/connect`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.7
+    },
+    {
+      url: `${siteUrl}/meet-the-team`,
       lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7
@@ -88,19 +99,14 @@ async function getEntries(): Promise<SitemapEntry[]> {
   ];
 
   try {
-    const [jobs, episodes] = await Promise.all([
-      getJobsForPublic(),
-      getPodcastEpisodes({ descriptionMaxLength: 120 })
+    const [episodes, blogPosts, categories, seriesItems, topics, authors] = await Promise.all([
+      getPodcastEpisodes({ descriptionMaxLength: 120 }),
+      listPublishedBlogPosts({ page: 1, limit: 200 }),
+      listTaxonomy('categories'),
+      listTaxonomy('series'),
+      listTaxonomy('topic_clusters'),
+      listTaxonomy('blog_authors')
     ]);
-
-    const jobRoutes: SitemapEntry[] = jobs
-      .filter((job) => job.status === STATUS.AVAILABLE || job.status === STATUS.REHIRING)
-      .map((job) => ({
-        url: `${siteUrl}/jobs/${job.id}`,
-        lastModified: now,
-        changeFrequency: 'daily',
-        priority: 0.8
-      }));
 
     const episodeRoutes: SitemapEntry[] = episodes.map((episode) => ({
       url: `${siteUrl}/episodes/${episode.slug}`,
@@ -109,7 +115,41 @@ async function getEntries(): Promise<SitemapEntry[]> {
       priority: 0.75
     }));
 
-    return [...staticRoutes, ...jobRoutes, ...episodeRoutes];
+    const blogRoutes: SitemapEntry[] = blogPosts.items.map((post) => ({
+      url: `${siteUrl}/blog/${post.slug}`,
+      lastModified: new Date(post.updated_at || post.published_at || now.toISOString()),
+      changeFrequency: 'weekly',
+      priority: 0.8
+    }));
+
+    const archiveRoutes: SitemapEntry[] = [
+      ...categories.map((item: any) => ({
+        url: `${siteUrl}/blog/category/${item.slug}`,
+        lastModified: now,
+        changeFrequency: 'weekly' as ChangeFrequency,
+        priority: 0.6
+      })),
+      ...seriesItems.map((item: any) => ({
+        url: `${siteUrl}/blog/series/${item.slug}`,
+        lastModified: now,
+        changeFrequency: 'weekly' as ChangeFrequency,
+        priority: 0.55
+      })),
+      ...topics.map((item: any) => ({
+        url: `${siteUrl}/blog/topic/${item.slug}`,
+        lastModified: now,
+        changeFrequency: 'weekly' as ChangeFrequency,
+        priority: 0.55
+      })),
+      ...authors.map((item: any) => ({
+        url: `${siteUrl}/blog/author/${item.slug}`,
+        lastModified: now,
+        changeFrequency: 'weekly' as ChangeFrequency,
+        priority: 0.4
+      }))
+    ];
+
+    return [...staticRoutes, ...episodeRoutes, ...blogRoutes, ...archiveRoutes];
   } catch {
     return staticRoutes;
   }

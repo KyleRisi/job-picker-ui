@@ -3,8 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { PodcastEpisode, formatEpisodeDate } from '@/lib/podcast';
+import { useRouter } from 'next/navigation';
+import { type PodcastEpisode, formatEpisodeDate } from '@/lib/podcast-shared';
 import { usePodcastPlayback } from '@/components/podcast-playback-provider';
+import { LiveSearchInput } from '@/components/live-search-input';
+import { FeaturedEpisodeShowcase } from '@/components/featured-episode-showcase';
 
 function toExcerpt(value: string, maxLength: number): string {
   const normalized = `${value || ''}`.replace(/\s+/g, ' ').trim();
@@ -114,7 +117,7 @@ function CardAudioPlayer({
   );
 }
 
-function EpisodeCard({
+export function EpisodeCard({
   episode,
   featured
 }: {
@@ -146,7 +149,7 @@ function EpisodeCard({
                     : '(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 380px'
                 }
                 className={featured ? 'object-contain bg-black' : 'object-cover'}
-                quality={56}
+                unoptimized
               />
             </Link>
           ) : (
@@ -169,7 +172,7 @@ function EpisodeCard({
             ) : null}
           </div>
           <h2 className={`mt-2 font-black leading-tight text-carnival-ink ${featured ? 'text-3xl' : 'text-[1.35rem]'}`}>
-            <Link href={detailHref} className="transition hover:text-carnival-red">
+            <Link href={detailHref} className="!text-carnival-ink !no-underline transition hover:!text-carnival-red">
               <span className="inline-flex flex-wrap items-center gap-2">
                 {episodeChip ? (
                   <span className="rounded-full bg-carnival-red px-2.5 py-1 text-[11px] font-black uppercase tracking-wide text-white">
@@ -181,7 +184,9 @@ function EpisodeCard({
             </Link>
           </h2>
           <p className={`mt-3 whitespace-pre-wrap text-sm leading-relaxed text-carnival-ink/80 ${featured ? 'line-clamp-5' : ''}`}>
-            {excerpt}
+            <Link href={detailHref} className="!text-inherit !no-underline transition hover:!text-carnival-red">
+              {excerpt}
+            </Link>
           </p>
 
           <div className={featured ? 'mt-4 space-y-3' : 'mt-auto pt-4 space-y-3'}>
@@ -218,13 +223,23 @@ const LOAD_MORE_COUNT = 12;
 const EPISODES_VIEW_MODE_STORAGE_KEY = 'compendium:episodes:view-mode';
 
 type ViewMode = 'grid' | 'compact';
+type SortOrder = 'newest' | 'oldest';
 
 function isViewMode(value: string): value is ViewMode {
   return value === 'grid' || value === 'compact';
 }
 
-function CompactEpisodeRow({ episode }: { episode: PodcastEpisode }) {
-  const artworkLinkRef = useRef<HTMLAnchorElement | null>(null);
+function byPublishedDate(order: SortOrder) {
+  return (a: PodcastEpisode, b: PodcastEpisode) => {
+    const aTime = new Date(a.publishedAt).getTime() || 0;
+    const bTime = new Date(b.publishedAt).getTime() || 0;
+    return order === 'oldest' ? aTime - bTime : bTime - aTime;
+  };
+}
+
+export function CompactEpisodeRow({ episode }: { episode: PodcastEpisode }) {
+  const artworkButtonRef = useRef<HTMLButtonElement | null>(null);
+  const router = useRouter();
   const { activeEpisode, isPlaying, playEpisode, togglePlayPause } = usePodcastPlayback();
   const isActive = activeEpisode?.slug === episode.slug;
   const playing = isActive && isPlaying;
@@ -241,16 +256,28 @@ function CompactEpisodeRow({ episode }: { episode: PodcastEpisode }) {
         episodeNumber: episode.episodeNumber,
         publishedAt: episode.publishedAt,
         duration: episode.duration
-      }, sourceElement || artworkLinkRef.current);
+      }, sourceElement || artworkButtonRef.current);
       return;
     }
     await togglePlayPause();
   };
 
+  const openDetails = () => {
+    router.push(detailHref);
+  };
+
   return (
     <article
-      className="overflow-hidden rounded-2xl border border-carnival-ink/10 bg-white shadow-[0_10px_26px_rgba(0,0,0,0.10)] transition hover:shadow-lg"
+      className="cursor-pointer overflow-hidden rounded-2xl border border-carnival-ink/10 bg-white shadow-[0_10px_26px_rgba(0,0,0,0.10)] transition hover:shadow-lg"
       aria-label={`Podcast episode ${episode.title}`}
+      role="link"
+      tabIndex={0}
+      onClick={openDetails}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        openDetails();
+      }}
     >
       <div className="flex items-center gap-4 px-4 py-4 sm:gap-6 sm:px-6 sm:py-5">
         {/* Artwork column — chip sits directly above artwork on narrow screens */}
@@ -262,24 +289,46 @@ function CompactEpisodeRow({ episode }: { episode: PodcastEpisode }) {
           ) : null}
           <div className="relative h-20 w-20 overflow-hidden rounded-xl sm:h-24 sm:w-24">
             {episode.artworkUrl ? (
-              <Link ref={artworkLinkRef} href={detailHref} className="relative block h-full w-full">
+              <button
+                ref={artworkButtonRef}
+                type="button"
+                className="relative block h-full w-full"
+                aria-label={playing ? 'Pause episode' : 'Play episode'}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  void togglePlay(artworkButtonRef.current || event.currentTarget);
+                }}
+              >
                 <Image
                   src={episode.artworkUrl}
                   alt=""
                   fill
                   sizes="96px"
                   className="object-cover"
-                  quality={60}
+                  unoptimized
                 />
-              </Link>
+              </button>
             ) : (
-              <div className="h-full w-full bg-carnival-ink/10" />
+              <button
+                ref={artworkButtonRef}
+                type="button"
+                className="h-full w-full bg-carnival-ink/10"
+                aria-label={playing ? 'Pause episode' : 'Play episode'}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  void togglePlay(artworkButtonRef.current || event.currentTarget);
+                }}
+              />
             )}
             {/* Play button overlaid on artwork — mobile only */}
             <button
               type="button"
               onClick={(event) => {
-                void togglePlay(artworkLinkRef.current || event.currentTarget);
+                event.preventDefault();
+                event.stopPropagation();
+                void togglePlay(artworkButtonRef.current || event.currentTarget);
               }}
               className={`absolute left-1/2 top-1/2 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-white shadow-lg transition sm:hidden ${
                 playing ? 'bg-carnival-red/90' : 'bg-carnival-red hover:bg-carnival-red/80'
@@ -299,7 +348,9 @@ function CompactEpisodeRow({ episode }: { episode: PodcastEpisode }) {
         <button
           type="button"
           onClick={(event) => {
-            void togglePlay(artworkLinkRef.current || event.currentTarget);
+            event.preventDefault();
+            event.stopPropagation();
+            void togglePlay(artworkButtonRef.current || event.currentTarget);
           }}
           className={`hidden h-14 w-14 flex-none items-center justify-center rounded-full text-white shadow-md transition sm:flex ${
             playing ? 'bg-carnival-red/90' : 'bg-carnival-red hover:bg-carnival-red/80'
@@ -349,7 +400,7 @@ function ViewModeToggle({ mode, onChange }: { mode: ViewMode; onChange: (m: View
         role="radio"
         aria-checked={mode === 'grid'}
         aria-label="Grid view"
-        className={`rounded-md p-1.5 transition ${mode === 'grid' ? 'bg-carnival-ink text-white' : 'text-carnival-ink/50 hover:text-carnival-ink'}`}
+        className={`flex h-7 w-7 items-center justify-center rounded-md transition ${mode === 'grid' ? 'bg-carnival-ink text-white' : 'text-carnival-ink/50 hover:text-carnival-ink'}`}
         onClick={() => onChange('grid')}
       >
         <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -361,7 +412,7 @@ function ViewModeToggle({ mode, onChange }: { mode: ViewMode; onChange: (m: View
         role="radio"
         aria-checked={mode === 'compact'}
         aria-label="Compact list view"
-        className={`rounded-md p-1.5 transition ${mode === 'compact' ? 'bg-carnival-ink text-white' : 'text-carnival-ink/50 hover:text-carnival-ink'}`}
+        className={`flex h-7 w-7 items-center justify-center rounded-md transition ${mode === 'compact' ? 'bg-carnival-ink text-white' : 'text-carnival-ink/50 hover:text-carnival-ink'}`}
         onClick={() => onChange('compact')}
       >
         <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -372,12 +423,58 @@ function ViewModeToggle({ mode, onChange }: { mode: ViewMode; onChange: (m: View
   );
 }
 
+function SortOrderToggle({ order, onChange }: { order: SortOrder; onChange: (o: SortOrder) => void }) {
+  return (
+    <div className="flex items-center gap-1 rounded-lg border border-carnival-ink/15 bg-white p-1" role="radiogroup" aria-label="Sort episodes">
+      <button
+        type="button"
+        role="radio"
+        aria-checked={order === 'oldest'}
+        className={`flex h-7 items-center rounded-md px-3 text-xs font-black uppercase tracking-wide transition ${
+          order === 'oldest' ? 'bg-carnival-ink text-white' : 'text-carnival-ink/60 hover:text-carnival-ink'
+        }`}
+        onClick={() => onChange('oldest')}
+      >
+        Oldest
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={order === 'newest'}
+        className={`flex h-7 items-center rounded-md px-3 text-xs font-black uppercase tracking-wide transition ${
+          order === 'newest' ? 'bg-carnival-ink text-white' : 'text-carnival-ink/60 hover:text-carnival-ink'
+        }`}
+        onClick={() => onChange('newest')}
+      >
+        Newest
+      </button>
+    </div>
+  );
+}
+
 export function EpisodesBrowser({ episodes, showSearch = true, initialCount = INITIAL_COUNT, loadMoreCount = LOAD_MORE_COUNT, middleSlot }: { episodes: PodcastEpisode[]; showSearch?: boolean; initialCount?: number; loadMoreCount?: number; middleSlot?: React.ReactNode }) {
   const [query, setQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(initialCount);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
   const [viewModeReady, setViewModeReady] = useState(false);
-  const preloadedArtworkUrlsRef = useRef<Set<string>>(new Set());
+
+  const handleSortOrderChange = (nextOrder: SortOrder) => {
+    if (nextOrder === sortOrder) return;
+    if (typeof window === 'undefined') {
+      setSortOrder(nextOrder);
+      return;
+    }
+
+    const previousY = window.scrollY;
+    setSortOrder(nextOrder);
+    requestAnimationFrame(() => {
+      window.scrollTo(0, previousY);
+      requestAnimationFrame(() => {
+        window.scrollTo(0, previousY);
+      });
+    });
+  };
 
   useEffect(() => {
     try {
@@ -403,97 +500,36 @@ export function EpisodesBrowser({ episodes, showSearch = true, initialCount = IN
 
   const normalizedQuery = query.trim().toLowerCase();
   const filteredEpisodes = useMemo(() => {
-    if (!normalizedQuery) return episodes;
-    return episodes.filter((episode) => {
+    const sortedEpisodes = [...episodes].sort(byPublishedDate(sortOrder));
+    if (!normalizedQuery) return sortedEpisodes;
+    return sortedEpisodes.filter((episode) => {
       const inTitle = episode.title.toLowerCase().includes(normalizedQuery);
       const inEpisodeNumber = episode.episodeNumber !== null && `${episode.episodeNumber}`.includes(normalizedQuery);
       return inTitle || inEpisodeNumber;
     });
-  }, [episodes, normalizedQuery]);
+  }, [episodes, normalizedQuery, sortOrder]);
 
-  const featuredEpisode = normalizedQuery ? null : filteredEpisodes[0] ?? null;
-  const allStandardEpisodes = featuredEpisode ? filteredEpisodes.slice(1) : filteredEpisodes;
+  const featuredEpisode = useMemo(() => {
+    if (normalizedQuery) return null;
+    if (!filteredEpisodes.length) return null;
+    return [...filteredEpisodes].sort(byPublishedDate('newest'))[0] ?? null;
+  }, [filteredEpisodes, normalizedQuery]);
+
+  const allStandardEpisodes = featuredEpisode
+    ? filteredEpisodes.filter((episode) => episode.slug !== featuredEpisode.slug)
+    : filteredEpisodes;
   const isSearching = !!normalizedQuery;
   const standardEpisodes = isSearching ? allStandardEpisodes : allStandardEpisodes.slice(0, visibleCount);
   const hasMore = !isSearching && visibleCount < allStandardEpisodes.length;
 
-  useEffect(() => {
-    if (isSearching) return;
-
-    const compactTargetWidth = (() => {
-      const pixelRatio = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
-      const required = Math.ceil(96 * pixelRatio);
-      if (required <= 96) return 96;
-      if (required <= 128) return 128;
-      if (required <= 256) return 256;
-      return 384;
-    })();
-
-    const nextImageWidth = viewMode === 'compact'
-      ? compactTargetWidth
-      : window.innerWidth < 768
-        ? 640
-        : window.innerWidth < 1280
-          ? 640
-          : 384;
-    const nextImageQuality = viewMode === 'compact' ? 60 : 56;
-
-    const nextBatch = allStandardEpisodes.slice(visibleCount, visibleCount + loadMoreCount * 2);
-    const nextArtworkUrls = nextBatch
-      .map((episode) => episode.artworkUrl)
-      .filter((url): url is string => !!url);
-
-    nextArtworkUrls.forEach((url) => {
-      const optimizedUrl = `/_next/image?url=${encodeURIComponent(url)}&w=${nextImageWidth}&q=${nextImageQuality}`;
-      if (preloadedArtworkUrlsRef.current.has(optimizedUrl)) return;
-      preloadedArtworkUrlsRef.current.add(optimizedUrl);
-      const image = new window.Image();
-      image.decoding = 'async';
-      image.src = optimizedUrl;
-    });
-  }, [allStandardEpisodes, isSearching, loadMoreCount, viewMode, visibleCount]);
-
   const searchPanel = (
-    <div className="relative overflow-hidden rounded-2xl border-2 border-carnival-ink bg-carnival-red p-5 shadow-[0_16px_38px_rgba(0,0,0,0.22)] sm:p-6">
-      <div className="pointer-events-none absolute -right-10 -top-16 h-44 w-44 rounded-full bg-carnival-gold/60 blur-2xl" aria-hidden="true" />
-      <div className="pointer-events-none absolute -bottom-16 -left-12 h-40 w-40 rounded-full bg-white/20 blur-2xl" aria-hidden="true" />
-
-      <div className="relative">
-        <label htmlFor="episode-search" className="text-sm font-black uppercase tracking-[0.08em] text-white sm:text-base">
-          Search The Back Catalog
-        </label>
-
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <div className="relative min-w-[240px] flex-1">
-            <span
-              className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 rounded-md bg-carnival-ink px-2 py-1 text-[11px] font-black uppercase tracking-wide text-white"
-              aria-hidden="true"
-            >
-              Find
-            </span>
-            <input
-              id="episode-search"
-              className="w-full rounded-xl border-2 border-carnival-ink bg-white py-3 pl-4 pr-20 text-base font-semibold text-carnival-ink shadow-[0_6px_0_rgba(27,22,53,0.2)] transition placeholder:text-carnival-ink/45 focus:border-carnival-gold focus:outline-none focus:ring-4 focus:ring-carnival-gold/45"
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Beanie Babies"
-              autoComplete="off"
-            />
-          </div>
-
-          {query ? (
-            <button
-              type="button"
-              className="rounded-xl border-2 border-carnival-ink bg-carnival-gold px-4 py-3 text-sm font-black uppercase tracking-wide text-carnival-ink transition hover:brightness-95"
-              onClick={() => setQuery('')}
-            >
-              Clear
-            </button>
-          ) : null}
-        </div>
-      </div>
-    </div>
+    <LiveSearchInput
+      id="episode-search"
+      value={query}
+      onChange={setQuery}
+      placeholder="Search episodes"
+      ariaLabel="Search episodes"
+    />
   );
 
   return (
@@ -508,20 +544,18 @@ export function EpisodesBrowser({ episodes, showSearch = true, initialCount = IN
       ) : (
         <>
           {featuredEpisode ? (
-            <section aria-label="Latest episode showcase" className="space-y-3">
-              <h2 className="text-2xl font-black text-carnival-ink">Latest Episode</h2>
+            <FeaturedEpisodeShowcase heading="Latest Episode">
               <EpisodeCard
                 episode={featuredEpisode}
                 featured
               />
-            </section>
+            </FeaturedEpisodeShowcase>
           ) : null}
 
           {middleSlot}
 
           <section className="space-y-3" aria-label="Episode list">
-            {showSearch ? searchPanel : null}
-            <div className="flex items-center justify-between gap-4 pt-6">
+            <div className="flex flex-col gap-3 pt-6 min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-between">
               {featuredEpisode ? (
                 <h3 className="text-xl font-black text-carnival-ink">Full Catalogue</h3>
               ) : (
@@ -529,8 +563,12 @@ export function EpisodesBrowser({ episodes, showSearch = true, initialCount = IN
                   {filteredEpisodes.length} result{filteredEpisodes.length !== 1 ? 's' : ''}
                 </p>
               )}
-              <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+              <div className="flex w-full items-center justify-between gap-2 min-[480px]:w-auto min-[480px]:justify-end">
+                <SortOrderToggle order={sortOrder} onChange={handleSortOrderChange} />
+                <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+              </div>
             </div>
+            {showSearch ? searchPanel : null}
 
             {viewMode === 'grid' ? (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

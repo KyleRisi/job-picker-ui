@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
-import { PodcastEpisode, formatEpisodeDate } from '@/lib/podcast';
+import { type PodcastEpisode, formatEpisodeDate } from '@/lib/podcast-shared';
 
 type SortMode = 'newest' | 'oldest' | 'title';
 const PAGE_SIZE = 50;

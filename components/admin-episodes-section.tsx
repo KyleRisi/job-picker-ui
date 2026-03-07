@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { AdminTabs } from '@/components/admin-tabs';
 import { AdminEpisodesTable } from '@/components/forms/admin-episodes-table';
-import type { PodcastEpisode } from '@/lib/podcast';
+import type { PodcastEpisode } from '@/lib/podcast-shared';
 
 export function AdminEpisodesSection({
   episodes,

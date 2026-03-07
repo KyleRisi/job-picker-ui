@@ -2,6 +2,8 @@ import { getPodcastEpisodes } from '@/lib/podcast';
 import { listAuthorArchive, listPublishedBlogPosts, listTaxonomy } from '@/lib/blog/data';
 import { getPublicSiteUrl } from '@/lib/site-url';
 
+export const revalidate = 300;
+
 type ChangeFrequency = 'daily' | 'weekly';
 
 type SitemapEntry = {
@@ -160,7 +162,7 @@ export async function GET() {
   return new Response(buildSitemapXml(entries), {
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=300'
+      'Cache-Control': 'public, max-age=0, must-revalidate'
     }
   });
 }

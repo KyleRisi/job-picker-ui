@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { badRequest, getErrorMessage, ok } from '@/lib/server';
 import { requireBlogAdminApiUser } from '@/lib/blog/auth';
 import { getBlogPostAdminById, saveBlogPost, softDeleteBlogPost } from '@/lib/blog/data';
+import { revalidatePublicBlogContent } from '@/lib/blog/revalidate';
 import { isUuid } from '@/lib/blog/validation';
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -26,6 +27,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (!existing) return badRequest('Post not found.', 404);
     const payload = await req.json();
     const post = await saveBlogPost(params.id, payload);
+    revalidatePublicBlogContent({ previous: existing, current: post });
     return ok(post);
   } catch (error) {
     return badRequest(getErrorMessage(error, 'Failed to save post.'), 500);
@@ -40,6 +42,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     const existing = await getBlogPostAdminById(params.id);
     if (!existing) return badRequest('Post not found.', 404);
     await softDeleteBlogPost(params.id);
+    revalidatePublicBlogContent({ previous: existing });
     return ok({ message: 'Post deleted.' });
   } catch (error) {
     return badRequest(getErrorMessage(error, 'Failed to delete post.'), 500);

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { badRequest, getErrorMessage, ok } from '@/lib/server';
 import { requireBlogAdminApiUser } from '@/lib/blog/auth';
 import { getBlogPostAdminById, saveBlogPost } from '@/lib/blog/data';
+import { revalidatePublicBlogContent } from '@/lib/blog/revalidate';
 import { isUuid } from '@/lib/blog/validation';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
@@ -13,6 +14,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (!existing) return badRequest('Post not found.', 404);
     const payload = await req.json();
     const post = await saveBlogPost(params.id, payload, { autosave: true });
+    revalidatePublicBlogContent({ previous: existing, current: post });
     return ok(post);
   } catch (error) {
     return badRequest(getErrorMessage(error, 'Failed to autosave post.'), 500);

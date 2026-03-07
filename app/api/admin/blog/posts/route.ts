@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { badRequest, getErrorMessage, ok } from '@/lib/server';
 import { requireBlogAdminApiUser } from '@/lib/blog/auth';
 import { createBlogPost, listBlogPostsAdmin, normalizePageNumber } from '@/lib/blog/data';
+import { revalidatePublicBlogContent } from '@/lib/blog/revalidate';
 
 function parsePageSize(rawValue: string | null): number {
   if (!rawValue) return 20;
@@ -35,6 +36,7 @@ export async function POST() {
     if (!user) return badRequest('Unauthorized.', 401);
 
     const post = await createBlogPost();
+    revalidatePublicBlogContent({ current: post });
     return ok(post, 201);
   } catch (error) {
     return badRequest(getErrorMessage(error, 'Failed to create post.'), 500);

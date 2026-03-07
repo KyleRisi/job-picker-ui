@@ -1,6 +1,8 @@
 import { listPublishedBlogPosts } from '@/lib/blog/data';
 import { getPublicSiteUrl } from '@/lib/site-url';
 
+export const revalidate = 300;
+
 function escapeXml(value: string) {
   return value
     .replace(/&/g, '&amp;')
@@ -30,7 +32,7 @@ export async function GET() {
   return new Response(xml, {
     headers: {
       'Content-Type': 'application/rss+xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=300'
+      'Cache-Control': 'public, max-age=0, must-revalidate'
     }
   });
 }

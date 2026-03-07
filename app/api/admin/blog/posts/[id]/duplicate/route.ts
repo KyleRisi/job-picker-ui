@@ -1,6 +1,7 @@
 import { badRequest, getErrorMessage, ok } from '@/lib/server';
 import { requireBlogAdminApiUser } from '@/lib/blog/auth';
 import { duplicateBlogPost, getBlogPostAdminById } from '@/lib/blog/data';
+import { revalidatePublicBlogContent } from '@/lib/blog/revalidate';
 import { isUuid } from '@/lib/blog/validation';
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
@@ -12,6 +13,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     if (!existing) return badRequest('Post not found.', 404);
 
     const post = await duplicateBlogPost(params.id);
+    revalidatePublicBlogContent({ current: post });
     return ok(post, 201);
   } catch (error) {
     return badRequest(getErrorMessage(error, 'Failed to duplicate post.'), 500);

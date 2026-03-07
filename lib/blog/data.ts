@@ -1288,6 +1288,31 @@ export async function getBlogPostBySlug(slug: string, options?: { includeDraft?:
   };
 }
 
+export async function resolveBlogSlugRedirect(slug: string): Promise<string | null> {
+  const supabase = getSupabase();
+  const sourcePath = normalizePath(`/blog/${slug}`);
+  const { data, error } = await supabase.rpc('resolve_redirect', { p_path: sourcePath });
+  if (error) {
+    console.error('[blog redirect] failed to resolve old slug:', error);
+    return null;
+  }
+
+  const row = ((data || [])[0] || null) as
+    | {
+        source_path: string;
+        target_url: string;
+        match_type: 'exact' | 'prefix';
+      }
+    | null;
+  if (!row) return null;
+  if (row.match_type !== 'exact') return null;
+
+  const targetPath = normalizePath(row.target_url || '');
+  if (!targetPath.startsWith('/blog/')) return null;
+  if (targetPath === sourcePath) return null;
+  return targetPath;
+}
+
 async function getRelatedPostsForPost(postId: string) {
   const supabase = getSupabase();
   const { data: overrides, error: overridesError } = await supabase

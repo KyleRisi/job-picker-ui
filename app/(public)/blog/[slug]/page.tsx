@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { draftMode } from 'next/headers';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { BlogContentRenderer } from '@/components/blog/blog-content-renderer';
 import { BlogAnalyticsTracker } from '@/components/blog/blog-analytics-tracker';
@@ -9,7 +9,7 @@ import { BlogPostCard } from '@/components/blog/blog-post-card';
 import { CompactEpisodeRow } from '@/components/episodes-browser';
 import { collectReferencedImageIds, hasPrimaryListenEpisodeBlock, normalizeBlogDocument, richTextToPlainText } from '@/lib/blog/content';
 import type { BlogContentBlock } from '@/lib/blog/schema';
-import { getBlogPostBySlug, getMediaAssetMapByIds, getPatreonUrl } from '@/lib/blog/data';
+import { getBlogPostBySlug, getMediaAssetMapByIds, getPatreonUrl, resolveBlogSlugRedirect } from '@/lib/blog/data';
 import { getStoragePublicUrl } from '@/lib/blog/media-url';
 import type { PodcastEpisode } from '@/lib/podcast-shared';
 import { getPublicSiteUrl } from '@/lib/site-url';
@@ -94,7 +94,15 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 export default async function BlogPostPage({ params }: { params: Params }) {
   const includeDraft = draftMode().isEnabled;
   const loaded = await loadPost(params.slug, includeDraft);
-  if (!loaded) notFound();
+  if (!loaded) {
+    if (!includeDraft) {
+      const redirectPath = await resolveBlogSlugRedirect(params.slug);
+      if (redirectPath) {
+        redirect(redirectPath);
+      }
+    }
+    notFound();
+  }
 
   const { post, assetMap } = loaded;
   const linkedEpisodes = post.linked_episodes || [];

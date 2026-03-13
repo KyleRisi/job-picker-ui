@@ -15,11 +15,23 @@
   --brand-navy: #0f2a57;
   --brand-gold: #e8c775;
   --brand-ink: #1b1635;
+  --hub-hero-fade-height: clamp(14rem, 30vw, 24rem);
+  --hub-dark-bridge-height: clamp(30rem, 78vw, 46rem);
+  --hub-dark-bridge-mid-stop: 58%;
+  --hub-content-fade-height: clamp(34rem, 88vw, 52rem);
+  --hub-card-scrim-height: clamp(14rem, 42vw, 22rem);
+  --hub-card-scrim-top-offset: clamp(-3.5rem, -8vw, -2rem);
+  --hub-card-scrim-opacity: 0.2;
 }
 
 body {
+  min-height: 100dvh;
   background: var(--brand-cream);
   color: var(--brand-ink);
+}
+
+html {
+  background: var(--brand-gold);
 }
 
 @media (min-width: 768px) {
@@ -324,6 +336,18 @@ textarea.input {
 
 .blog-editor-preview .ProseMirror li + li {
   margin-top: 0.35rem;
+}
+
+.blog-editor-preview .ProseMirror a {
+  color: var(--brand-red);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.blog-editor-preview .ProseMirror a:hover {
+  color: #8f130f;
 }
 
 .blog-editor-preview .ProseMirror blockquote {

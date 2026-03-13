@@ -4,7 +4,7 @@ import { badRequest, ok } from '@/lib/server';
 import { createSupabaseAdminClient } from '@/lib/supabase';
 import { requireAdminInApi } from '@/lib/api-auth';
 
-const PAGE_SIZE = 21;
+const PAGE_SIZE = 20;
 const VALID_STATUS = ['visible', 'hidden'] as const;
 const VALID_SOURCES = ['apple', 'website', 'manual', 'scraped'] as const;
 

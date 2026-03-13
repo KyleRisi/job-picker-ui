@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { AdminTabs } from '@/components/admin-tabs';
 import { AdminActiveRolesUpload } from '@/components/forms/admin-active-roles-upload';
 import { AdminExportLinks } from '@/components/forms/admin-export-links';
@@ -9,14 +10,17 @@ export default async function ExportsPage() {
   if (env.adminAuthDisabled) {
     return (
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-4xl font-black">CSV Exports</h1>
-          <AdminTabs current="exports" />
-        </div>
+        <Link href="/admin" className="inline-block text-sm font-semibold underline">
+          Back to dashboard
+        </Link>
+        <h1 className="text-4xl font-black">CSV Exports</h1>
         <p className="rounded-md bg-amber-100 p-3 font-semibold">Admin auth bypass is enabled for testing.</p>
-        <div className="space-y-3">
-          <AdminExportLinks />
-          <AdminActiveRolesUpload />
+        <div className="grid gap-4 md:grid-cols-[220px_1fr] md:items-start">
+          <AdminTabs current="exports" />
+          <div className="space-y-3">
+            <AdminExportLinks />
+            <AdminActiveRolesUpload />
+          </div>
         </div>
       </section>
     );
@@ -26,13 +30,16 @@ export default async function ExportsPage() {
 
   return (
     <section className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-4xl font-black">CSV Exports</h1>
+      <Link href="/admin" className="inline-block text-sm font-semibold underline">
+        Back to dashboard
+      </Link>
+      <h1 className="text-4xl font-black">CSV Exports</h1>
+      <div className="grid gap-4 md:grid-cols-[220px_1fr] md:items-start">
         <AdminTabs current="exports" />
-      </div>
-      <div className="space-y-3">
-        <AdminExportLinks />
-        <AdminActiveRolesUpload />
+        <div className="space-y-3">
+          <AdminExportLinks />
+          <AdminActiveRolesUpload />
+        </div>
       </div>
     </section>
   );

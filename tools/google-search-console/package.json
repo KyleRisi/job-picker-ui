@@ -1,0 +1,13 @@
+{
+  "name": "google-search-console-tool",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "cli": "node src/cli.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "googleapis": "^146.0.0"
+  }
+}

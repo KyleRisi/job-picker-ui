@@ -1,5 +1,6 @@
-import { getPodcastEpisodes } from '@/lib/podcast';
-import { listAuthorArchive, listPublishedBlogPosts, listTaxonomy } from '@/lib/blog/data';
+import { getResolvedEpisodes, listActiveDiscoveryTerms } from '@/lib/episodes';
+import { listBlogAuthors, listPublishedBlogPostsForSitemap } from '@/lib/blog/data';
+import { getJobsForPublic } from '@/lib/data';
 import { getPublicSiteUrl } from '@/lib/site-url';
 
 export const revalidate = 300;
@@ -8,10 +9,64 @@ type ChangeFrequency = 'daily' | 'weekly';
 
 type SitemapEntry = {
   url: string;
-  lastModified: Date;
+  lastModified?: string;
   changeFrequency: ChangeFrequency;
   priority: number;
 };
+
+function toIsoIfValid(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
+function pickFirstIso(...values: Array<string | null | undefined>): string | undefined {
+  for (const value of values) {
+    const iso = toIsoIfValid(value);
+    if (iso) return iso;
+  }
+  return undefined;
+}
+
+function pickLatestIso(values: Array<string | null | undefined>): string | undefined {
+  let latest: string | null = null;
+  for (const value of values) {
+    const iso = toIsoIfValid(value);
+    if (!iso) continue;
+    if (!latest || iso > latest) latest = iso;
+  }
+  return latest || undefined;
+}
+
+function runSitemapDateSelectionAssertions() {
+  const updated = '2026-01-15T12:00:00.000Z';
+  const published = '2025-12-10T08:30:00.000Z';
+
+  const preferredUpdated = pickFirstIso(updated, published);
+  if (preferredUpdated !== updated) {
+    throw new Error('Sitemap lastmod regression: updated timestamp must be preferred over published timestamp.');
+  }
+
+  const fallbackPublished = pickFirstIso('not-a-date', published);
+  if (fallbackPublished !== published) {
+    throw new Error('Sitemap lastmod regression: published timestamp should be used when updated timestamp is invalid.');
+  }
+
+  const omittedWithoutReliableDate = pickFirstIso(undefined, null, '');
+  if (omittedWithoutReliableDate !== undefined) {
+    throw new Error('Sitemap lastmod regression: lastmod must be omitted when no reliable timestamp exists.');
+  }
+
+  const latestArchiveDate = pickLatestIso([published, updated]);
+  if (latestArchiveDate !== updated) {
+    throw new Error('Sitemap lastmod regression: archive lastmod should use the latest meaningful child timestamp.');
+  }
+}
+
+if (process.env.NODE_ENV !== 'production') {
+  runSitemapDateSelectionAssertions();
+}
 
 function escapeXml(value: string): string {
   return value
@@ -25,8 +80,10 @@ function escapeXml(value: string): string {
 function buildSitemapXml(entries: SitemapEntry[]): string {
   const rows = entries
     .map(
-      (entry) =>
-        `<url><loc>${escapeXml(entry.url)}</loc><lastmod>${entry.lastModified.toISOString()}</lastmod><changefreq>${entry.changeFrequency}</changefreq><priority>${entry.priority}</priority></url>`
+      (entry) => {
+        const lastmod = entry.lastModified ? `<lastmod>${entry.lastModified}</lastmod>` : '';
+        return `<url><loc>${escapeXml(entry.url)}</loc>${lastmod}<changefreq>${entry.changeFrequency}</changefreq><priority>${entry.priority}</priority></url>`;
+      }
     )
     .join('');
 
@@ -35,125 +92,145 @@ function buildSitemapXml(entries: SitemapEntry[]): string {
 
 async function getEntries(): Promise<SitemapEntry[]> {
   const siteUrl = getPublicSiteUrl();
-  const now = new Date();
 
-  const staticRoutes: SitemapEntry[] = [
+  const stableStaticRoutes: SitemapEntry[] = [
     {
       url: `${siteUrl}/`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 1
     },
     {
       url: `${siteUrl}/jobs`,
-      lastModified: now,
       changeFrequency: 'daily',
       priority: 0.9
     },
     {
       url: `${siteUrl}/episodes`,
-      lastModified: now,
       changeFrequency: 'daily',
       priority: 0.85
     },
     {
       url: `${siteUrl}/blog`,
-      lastModified: now,
       changeFrequency: 'daily',
       priority: 0.9
     },
     {
       url: `${siteUrl}/reviews`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7
     },
     {
       url: `${siteUrl}/connect`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7
     },
     {
       url: `${siteUrl}/meet-the-team`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7
     },
     {
+      url: `${siteUrl}/patreon`,
+      changeFrequency: 'weekly',
+      priority: 0.85
+    },
+    {
       url: `${siteUrl}/connect/press-kit`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7
     },
     {
       url: `${siteUrl}/merch`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.75
     },
     {
       url: `${siteUrl}/merch/crotch-dangler`,
-      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7
     }
   ];
 
   try {
-    const [episodes, blogPosts, categories, seriesItems, topics, authors] = await Promise.all([
-      getPodcastEpisodes({ descriptionMaxLength: 120 }),
-      listPublishedBlogPosts({ page: 1, limit: 200 }),
-      listTaxonomy('categories'),
-      listTaxonomy('series'),
-      listTaxonomy('topic_clusters'),
-      listTaxonomy('blog_authors')
+    const [episodes, blogPosts, authors, discoveryTerms, jobs] = await Promise.all([
+      getResolvedEpisodes({ descriptionMaxLength: 120 }),
+      listPublishedBlogPostsForSitemap(),
+      listBlogAuthors(),
+      listActiveDiscoveryTerms(),
+      getJobsForPublic()
     ]);
 
-    const episodeRoutes: SitemapEntry[] = episodes.map((episode) => ({
-      url: `${siteUrl}/episodes/${episode.slug}`,
-      lastModified: new Date(episode.publishedAt),
+    const episodeRoutes: SitemapEntry[] = episodes
+      .filter((episode) => !episode.noindex && episode.isVisible && !episode.isArchived)
+      .map((episode) => ({
+      url: `${siteUrl}${episode.canonicalUrl}`,
+      lastModified: pickFirstIso(episode.editorial?.updatedAt, episode.publishedAt),
       changeFrequency: 'weekly',
       priority: 0.75
     }));
 
-    const blogRoutes: SitemapEntry[] = blogPosts.items.map((post) => ({
+    const blogRoutes: SitemapEntry[] = blogPosts.map((post) => ({
       url: `${siteUrl}/blog/${post.slug}`,
-      lastModified: new Date(post.updated_at || post.published_at || now.toISOString()),
+      lastModified: pickFirstIso(post.updated_at, post.published_at),
       changeFrequency: 'weekly',
       priority: 0.8
     }));
 
+    const latestBlogByAuthorId = new Map<string, string>();
+    for (const post of blogPosts) {
+      const authorId = `${post.author_id || ''}`.trim();
+      if (!authorId) continue;
+      const next = pickFirstIso(post.updated_at, post.published_at);
+      if (!next) continue;
+      const previous = latestBlogByAuthorId.get(authorId);
+      if (!previous || next > previous) {
+        latestBlogByAuthorId.set(authorId, next);
+      }
+    }
+
+    const episodesArchiveLastmod = pickLatestIso(episodeRoutes.map((entry) => entry.lastModified));
+    const blogArchiveLastmod = pickLatestIso(blogRoutes.map((entry) => entry.lastModified));
+    const jobsArchiveLastmod = pickLatestIso(
+      jobs.flatMap((job) => [job.updated_at, job.created_at, job.filledAt] as Array<string | null | undefined>)
+    );
+    const homepageLastmod = pickLatestIso([episodesArchiveLastmod, blogArchiveLastmod, jobsArchiveLastmod]);
+
+    const staticRoutes: SitemapEntry[] = stableStaticRoutes.map((entry) => {
+      if (entry.url === `${siteUrl}/`) {
+        return { ...entry, lastModified: homepageLastmod };
+      }
+      if (entry.url === `${siteUrl}/jobs`) {
+        return { ...entry, lastModified: jobsArchiveLastmod };
+      }
+      if (entry.url === `${siteUrl}/episodes`) {
+        return { ...entry, lastModified: episodesArchiveLastmod };
+      }
+      if (entry.url === `${siteUrl}/blog`) {
+        return { ...entry, lastModified: blogArchiveLastmod };
+      }
+      return entry;
+    });
+
     const archiveRoutes: SitemapEntry[] = [
-      ...categories.map((item: any) => ({
-        url: `${siteUrl}/blog/category/${item.slug}`,
-        lastModified: now,
-        changeFrequency: 'weekly' as ChangeFrequency,
-        priority: 0.6
-      })),
-      ...seriesItems.map((item: any) => ({
-        url: `${siteUrl}/blog/series/${item.slug}`,
-        lastModified: now,
-        changeFrequency: 'weekly' as ChangeFrequency,
-        priority: 0.55
-      })),
-      ...topics.map((item: any) => ({
-        url: `${siteUrl}/blog/topic/${item.slug}`,
-        lastModified: now,
-        changeFrequency: 'weekly' as ChangeFrequency,
-        priority: 0.55
-      })),
       ...authors.map((item: any) => ({
         url: `${siteUrl}/blog/author/${item.slug}`,
-        lastModified: now,
+        lastModified: latestBlogByAuthorId.get(item.id),
         changeFrequency: 'weekly' as ChangeFrequency,
         priority: 0.4
+      })),
+      ...discoveryTerms
+        .filter((item) => item.path)
+        .map((item) => ({
+          url: `${siteUrl}${item.path}`,
+          lastModified: pickFirstIso(item.updatedAt),
+          changeFrequency: 'weekly' as ChangeFrequency,
+          priority: 0.65
       }))
     ];
 
     return [...staticRoutes, ...episodeRoutes, ...blogRoutes, ...archiveRoutes];
   } catch {
-    return staticRoutes;
+    return stableStaticRoutes;
   }
 }
 

@@ -188,6 +188,12 @@ const faqBlockSchema = blockBaseSchema.extend({
   items: z.array(faqItemSchema).default([])
 });
 
+const transcriptBlockSchema = blockBaseSchema.extend({
+  type: z.literal('transcript'),
+  heading: z.string().default('Episode transcript'),
+  content: richTextSchema.default([])
+});
+
 export const blogContentBlockSchema = z.discriminatedUnion('type', [
   paragraphBlockSchema,
   headingBlockSchema,
@@ -205,7 +211,8 @@ export const blogContentBlockSchema = z.discriminatedUnion('type', [
   resourcesBlockSchema,
   relatedEpisodesBlockSchema,
   relatedPostsBlockSchema,
-  faqBlockSchema
+  faqBlockSchema,
+  transcriptBlockSchema
 ]);
 
 export type BlogContentBlock = z.infer<typeof blogContentBlockSchema>;
@@ -231,6 +238,16 @@ export const seoFieldsSchema = z.object({
   ogImageId: z.string().nullable().default(null)
 });
 
+export const discoveryAssignmentsInputSchema = z.object({
+  primaryTopicId: z.string().nullable().default(null),
+  themeIds: z.array(z.string()).default([]),
+  entityIds: z.array(z.string()).default([]),
+  caseIds: z.array(z.string()).default([]),
+  eventIds: z.array(z.string()).default([]),
+  collectionIds: z.array(z.string()).default([]),
+  seriesIds: z.array(z.string()).default([])
+});
+
 export const blogPostWriteSchema = z.object({
   title: z.string().min(1).max(180),
   slug: z.string().min(1).max(180),
@@ -251,6 +268,7 @@ export const blogPostWriteSchema = z.object({
     topicClusterIds: z.array(z.string()).default([]),
     labelIds: z.array(z.string()).default([])
   }),
+  discovery: discoveryAssignmentsInputSchema.default({}),
   linkedEpisodes: z.array(linkedEpisodeSchema).default([]),
   relatedPostIds: z.array(z.string()).default([]),
   seo: seoFieldsSchema.default({}),
@@ -258,6 +276,7 @@ export const blogPostWriteSchema = z.object({
 });
 
 export type BlogPostWriteInput = z.infer<typeof blogPostWriteSchema>;
+export type DiscoveryAssignmentsInput = z.infer<typeof discoveryAssignmentsInputSchema>;
 
 export const taxonomyTermWriteSchema = z.object({
   id: z.string().optional(),

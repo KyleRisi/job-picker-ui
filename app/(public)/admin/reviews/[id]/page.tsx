@@ -30,44 +30,45 @@ export default async function AdminReviewDetailPage({ params }: { params: { id: 
     <section className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-4xl font-black">Review</h1>
-        <div className="flex items-center gap-2">
-          <AdminTabs current="reviews" />
-          <Link href="/admin/reviews" className="btn-secondary">
-            Back to Reviews
-          </Link>
-        </div>
+        <Link href="/admin/reviews" className="btn-secondary">
+          Back to Reviews
+        </Link>
       </div>
-      <div className="space-y-4">
-        <div className="card space-y-3">
-          <p>
-            <strong>Author:</strong> {review.author || 'Anonymous'}
-          </p>
-          <p>
-            <strong>Received:</strong>{' '}
-            {new Date(review.received_at).toLocaleDateString('en-GB', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric'
-            })}
-          </p>
-          <p>
-            <strong>Rating:</strong> {review.rating}★
-          </p>
-          <p>
-            <strong>Source:</strong> <span className="uppercase">{review.source}</span>
-          </p>
-          <p>
-            <strong>Country:</strong> {review.country || 'N/A'}
-          </p>
-        </div>
+      <div className="grid gap-4 md:grid-cols-[220px_1fr] md:items-start">
+        <AdminTabs current="reviews" />
 
-        <div className="card space-y-3">
-          <h2 className="text-2xl font-black">{review.title || '(No title)'}</h2>
-          <p className="whitespace-pre-line leading-relaxed">{review.body}</p>
-        </div>
+        <div className="space-y-4">
+          <div className="card space-y-3">
+            <p>
+              <strong>Author:</strong> {review.author || 'Anonymous'}
+            </p>
+            <p>
+              <strong>Received:</strong>{' '}
+              {new Date(review.received_at).toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+              })}
+            </p>
+            <p>
+              <strong>Rating:</strong> {review.rating}★
+            </p>
+            <p>
+              <strong>Source:</strong> <span className="uppercase">{review.source}</span>
+            </p>
+            <p>
+              <strong>Country:</strong> {review.country || 'N/A'}
+            </p>
+          </div>
 
-        <div className="card">
-          <AdminReviewVisibilityForm reviewId={review.id} initialStatus={review.status} />
+          <div className="card space-y-3">
+            <h2 className="text-2xl font-black">{review.title || '(No title)'}</h2>
+            <p className="whitespace-pre-line leading-relaxed">{review.body}</p>
+          </div>
+
+          <div className="card">
+            <AdminReviewVisibilityForm reviewId={review.id} initialStatus={review.status} />
+          </div>
         </div>
       </div>
     </section>

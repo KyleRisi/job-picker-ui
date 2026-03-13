@@ -70,15 +70,8 @@ STRIPE_WEBHOOK_SECRET=
 
 1. Open Supabase SQL editor.
 2. Run migrations in order:
-  - `supabase/migrations/0001_init.sql`
-  - `supabase/migrations/0002_fix_claim_job_ref_generation.sql`
-  - `supabase/migrations/0003_clean_malformed_description_chars.sql`
-  - `supabase/migrations/0004_add_salary_benefits_to_jobs.sql`
-  - `supabase/migrations/0005_add_broadcast_fields_to_applications_archive.sql`
-  - `supabase/migrations/0006_add_profile_photo_to_assignments_and_archive.sql`
-  - `supabase/migrations/0007_add_rehiring_reason_to_jobs.sql`
-  - `supabase/migrations/0008_create_reviews_table.sql`
-  - `supabase/migrations/0009_create_redirects_table.sql`
+  - Run every `*.sql` file in `supabase/migrations` in lexical order (`0001_...` through the latest migration).
+  - Current latest migration: `supabase/migrations/0023_harden_blog_analytics_views.sql`.
 3. Run `supabase/seed.sql`.
 
 This creates all required tables:
@@ -119,6 +112,19 @@ Notes:
      - `DEPLOY_URL=https://www.thecompendiumpodcast.com npm run deploy:integrity`
 
 This check fetches the homepage HTML, extracts `/_next/static/chunks/*.js` references, and fails if any chunk `HEAD` request is non-`200`.
+
+## Performance audit
+
+- Generate production performance inventory:
+  - `npm run perf:audit:prod`
+- Custom base URL/output:
+  - `npm run perf:audit -- --base https://www.thecompendiumpodcast.com --out docs/performance-inventory.md`
+- Adjust pacing/retries if API rate-limits:
+  - `npm run perf:audit -- --delay-ms 1500 --retry-count 3`
+- Optional API key:
+  - `PAGESPEED_API_KEY=... npm run perf:audit:prod`
+
+Route templates for audits live in `data/performance-route-templates.json`.
 
 ## Resend domain verification (required custom sender domain)
 

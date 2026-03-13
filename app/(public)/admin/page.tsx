@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { unstable_noStore as noStore } from 'next/cache';
 import { AdminLoginForm } from '@/components/forms/admin-login-form';
-import { BlogAdminLoginForm } from '@/components/forms/blog-admin-login-form';
+import { AdminActionMenu } from '@/components/admin-action-menu';
 import { AdminTabs } from '@/components/admin-tabs';
 import { env } from '@/lib/env';
 import { createSupabaseAdminClient } from '@/lib/supabase';
@@ -25,6 +25,15 @@ type ExitRow = {
   job_ref: string;
   job_title: string;
   created_at: string;
+};
+
+type Counts = {
+  total: number;
+  available: number;
+  filled: number;
+  rehiring: number;
+  ready_for_show: number;
+  reviews: number;
 };
 
 async function getRecentFilledApplications(admin: ReturnType<typeof createSupabaseAdminClient>): Promise<AppRow[]> {
@@ -87,11 +96,64 @@ async function getRecentResignations(admin: ReturnType<typeof createSupabaseAdmi
   }));
 }
 
+function getCounts(rows: Array<{ status: string }>): Counts {
+  const counts = { total: 0, available: 0, filled: 0, rehiring: 0, ready_for_show: 0, reviews: 0 };
+  rows.forEach((j) => {
+    counts.total += 1;
+    if (j.status === 'AVAILABLE') counts.available += 1;
+    if (j.status === 'FILLED') counts.filled += 1;
+    if (j.status === 'REHIRING') counts.rehiring += 1;
+  });
+  return counts;
+}
+
+async function getReviewsCount(admin: ReturnType<typeof createSupabaseAdminClient>): Promise<number> {
+  const { count } = await admin.from('reviews').select('id', { count: 'exact', head: true });
+  return count || 0;
+}
+
+async function getReadyForShowCount(admin: ReturnType<typeof createSupabaseAdminClient>): Promise<number> {
+  const { data: activeAssignments } = await admin
+    .from('assignments')
+    .select('job_id,assignment_ref')
+    .eq('active', true);
+
+  const assignments = activeAssignments || [];
+  const refs = assignments.map((row) => row.assignment_ref).filter(Boolean);
+  const jobIds = [...new Set(assignments.map((row) => row.job_id).filter(Boolean))];
+  if (!refs.length || !jobIds.length) return 0;
+
+  const { data: archives } = await admin
+    .from('applications_archive')
+    .select('assignment_ref,day_to_day,incidents,kpi_assessment,consent_read_on_show')
+    .in('assignment_ref', refs);
+
+  const archiveByRef = new Map((archives || []).map((row) => [row.assignment_ref, row]));
+  if (!jobIds.length) return 0;
+
+  let eligibleCount = 0;
+  assignments.forEach((row) => {
+    const archive = archiveByRef.get(row.assignment_ref);
+    if (!archive) return;
+    const dayToDay = `${archive.day_to_day || ''}`.trim();
+    const incidents = `${archive.incidents || ''}`.trim();
+    const kpi = `${archive.kpi_assessment || ''}`.trim();
+    const consent = Boolean(archive.consent_read_on_show);
+    if (consent && dayToDay && incidents && kpi) {
+      eligibleCount += 1;
+    }
+  });
+
+  return eligibleCount;
+}
+
 function DashboardView({
+  counts,
   archives,
   exits,
   showBypassBanner
 }: {
+  counts: Counts;
   archives: AppRow[];
   exits: ExitRow[];
   showBypassBanner: boolean;
@@ -100,100 +162,130 @@ function DashboardView({
     <section className="space-y-5">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-4xl font-black">Admin Dashboard</h1>
-        <AdminTabs current="dashboard" />
+        <AdminActionMenu />
       </div>
 
       {showBypassBanner ? (
         <p className="rounded-md bg-amber-100 p-3 font-semibold">Admin auth bypass is enabled for testing.</p>
       ) : null}
 
-      <div className="space-y-5">
-        <section className="card">
-          <h2 className="text-xl font-bold">Recent applications</h2>
-          <div className="mt-2 overflow-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="py-2 pr-3">Job Number</th>
-                  <th className="py-2 pr-3">Name</th>
-                  <th className="py-2 pr-3">Job Title</th>
-                  <th className="py-2 pr-3">Applied At</th>
-                  <th className="py-2 pr-3">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {archives.map((a) => (
-                  <tr key={a.id} className="border-b last:border-b-0">
-                    <td className="py-2 pr-3">{a.job_ref}</td>
-                    <td className="py-2 pr-3">{a.full_name}</td>
-                    <td className="py-2 pr-3">{a.job_title}</td>
-                    <td className="py-2 pr-3">
-                      {new Date(a.applied_at).toLocaleDateString('en-GB', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                      })}
-                    </td>
-                    <td className="py-2 pr-3">
-                      <Link href={`/admin/applications/${a.id}`} className="btn-secondary">View</Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+      <div className="grid gap-4 md:grid-cols-[220px_1fr] md:items-start">
+        <AdminTabs current="dashboard" />
 
-        <section className="card">
-          <h2 className="text-xl font-bold">Recent resignations</h2>
-          <div className="mt-2 overflow-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="py-2 pr-3">Job Number</th>
-                  <th className="py-2 pr-3">Name</th>
-                  <th className="py-2 pr-3">Job Title</th>
-                  <th className="py-2 pr-3">Resigned At</th>
-                </tr>
-              </thead>
-              <tbody>
-                {exits.map((e) => (
-                  <tr key={e.id} className="border-b last:border-b-0">
-                    <td className="py-2 pr-3">{e.job_ref}</td>
-                    <td className="py-2 pr-3">{e.full_name}</td>
-                    <td className="py-2 pr-3">{e.job_title}</td>
-                    <td className="py-2 pr-3">{new Date(e.created_at).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="space-y-5">
+          <div className="grid gap-3 md:grid-cols-6">
+            <Link href="/admin/jobs" className="card block hover:border-carnival-red">
+              <p>All available jobs</p>
+              <p className="text-3xl font-bold">{counts.total}</p>
+            </Link>
+            <Link href="/admin/jobs?status=AVAILABLE" className="card block hover:border-carnival-red">
+              <p>Available jobs</p>
+              <p className="text-3xl font-bold">{counts.available}</p>
+            </Link>
+            <Link href="/admin/jobs?status=FILLED" className="card block hover:border-carnival-red">
+              <p>Filled jobs</p>
+              <p className="text-3xl font-bold">{counts.filled}</p>
+            </Link>
+            <Link href="/admin/jobs?status=REHIRING" className="card block hover:border-carnival-red">
+              <p>Re-hiring</p>
+              <p className="text-3xl font-bold">{counts.rehiring}</p>
+            </Link>
+            <Link href="/admin/jobs?status=READY_FOR_SHOW" className="card block hover:border-carnival-red">
+              <p>Ready for show</p>
+              <p className="text-3xl font-bold">{counts.ready_for_show}</p>
+            </Link>
+            <Link href="/admin/reviews" className="card block hover:border-carnival-red">
+              <p>All reviews</p>
+              <p className="text-3xl font-bold">{counts.reviews}</p>
+            </Link>
           </div>
-        </section>
+
+          <section className="card">
+            <h2 className="text-xl font-bold">Recent applications</h2>
+            <div className="mt-2 overflow-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="py-2 pr-3">Job Number</th>
+                    <th className="py-2 pr-3">Name</th>
+                    <th className="py-2 pr-3">Job Title</th>
+                    <th className="py-2 pr-3">Applied At</th>
+                    <th className="py-2 pr-3">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {archives.map((a) => (
+                    <tr key={a.id} className="border-b last:border-b-0">
+                      <td className="py-2 pr-3">{a.job_ref}</td>
+                      <td className="py-2 pr-3">{a.full_name}</td>
+                      <td className="py-2 pr-3">{a.job_title}</td>
+                      <td className="py-2 pr-3">
+                        {new Date(a.applied_at).toLocaleDateString('en-GB', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </td>
+                      <td className="py-2 pr-3">
+                        <Link href={`/admin/applications/${a.id}`} className="btn-secondary">View</Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="card">
+            <h2 className="text-xl font-bold">Recent resignations</h2>
+            <div className="mt-2 overflow-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="py-2 pr-3">Job Number</th>
+                    <th className="py-2 pr-3">Name</th>
+                    <th className="py-2 pr-3">Job Title</th>
+                    <th className="py-2 pr-3">Resigned At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {exits.map((e) => (
+                    <tr key={e.id} className="border-b last:border-b-0">
+                      <td className="py-2 pr-3">{e.job_ref}</td>
+                      <td className="py-2 pr-3">{e.full_name}</td>
+                      <td className="py-2 pr-3">{e.job_title}</td>
+                      <td className="py-2 pr-3">{new Date(e.created_at).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
       </div>
     </section>
   );
 }
 
-export default async function AdminPage({
-  searchParams
-}: {
-  searchParams?: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
-}) {
+export default async function AdminPage() {
   noStore();
-
-  const resolvedSearchParams = searchParams ? await searchParams : {};
-  const errorParam = resolvedSearchParams.error;
-  const blogAuthError = (Array.isArray(errorParam) ? errorParam[0] : errorParam) === 'blog-auth';
 
   if (env.adminAuthDisabled) {
     const admin = createSupabaseAdminClient();
-    const [archives, exits] = await Promise.all([
+    const [jobs, archives, exits, readyForShow, reviewsCount] = await Promise.all([
+      admin.from('jobs').select('status'),
       getRecentFilledApplications(admin),
-      getRecentResignations(admin)
+      getRecentResignations(admin),
+      getReadyForShowCount(admin),
+      getReviewsCount(admin)
     ]);
+    const counts = getCounts(jobs.data || []);
+    counts.ready_for_show = readyForShow;
+    counts.reviews = reviewsCount;
 
     return (
       <DashboardView
+        counts={counts}
         archives={archives}
         exits={exits}
         showBypassBanner
@@ -206,36 +298,29 @@ export default async function AdminPage({
       <section className="space-y-4">
         <h1 className="text-4xl font-black">Admin Dashboard</h1>
         <p>Only the configured admin email can access this dashboard.</p>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <AdminLoginForm />
-          <BlogAdminLoginForm adminEmail={env.adminEmail} />
-        </div>
+        <AdminLoginForm />
       </section>
     );
   }
 
   const admin = createSupabaseAdminClient();
-  const [archives, exits] = await Promise.all([
+  const [jobs, archives, exits, readyForShow, reviewsCount] = await Promise.all([
+    admin.from('jobs').select('status'),
     getRecentFilledApplications(admin),
-    getRecentResignations(admin)
+    getRecentResignations(admin),
+    getReadyForShowCount(admin),
+    getReviewsCount(admin)
   ]);
+  const counts = getCounts(jobs.data || []);
+  counts.ready_for_show = readyForShow;
+  counts.reviews = reviewsCount;
 
   return (
-    <div className="space-y-4">
-      {blogAuthError ? (
-        <div className="card space-y-2 border-2 border-amber-400 bg-amber-50">
-          <h2 className="text-xl font-bold">Blog sign-in required</h2>
-          <p className="text-sm text-carnival-ink/80">
-            You are signed into the legacy admin, but the blog CMS uses Supabase Auth separately.
-          </p>
-          <BlogAdminLoginForm adminEmail={env.adminEmail} />
-        </div>
-      ) : null}
-      <DashboardView
-        archives={archives}
-        exits={exits}
-        showBypassBanner={false}
-      />
-    </div>
+    <DashboardView
+      counts={counts}
+      archives={archives}
+      exits={exits}
+      showBypassBanner={false}
+    />
   );
 }

@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import Link from 'next/link';
 import { ConnectForm } from '@/components/forms/connect-form';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/thecompendiumpodcast/';
@@ -31,11 +30,10 @@ export default function ConnectPage() {
     <section className="full-bleed relative -mt-8 -mb-8 overflow-hidden bg-carnival-ink pb-14 md:pb-20">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[72vh] md:h-[78vh]" aria-hidden="true">
         <Image
-          src="/cover-banner-hero.jpg"
+          src="/Cover Banner.png"
           alt="Kyle and Adam from The Compendium Podcast"
           fill
           priority
-          quality={74}
           className="-translate-y-[60px] object-cover object-[50%_0%] md:-translate-y-[18vh]"
           sizes="100vw"
         />
@@ -83,14 +81,11 @@ export default function ConnectPage() {
             <section className="rounded-2xl border border-white/15 bg-white/10 p-5 shadow-card backdrop-blur-sm sm:p-6">
               <h2 className="text-2xl font-black text-white">Press Kit</h2>
               <p className="mt-2 text-sm leading-relaxed text-white/75">
-                Access our media-ready page with show overview, key stats, host bios, and listen links.
+                Headline podcast figures and downloadable media assets will live here soon.
               </p>
-              <Link
-                href="/connect/press-kit"
-                className="mt-4 inline-flex rounded-full bg-carnival-red px-5 py-2.5 text-xs font-black uppercase tracking-wide text-white shadow-lg transition hover:brightness-110"
-              >
-                Open Press Kit
-              </Link>
+              <p className="mt-3 text-sm leading-relaxed text-white/75">
+                In the meantime, use the contact form and choose <strong className="text-white">Press / media</strong> so we can send details directly.
+              </p>
             </section>
           </aside>
         </div>

@@ -69,11 +69,23 @@ async function getFilledApplicationMap(admin: ReturnType<typeof createSupabaseAd
 async function getHolderNameByJobId(admin: ReturnType<typeof createSupabaseAdminClient>) {
   const { data: activeAssignments } = await admin
     .from('assignments')
-    .select('job_id,full_name')
+    .select('job_id,full_name,created_at')
     .eq('active', true);
   const byJob: Record<string, string> = {};
   (activeAssignments || []).forEach((a) => {
     byJob[a.job_id] = a.full_name;
+  });
+  return byJob;
+}
+
+async function getFilledAtByJobId(admin: ReturnType<typeof createSupabaseAdminClient>) {
+  const { data: activeAssignments } = await admin
+    .from('assignments')
+    .select('job_id,created_at')
+    .eq('active', true);
+  const byJob: Record<string, string> = {};
+  (activeAssignments || []).forEach((a) => {
+    if (a.created_at) byJob[a.job_id] = a.created_at;
   });
   return byJob;
 }
@@ -153,6 +165,14 @@ function applyComputedStatus(
   }));
 }
 
+function sortFilledJobsByDate<T extends { id: string }>(jobs: T[], filledAtByJobId: Record<string, string>): T[] {
+  return [...jobs].sort((a, b) => {
+    const aTime = filledAtByJobId[a.id] ? new Date(filledAtByJobId[a.id]).getTime() : 0;
+    const bTime = filledAtByJobId[b.id] ? new Date(filledAtByJobId[b.id]).getTime() : 0;
+    return bTime - aTime;
+  });
+}
+
 function filterJobsByView<T extends { id: string; status: string }>(
   jobs: T[],
   view: string,
@@ -202,12 +222,13 @@ export default async function AdminJobsPage({
 
   if (env.adminAuthDisabled) {
     const admin = createSupabaseAdminClient();
-    const [{ data: jobs }, filledApplicationByJobId, holderNameByJobId, settings, readyForShowMetaByJobId] = await Promise.all([
+    const [{ data: jobs }, filledApplicationByJobId, holderNameByJobId, settings, readyForShowMetaByJobId, filledAtByJobId] = await Promise.all([
       admin.from('jobs').select('*').order('job_ref', { ascending: false }),
       getFilledApplicationMap(admin),
       getHolderNameByJobId(admin),
       getSettings(),
-      getReadyForShowMetaByJobId(admin)
+      getReadyForShowMetaByJobId(admin),
+      getFilledAtByJobId(admin)
     ]);
     const readyForShowJobIds = new Set(Object.keys(readyForShowMetaByJobId));
     const computedJobs = applyComputedStatus((jobs || []) as Array<{ id: string; status: string }>, holderNameByJobId) as typeof jobs;
@@ -218,9 +239,10 @@ export default async function AdminJobsPage({
       broadcastFilter,
       readyForShowMetaByJobId
     );
+    const sortedJobs = (validView === 'FILLED' || validView === 'READY_FOR_SHOW') ? sortFilledJobsByDate(filteredJobs, filledAtByJobId) : filteredJobs;
     const rehiringResignCountByJobId = await getResignationCountByJobId(
       admin,
-      (filteredJobs || []) as Array<{ id: string; title: string }>
+      (sortedJobs || []) as Array<{ id: string; title: string }>
     );
 
     return (
@@ -229,7 +251,7 @@ export default async function AdminJobsPage({
           <div className="flex items-center gap-3">
             <h1 className="text-4xl font-black">{getTitle(validView)}</h1>
             <span className="rounded-full bg-carnival-red px-3 py-1 text-sm font-bold text-white">
-              {filteredJobs.length}
+              {sortedJobs.length}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -239,7 +261,7 @@ export default async function AdminJobsPage({
         </div>
         <p className="rounded-md bg-amber-100 p-3 font-semibold">Admin auth bypass is enabled for testing.</p>
         <AdminJobsForm
-          jobs={filteredJobs}
+          jobs={sortedJobs}
           filledApplicationByJobId={filledApplicationByJobId}
           holderNameByJobId={holderNameByJobId}
           reportsToOptions={settings.reports_to_options}
@@ -261,12 +283,13 @@ export default async function AdminJobsPage({
   if (!isAdminSessionActive()) redirect('/admin');
 
   const admin = createSupabaseAdminClient();
-  const [{ data: jobs }, filledApplicationByJobId, holderNameByJobId, settings, readyForShowMetaByJobId] = await Promise.all([
+  const [{ data: jobs }, filledApplicationByJobId, holderNameByJobId, settings, readyForShowMetaByJobId, filledAtByJobId] = await Promise.all([
     admin.from('jobs').select('*').order('job_ref', { ascending: false }),
     getFilledApplicationMap(admin),
     getHolderNameByJobId(admin),
     getSettings(),
-    getReadyForShowMetaByJobId(admin)
+    getReadyForShowMetaByJobId(admin),
+    getFilledAtByJobId(admin)
   ]);
   const readyForShowJobIds = new Set(Object.keys(readyForShowMetaByJobId));
   const computedJobs = applyComputedStatus((jobs || []) as Array<{ id: string; status: string }>, holderNameByJobId) as typeof jobs;
@@ -277,9 +300,10 @@ export default async function AdminJobsPage({
     broadcastFilter,
     readyForShowMetaByJobId
   );
+  const sortedJobs = (validView === 'FILLED' || validView === 'READY_FOR_SHOW') ? sortFilledJobsByDate(filteredJobs, filledAtByJobId) : filteredJobs;
   const rehiringResignCountByJobId = await getResignationCountByJobId(
     admin,
-    (filteredJobs || []) as Array<{ id: string; title: string }>
+    (sortedJobs || []) as Array<{ id: string; title: string }>
   );
 
   return (
@@ -288,7 +312,7 @@ export default async function AdminJobsPage({
         <div className="flex items-center gap-3">
           <h1 className="text-4xl font-black">{getTitle(validView)}</h1>
           <span className="rounded-full bg-carnival-red px-3 py-1 text-sm font-bold text-white">
-            {filteredJobs.length}
+            {sortedJobs.length}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -297,7 +321,7 @@ export default async function AdminJobsPage({
         </div>
       </div>
       <AdminJobsForm
-        jobs={filteredJobs}
+        jobs={sortedJobs}
         filledApplicationByJobId={filledApplicationByJobId}
         holderNameByJobId={holderNameByJobId}
         reportsToOptions={settings.reports_to_options}

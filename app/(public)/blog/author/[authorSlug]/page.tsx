@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { BlogListingPage } from '@/components/blog/blog-listing-page';
-import { listAuthorArchive, normalizePageNumber } from '@/lib/blog/data';
+import { listAuthorArchive } from '@/lib/blog/data';
 
 export const revalidate = 300;
 
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: { authorSlug: strin
 }
 
 export default async function BlogAuthorPage({ params, searchParams }: { params: { authorSlug: string }; searchParams: { page?: string } }) {
-  const archive = await listAuthorArchive(params.authorSlug, normalizePageNumber(searchParams.page));
+  const archive = await listAuthorArchive(params.authorSlug, Number.parseInt(searchParams.page || '1', 10));
   if (!archive) notFound();
   return (
     <BlogListingPage

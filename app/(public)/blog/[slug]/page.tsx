@@ -7,12 +7,16 @@ import { BlogContentRenderer } from '@/components/blog/blog-content-renderer';
 import { BlogAnalyticsTracker } from '@/components/blog/blog-analytics-tracker';
 import { BlogPostCard } from '@/components/blog/blog-post-card';
 import { CompactEpisodeRow } from '@/components/episodes-browser';
+import { SupportAndListenCta } from '@/components/support-and-listen-cta';
 import { collectReferencedImageIds, hasPrimaryListenEpisodeBlock, normalizeBlogDocument, richTextToPlainText } from '@/lib/blog/content';
 import type { BlogContentBlock } from '@/lib/blog/schema';
-import { getBlogPostBySlug, getMediaAssetMapByIds, getPatreonUrl, resolveBlogSlugRedirect } from '@/lib/blog/data';
+import { breadcrumbsToJsonLd } from '@/lib/breadcrumbs';
+import { getBlogPostBySlug, getMediaAssetMapByIds, resolveBlogSlugRedirect } from '@/lib/blog/data';
 import { getStoragePublicUrl } from '@/lib/blog/media-url';
+import { buildBlogPostBreadcrumbs } from '@/lib/episodes';
 import type { PodcastEpisode } from '@/lib/podcast-shared';
 import { getPublicSiteUrl } from '@/lib/site-url';
+import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
 
 export const revalidate = 300;
 
@@ -44,6 +48,27 @@ async function loadPost(slug: string, includeDraft: boolean) {
   };
 }
 
+function resolveBlogCanonicalValue(postSlug: string, canonicalUrl: string | null): string {
+  const fallbackPath = `/blog/${postSlug}`;
+  const raw = `${canonicalUrl || ''}`.trim();
+  if (!raw) return fallbackPath;
+
+  try {
+    const siteUrl = getPublicSiteUrl();
+    const parsed = new URL(raw, siteUrl);
+    if (!/^https?:$/i.test(parsed.protocol)) return fallbackPath;
+
+    const siteOrigin = new URL(siteUrl).origin;
+    if (parsed.origin === siteOrigin) {
+      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+
+    return parsed.toString();
+  } catch {
+    return fallbackPath;
+  }
+}
+
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const includeDraft = draftMode().isEnabled;
   const loaded = await loadPost(params.slug, includeDraft);
@@ -55,7 +80,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   }
   const { post } = loaded;
   const description = post.seo_description || post.excerpt || post.excerpt_auto || 'Read the latest article from The Compendium.';
-  const canonicalPath = `/blog/${post.slug}`;
+  const canonicalValue = resolveBlogCanonicalValue(post.slug, post.canonical_url);
   const imageUrl = post.og_image
     ? getStoragePublicUrl(post.og_image.storage_path)
     : post.featured_image
@@ -64,7 +89,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return {
     title: post.seo_title || post.title,
     description,
-    alternates: { canonical: canonicalPath },
+    alternates: { canonical: canonicalValue },
     robots: {
       index: !post.noindex,
       follow: !post.nofollow
@@ -72,7 +97,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     openGraph: {
       title: post.social_title || post.seo_title || post.title,
       description: post.social_description || description,
-      url: canonicalPath,
+      url: canonicalValue,
       images: [
         {
           url: imageUrl,
@@ -116,7 +141,7 @@ export default async function BlogPostPage({ params }: { params: Params }) {
       slug: episode.slug,
       title: episode.title,
       seasonNumber: null,
-      episodeNumber: null,
+      episodeNumber: episode.episode_number ?? null,
       publishedAt: episode.published_at || '',
       description: episode.description_plain || '',
       descriptionHtml: episode.description_html || '',
@@ -128,7 +153,8 @@ export default async function BlogPostPage({ params }: { params: Params }) {
   const primaryEpisode = linkedEpisodes[0]?.episode || null;
   const relatedEpisodeCards: PodcastEpisode[] = hasPrimaryListenBlock ? linkedEpisodeCards.slice(1) : linkedEpisodeCards;
   const siteUrl = getPublicSiteUrl();
-  const canonicalUrl = `${siteUrl}/blog/${post.slug}`;
+  const canonicalValue = resolveBlogCanonicalValue(post.slug, post.canonical_url);
+  const canonicalUrl = new URL(canonicalValue, siteUrl).toString();
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': post.schema_type || 'BlogPosting',
@@ -157,6 +183,8 @@ export default async function BlogPostPage({ params }: { params: Params }) {
         }
       : undefined
   };
+  const breadcrumbItems = buildBlogPostBreadcrumbs(post);
+  const breadcrumbJsonLd = breadcrumbsToJsonLd(breadcrumbItems, siteUrl);
 
   const featuredImageUrl = post.featured_image ? getStoragePublicUrl(post.featured_image.storage_path) : null;
   const excerpt = post.excerpt || post.excerpt_auto;
@@ -170,6 +198,7 @@ export default async function BlogPostPage({ params }: { params: Params }) {
     <section className="full-bleed relative -mt-8 -mb-8 overflow-hidden bg-carnival-ink pb-14 md:pb-20">
       <BlogAnalyticsTracker postId={post.id} episodeId={primaryEpisode?.id || null} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       {(() => {
         const faqItems = normalizedDocument
           .filter((block): block is Extract<BlogContentBlock, { type: 'faq' }> => block.type === 'faq')
@@ -198,8 +227,6 @@ export default async function BlogPostPage({ params }: { params: Params }) {
               src={featuredImageUrl}
               alt={post.featured_image?.alt_text_default || post.title}
               fill
-              priority
-              fetchPriority="high"
               quality={68}
               sizes="100vw"
               className="object-cover object-center md:object-[50%_25%]"
@@ -262,17 +289,15 @@ export default async function BlogPostPage({ params }: { params: Params }) {
                   >
                     <IconFacebook />
                   </a>
-                  <a
-                    href={getPatreonUrl()}
-                    target="_blank"
-                    rel="noreferrer"
+                  <Link
+                    href={PATREON_INTERNAL_PATH}
                     className={actionButtonClass}
                     aria-label="Join Patreon"
                     title="Join Patreon"
                     data-blog-cta="1"
                   >
                     <Image src="/patreon-icon.svg" alt="" width={16} height={16} className="h-4 w-4 brightness-0 invert" aria-hidden="true" />
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -311,6 +336,16 @@ export default async function BlogPostPage({ params }: { params: Params }) {
           </section>
         ) : null}
       </section>
+
+      <SupportAndListenCta
+        pageType="blog"
+        pageSlug={post.slug}
+        pageUrl={canonicalUrl}
+        contentTitle={post.title}
+        placement="blog_post_bottom"
+        variant="hero"
+        className="mt-6"
+      />
     </section>
   );
 }

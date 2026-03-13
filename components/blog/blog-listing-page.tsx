@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BlogPostCard } from '@/components/blog/blog-post-card';
 import { LiveSearchInput } from '@/components/live-search-input';
 import { getStoragePublicUrl } from '@/lib/blog/media-url';
 import type { MediaAssetRecord } from '@/lib/blog/data';
-import { trackMixpanel } from '@/lib/mixpanel-browser';
 
 type ListingPost = {
   id: string;
@@ -185,7 +184,6 @@ export function BlogListingPage({
   const [hasMoreByTab, setHasMoreByTab] = useState<Record<string, boolean>>(() => initialHasMoreByTab);
   const [loadingByTab, setLoadingByTab] = useState<Record<string, boolean>>({});
   const [errorByTab, setErrorByTab] = useState<Record<string, string | null>>({});
-  const lastTrackedSearchRef = useRef('');
   const normalizedQuery = query.trim().toLowerCase();
 
   function pageUrl(page: number) {
@@ -242,27 +240,6 @@ export function BlogListingPage({
       ariaLabel="Search posts"
     />
   );
-
-  useEffect(() => {
-    if (!normalizedQuery) {
-      lastTrackedSearchRef.current = '';
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      const signature = `${activeCategory}::${normalizedQuery}::${visiblePosts.length}`;
-      if (signature === lastTrackedSearchRef.current) return;
-      lastTrackedSearchRef.current = signature;
-
-      trackMixpanel('Search', {
-        search_query: normalizedQuery,
-        user_id: null,
-        results_count: visiblePosts.length
-      });
-    }, 350);
-
-    return () => window.clearTimeout(timeout);
-  }, [activeCategory, normalizedQuery, visiblePosts.length]);
 
   async function handleLoadMore() {
     const tabKey = activeCategory;

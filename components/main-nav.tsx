@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
 
 export function MainNav() {
-  const patreonUrl = 'https://www.patreon.com/cw/TheCompendiumPodcast';
   const instagramUrl = 'https://www.instagram.com/thecompendiumpodcast/';
   const youtubeUrl = 'https://www.youtube.com/@CompendiumPodcast';
   const youtubeMusicUrl = 'https://music.youtube.com/channel/UCQR5hWsxuu9wh7QvR60qmIw';
@@ -118,6 +118,7 @@ export function MainNav() {
                   type="button"
                   className={moreNavLinkClass}
                   aria-haspopup="menu"
+                  aria-controls="desktop-more-menu"
                   aria-expanded={moreOpen}
                   onClick={() => setMoreOpen((current) => !current)}
                 >
@@ -138,32 +139,37 @@ export function MainNav() {
                     <polyline points="6 9 12 15 18 9" />
                   </svg>
                 </button>
-                {moreOpen ? (
-                  <div
-                    role="menu"
-                    className="absolute right-0 z-[90] mt-2 min-w-[12rem] rounded-xl border border-carnival-ink/20 bg-carnival-cream p-2 shadow-card"
-                  >
-                    {moreItems.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        prefetch={item.prefetch}
-                        className={`block rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                          isActive(item.href)
-                            ? 'bg-carnival-red/10 text-carnival-red'
-                            : 'text-carnival-ink/80 hover:bg-carnival-gold/25 hover:text-carnival-ink'
-                        }`}
-                        onClick={() => setMoreOpen(false)}
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
-                  </div>
-                ) : null}
+                <div
+                  id="desktop-more-menu"
+                  role="menu"
+                  aria-hidden={!moreOpen}
+                  className={`absolute right-0 z-[90] mt-2 min-w-[12rem] rounded-xl border border-carnival-ink/20 bg-carnival-cream p-2 shadow-card transition ${
+                    moreOpen
+                      ? 'pointer-events-auto visible translate-y-0 opacity-100'
+                      : 'pointer-events-none invisible -translate-y-1 opacity-0'
+                  }`}
+                >
+                  {moreItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      prefetch={item.prefetch}
+                      tabIndex={moreOpen ? 0 : -1}
+                      className={`block rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                        isActive(item.href)
+                          ? 'bg-carnival-red/10 text-carnival-red'
+                          : 'text-carnival-ink/80 hover:bg-carnival-gold/25 hover:text-carnival-ink'
+                      }`}
+                      onClick={() => setMoreOpen(false)}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
               </div>
-              <a href={patreonUrl} target="_blank" rel="noopener noreferrer" className="btn-primary">
+              <Link href={PATREON_INTERNAL_PATH} className="btn-primary">
                 Patreon
-              </a>
+              </Link>
             </>
           )}
         </div>
@@ -254,9 +260,9 @@ export function MainNav() {
                   {item.label}
                 </Link>
               ))}
-              <a href={patreonUrl} target="_blank" rel="noopener noreferrer" className="btn-primary flex w-full justify-center">
+              <Link href={PATREON_INTERNAL_PATH} className="btn-primary flex w-full justify-center" onClick={() => setOpen(false)}>
                 Patreon
-              </a>
+              </Link>
             </div>
 
             <div className="mt-auto pt-4">
@@ -272,16 +278,14 @@ export function MainNav() {
                 >
                   <Image src="/ig-instagram-icon.svg" alt="" width={28} height={28} className="h-7 w-7" aria-hidden="true" />
                 </a>
-                <a
-                  href={patreonUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  href={PATREON_INTERNAL_PATH}
                   className="inline-flex items-center justify-center p-1 text-carnival-ink transition hover:text-carnival-red"
                   onClick={() => setOpen(false)}
                   aria-label="Patreon"
                 >
                   <Image src="/patreon-icon.svg" alt="" width={28} height={28} className="h-7 w-7" aria-hidden="true" />
-                </a>
+                </Link>
                 <a
                   href={youtubeUrl}
                   target="_blank"

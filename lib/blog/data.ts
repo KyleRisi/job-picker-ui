@@ -54,6 +54,7 @@ export type PodcastEpisodeRecord = {
   rss_guid: string;
   title: string;
   slug: string;
+  episode_number: number | null;
   description_plain: string;
   description_html: string;
   published_at: string | null;
@@ -68,7 +69,7 @@ export type PodcastEpisodeRecord = {
   updated_at: string;
 };
 
-export type TaxonomyKind = 'categories' | 'tags' | 'series' | 'topic_clusters' | 'post_labels' | 'blog_authors';
+export type TaxonomyKind = 'categories' | 'tags' | 'series' | 'topic_clusters' | 'post_labels';
 export type TaxonomyItem = {
   id: string;
   name: string;
@@ -120,11 +121,21 @@ export type BlogPostRecord = {
 };
 
 type SupabaseClient = ReturnType<typeof createSupabaseAdminClient>;
+type DiscoveryAssignmentState = BlogPostWriteInput['discovery'] & {
+  termNames: string[];
+};
+type DiscoveryTermType = 'topic' | 'theme' | 'entity' | 'case' | 'event' | 'collection' | 'series';
+type DiscoveryTermRow = {
+  id: string;
+  name: string;
+  slug: string;
+  term_type: DiscoveryTermType;
+};
 
 const PATREON_URL = 'https://www.patreon.com/cw/TheCompendiumPodcast';
 const SEARCH_PAGE_SIZE = 12;
 
-const TAXONOMY_CONFIG: Record<Exclude<TaxonomyKind, 'blog_authors'>, { table: string; joinTable: string; idColumn: string }> = {
+const TAXONOMY_CONFIG: Record<TaxonomyKind, { table: string; joinTable: string; idColumn: string }> = {
   categories: { table: 'categories', joinTable: 'blog_post_categories', idColumn: 'category_id' },
   tags: { table: 'tags', joinTable: 'blog_post_tags', idColumn: 'tag_id' },
   series: { table: 'series', joinTable: 'blog_post_series', idColumn: 'series_id' },
@@ -247,6 +258,16 @@ async function getTaxonomyItemsByIds(
   return new Map((data || []).map((item) => [item.id, item as TaxonomyItem]));
 }
 
+async function getDiscoveryTermsByIds(
+  supabase: SupabaseClient,
+  ids: string[]
+) {
+  if (!ids.length) return new Map<string, DiscoveryTermRow>();
+  const { data, error } = await supabase.from('discovery_terms').select('id, name, slug, term_type').in('id', ids);
+  if (error) throw error;
+  return new Map((data || []).map((item) => [item.id, item as DiscoveryTermRow]));
+}
+
 async function getTaxonomyForPosts(
   supabase: SupabaseClient,
   postIds: string[]
@@ -254,10 +275,7 @@ async function getTaxonomyForPosts(
   if (!postIds.length) {
     return {
       categories: new Map<string, TaxonomyItem[]>(),
-      tags: new Map<string, TaxonomyItem[]>(),
-      series: new Map<string, TaxonomyItem[]>(),
-      topicClusters: new Map<string, TaxonomyItem[]>(),
-      labels: new Map<string, TaxonomyItem[]>()
+      tags: new Map<string, TaxonomyItem[]>()
     };
   }
 
@@ -266,26 +284,14 @@ async function getTaxonomyForPosts(
     .select('post_id, category_id')
     .in('post_id', postIds);
   const tagsPromise = supabase.from('blog_post_tags').select('post_id, tag_id').in('post_id', postIds);
-  const seriesPromise = supabase.from('blog_post_series').select('post_id, series_id').in('post_id', postIds);
-  const topicsPromise = supabase
-    .from('blog_post_topic_clusters')
-    .select('post_id, topic_cluster_id')
-    .in('post_id', postIds);
-  const labelsPromise = supabase.from('blog_post_labels').select('post_id, label_id').in('post_id', postIds);
 
-  const [categoriesRows, tagRows, seriesRows, topicRows, labelRows] = await Promise.all([
+  const [categoriesRows, tagRows] = await Promise.all([
     categoriesPromise,
-    tagsPromise,
-    seriesPromise,
-    topicsPromise,
-    labelsPromise
+    tagsPromise
   ]);
 
   if (categoriesRows.error) throw categoriesRows.error;
   if (tagRows.error) throw tagRows.error;
-  if (seriesRows.error) throw seriesRows.error;
-  if (topicRows.error) throw topicRows.error;
-  if (labelRows.error) throw labelRows.error;
 
   const categoryItems = await getTaxonomyItemsByIds(
     supabase,
@@ -293,17 +299,6 @@ async function getTaxonomyForPosts(
     [...new Set((categoriesRows.data || []).map((item) => item.category_id))]
   );
   const tagItems = await getTaxonomyItemsByIds(supabase, 'tags', [...new Set((tagRows.data || []).map((item) => item.tag_id))]);
-  const seriesItems = await getTaxonomyItemsByIds(supabase, 'series', [...new Set((seriesRows.data || []).map((item) => item.series_id))]);
-  const topicItems = await getTaxonomyItemsByIds(
-    supabase,
-    'topic_clusters',
-    [...new Set((topicRows.data || []).map((item) => item.topic_cluster_id))]
-  );
-  const labelItems = await getTaxonomyItemsByIds(
-    supabase,
-    'post_labels',
-    [...new Set((labelRows.data || []).map((item) => item.label_id))]
-  );
 
   function group<T extends { post_id: string }>(
     rows: T[],
@@ -323,11 +318,62 @@ async function getTaxonomyForPosts(
 
   return {
     categories: group(categoriesRows.data || [], 'category_id', categoryItems),
-    tags: group(tagRows.data || [], 'tag_id', tagItems),
-    series: group(seriesRows.data || [], 'series_id', seriesItems),
-    topicClusters: group(topicRows.data || [], 'topic_cluster_id', topicItems),
-    labels: group(labelRows.data || [], 'label_id', labelItems)
+    tags: group(tagRows.data || [], 'tag_id', tagItems)
   };
+}
+
+function createEmptyDiscoveryAssignments(): DiscoveryAssignmentState {
+  return {
+    primaryTopicId: null,
+    themeIds: [],
+    entityIds: [],
+    caseIds: [],
+    eventIds: [],
+    collectionIds: [],
+    seriesIds: [],
+    termNames: []
+  };
+}
+
+async function getDiscoveryForPosts(
+  supabase: SupabaseClient,
+  postIds: string[]
+) {
+  if (!postIds.length) return new Map<string, DiscoveryAssignmentState>();
+  const { data, error } = await supabase
+    .from('blog_post_discovery_terms')
+    .select('blog_post_id, term_id, is_primary, sort_order, discovery_terms!inner(term_type, name)')
+    .in('blog_post_id', postIds)
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+
+  const map = new Map<string, DiscoveryAssignmentState>();
+  (data || []).forEach((row: any) => {
+    const state = map.get(row.blog_post_id) || createEmptyDiscoveryAssignments();
+    const termId = `${row.term_id}`;
+    const termName = `${row.discovery_terms?.name || ''}`.trim();
+    const termType = row.discovery_terms?.term_type as DiscoveryTermType;
+    if (termName && !state.termNames.includes(termName)) {
+      state.termNames.push(termName);
+    }
+    if (termType === 'topic') {
+      if (row.is_primary || !state.primaryTopicId) state.primaryTopicId = termId;
+    } else if (termType === 'theme') {
+      state.themeIds.push(termId);
+    } else if (termType === 'entity') {
+      state.entityIds.push(termId);
+    } else if (termType === 'case') {
+      state.caseIds.push(termId);
+    } else if (termType === 'event') {
+      state.eventIds.push(termId);
+    } else if (termType === 'collection') {
+      state.collectionIds.push(termId);
+    } else if (termType === 'series') {
+      state.seriesIds.push(termId);
+    }
+    map.set(row.blog_post_id, state);
+  });
+  return map;
 }
 
 async function getEpisodeLinksForPosts(supabase: SupabaseClient, postIds: string[]) {
@@ -363,9 +409,7 @@ function serializeSearchPlaintext(input: {
   contentPlain: string;
   categories: TaxonomyItem[];
   tags: TaxonomyItem[];
-  series: TaxonomyItem[];
-  topics: TaxonomyItem[];
-  labels: TaxonomyItem[];
+  discoveryTerms: string[];
   episodes: PodcastEpisodeRecord[];
 }) {
   return [
@@ -374,9 +418,7 @@ function serializeSearchPlaintext(input: {
     input.contentPlain,
     ...input.categories.map((item) => item.name),
     ...input.tags.map((item) => item.name),
-    ...input.series.map((item) => item.name),
-    ...input.topics.map((item) => item.name),
-    ...input.labels.map((item) => item.name),
+    ...input.discoveryTerms,
     ...input.episodes.map((item) => item.title)
   ]
     .filter(Boolean)
@@ -424,17 +466,7 @@ async function syncTaxonomyLinks(
 ) {
   await Promise.all(
     Object.entries(TAXONOMY_CONFIG).map(async ([kind, config]) => {
-      const ids = taxonomy[
-        kind === 'categories'
-          ? 'categoryIds'
-          : kind === 'tags'
-            ? 'tagIds'
-            : kind === 'series'
-              ? 'seriesIds'
-              : kind === 'topic_clusters'
-                ? 'topicClusterIds'
-                : 'labelIds'
-      ];
+      const ids = taxonomy[kind === 'categories' ? 'categoryIds' : 'tagIds'];
       const deleteResult = await supabase.from(config.joinTable).delete().eq('post_id', postId);
       if (deleteResult.error) throw deleteResult.error;
       if (!ids.length) return;
@@ -447,6 +479,71 @@ async function syncTaxonomyLinks(
       if (insertResult.error) throw insertResult.error;
     })
   );
+}
+
+async function syncBlogPostDiscovery(
+  supabase: SupabaseClient,
+  postId: string,
+  discovery: BlogPostWriteInput['discovery']
+) {
+  const ids = [
+    ...(discovery.primaryTopicId ? [discovery.primaryTopicId] : []),
+    ...discovery.themeIds,
+    ...discovery.entityIds,
+    ...discovery.caseIds,
+    ...discovery.eventIds,
+    ...discovery.collectionIds,
+    ...discovery.seriesIds
+  ];
+  const uniqueIds = [...new Set(ids)];
+  const { data: terms, error: termsError } = await supabase
+    .from('discovery_terms')
+    .select('id, term_type')
+    .in('id', uniqueIds.length ? uniqueIds : ['00000000-0000-0000-0000-000000000000']);
+  if (termsError) throw termsError;
+
+  const termTypeById = new Map((terms || []).map((row: any) => [row.id as string, row.term_type as DiscoveryTermType]));
+  if (discovery.primaryTopicId && termTypeById.get(discovery.primaryTopicId) !== 'topic') {
+    throw new Error('Primary topic must reference a topic discovery term.');
+  }
+
+  const expectedTypes: Array<[string[], DiscoveryTermType]> = [
+    [discovery.themeIds, 'theme'],
+    [discovery.entityIds, 'entity'],
+    [discovery.caseIds, 'case'],
+    [discovery.eventIds, 'event'],
+    [discovery.collectionIds, 'collection'],
+    [discovery.seriesIds, 'series']
+  ];
+  expectedTypes.forEach(([list, expected]) => {
+    list.forEach((id) => {
+      if (termTypeById.get(id) !== expected) {
+        throw new Error(`Discovery term assignment mismatch for ${expected}.`);
+      }
+    });
+  });
+
+  const deleteResult = await supabase.from('blog_post_discovery_terms').delete().eq('blog_post_id', postId);
+  if (deleteResult.error) throw deleteResult.error;
+
+  const rows = [
+    ...(discovery.primaryTopicId ? [{
+      blog_post_id: postId,
+      term_id: discovery.primaryTopicId,
+      is_primary: true,
+      sort_order: 0
+    }] : []),
+    ...discovery.themeIds.map((termId, index) => ({ blog_post_id: postId, term_id: termId, is_primary: false, sort_order: index })),
+    ...discovery.entityIds.map((termId, index) => ({ blog_post_id: postId, term_id: termId, is_primary: false, sort_order: index })),
+    ...discovery.caseIds.map((termId, index) => ({ blog_post_id: postId, term_id: termId, is_primary: false, sort_order: index })),
+    ...discovery.eventIds.map((termId, index) => ({ blog_post_id: postId, term_id: termId, is_primary: false, sort_order: index })),
+    ...discovery.collectionIds.map((termId, index) => ({ blog_post_id: postId, term_id: termId, is_primary: false, sort_order: index })),
+    ...discovery.seriesIds.map((termId, index) => ({ blog_post_id: postId, term_id: termId, is_primary: false, sort_order: index }))
+  ];
+  if (!rows.length) return;
+
+  const insertResult = await supabase.from('blog_post_discovery_terms').insert(rows);
+  if (insertResult.error) throw insertResult.error;
 }
 
 async function syncEpisodeLinks(
@@ -535,6 +632,10 @@ async function hydratePosts(baseRows: BlogPostRecord[]) {
     supabase,
     baseRows.map((row) => row.id)
   );
+  const discovery = await getDiscoveryForPosts(
+    supabase,
+    baseRows.map((row) => row.id)
+  );
   const episodeLinks = await getEpisodeLinksForPosts(
     supabase,
     baseRows.map((row) => row.id)
@@ -551,11 +652,9 @@ async function hydratePosts(baseRows: BlogPostRecord[]) {
     og_image: row.og_image_id ? mediaMap.get(row.og_image_id) || null : null,
     taxonomies: {
       categories: taxonomy.categories.get(row.id) || [],
-      tags: taxonomy.tags.get(row.id) || [],
-      series: taxonomy.series.get(row.id) || [],
-      topicClusters: taxonomy.topicClusters.get(row.id) || [],
-      labels: taxonomy.labels.get(row.id) || []
+      tags: taxonomy.tags.get(row.id) || []
     },
+    discovery: discovery.get(row.id) || createEmptyDiscoveryAssignments(),
     linked_episodes: episodeLinks.get(row.id) || []
   }));
 }
@@ -569,20 +668,35 @@ export async function listBlogAuthors() {
 
 export async function listTaxonomy(kind: TaxonomyKind) {
   const supabase = getSupabase();
-  const table = kind === 'blog_authors' ? 'blog_authors' : TAXONOMY_CONFIG[kind].table;
+  const table = TAXONOMY_CONFIG[kind].table;
   const { data, error } = await supabase.from(table).select('*').order('name');
   if (error) throw error;
   return data as TaxonomyItem[];
+}
+
+async function listOptionalTaxonomyTable(table: string) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from(table).select('*').order('name');
+  if (error) {
+    const code = `${(error as { code?: string }).code || ''}`;
+    if (code === 'PGRST205' || code === '42P01') return [] as TaxonomyItem[];
+    throw error;
+  }
+  return (data || []) as TaxonomyItem[];
 }
 
 export async function listBlogTaxonomies() {
   const [categories, tags, series, topicClusters, labels, authors] = await Promise.all([
     listTaxonomy('categories'),
     listTaxonomy('tags'),
-    listTaxonomy('series'),
-    listTaxonomy('topic_clusters'),
-    listTaxonomy('post_labels'),
-    listBlogAuthors()
+    listOptionalTaxonomyTable('series'),
+    listOptionalTaxonomyTable('topic_clusters'),
+    listOptionalTaxonomyTable('post_labels'),
+    listBlogAuthors().catch((error: unknown) => {
+      const code = `${(error as { code?: string }).code || ''}`;
+      if (code === 'PGRST205' || code === '42P01') return [] as BlogAuthorRecord[];
+      throw error;
+    })
   ]);
 
   return {
@@ -598,7 +712,7 @@ export async function listBlogTaxonomies() {
 export async function upsertTaxonomy(kind: TaxonomyKind, input: unknown) {
   const supabase = getSupabase();
   const parsed = taxonomyTermWriteSchema.parse(input);
-  const table = kind === 'blog_authors' ? 'blog_authors' : TAXONOMY_CONFIG[kind].table;
+  const table = TAXONOMY_CONFIG[kind].table;
   const normalizedSlug = slugifyBlogText(parsed.slug || parsed.name);
   if (!normalizedSlug) throw new Error('Slug is required.');
   const basePayload = {
@@ -608,14 +722,7 @@ export async function upsertTaxonomy(kind: TaxonomyKind, input: unknown) {
   };
 
   let payload: Record<string, unknown>;
-  if (kind === 'blog_authors') {
-    payload = {
-      ...basePayload,
-      bio: parsed.bio || '',
-      image_url: parsed.imageUrl || null,
-      image_asset_id: parsed.imageAssetId || null
-    };
-  } else if (kind === 'categories') {
+  if (kind === 'categories') {
     payload = {
       ...basePayload,
       description: parsed.description || '',
@@ -624,17 +731,6 @@ export async function upsertTaxonomy(kind: TaxonomyKind, input: unknown) {
   } else if (kind === 'tags') {
     payload = {
       ...basePayload
-    };
-  } else if (kind === 'series') {
-    payload = {
-      ...basePayload,
-      description: parsed.description || ''
-    };
-  } else if (kind === 'topic_clusters') {
-    payload = {
-      ...basePayload,
-      description: parsed.description || '',
-      pillar_post_id: parsed.pillarPostId || null
     };
   } else {
     payload = {
@@ -653,8 +749,35 @@ export async function upsertTaxonomy(kind: TaxonomyKind, input: unknown) {
 
 export async function deleteTaxonomy(kind: TaxonomyKind, id: string) {
   const supabase = getSupabase();
-  const table = kind === 'blog_authors' ? 'blog_authors' : TAXONOMY_CONFIG[kind].table;
+  const table = TAXONOMY_CONFIG[kind].table;
   const { error } = await supabase.from(table).delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function saveBlogAuthor(input: unknown) {
+  const supabase = getSupabase();
+  const parsed = taxonomyTermWriteSchema.parse(input);
+  const normalizedSlug = slugifyBlogText(parsed.slug || parsed.name);
+  if (!normalizedSlug) throw new Error('Slug is required.');
+  const payload = {
+    ...(parsed.id ? { id: parsed.id } : {}),
+    name: parsed.name.trim(),
+    slug: normalizedSlug,
+    bio: parsed.bio || parsed.description || '',
+    image_url: parsed.imageUrl || null,
+    image_asset_id: parsed.imageAssetId || null
+  };
+  const query = parsed.id
+    ? supabase.from('blog_authors').update(payload).eq('id', parsed.id).select('*').single()
+    : supabase.from('blog_authors').insert(payload).select('*').single();
+  const { data, error } = await query;
+  if (error) throw error;
+  return data as BlogAuthorRecord;
+}
+
+export async function deleteBlogAuthor(id: string) {
+  const supabase = getSupabase();
+  const { error } = await supabase.from('blog_authors').delete().eq('id', id);
   if (error) throw error;
 }
 
@@ -878,9 +1001,16 @@ export async function saveBlogPost(postId: string | null, input: unknown, option
 
   const categoriesMap = await getTaxonomyItemsByIds(supabase, 'categories', payload.taxonomy.categoryIds);
   const tagsMap = await getTaxonomyItemsByIds(supabase, 'tags', payload.taxonomy.tagIds);
-  const seriesMap = await getTaxonomyItemsByIds(supabase, 'series', payload.taxonomy.seriesIds);
-  const topicsMap = await getTaxonomyItemsByIds(supabase, 'topic_clusters', payload.taxonomy.topicClusterIds);
-  const labelsMap = await getTaxonomyItemsByIds(supabase, 'post_labels', payload.taxonomy.labelIds);
+  const discoveryIds = [
+    ...(payload.discovery.primaryTopicId ? [payload.discovery.primaryTopicId] : []),
+    ...payload.discovery.themeIds,
+    ...payload.discovery.entityIds,
+    ...payload.discovery.caseIds,
+    ...payload.discovery.eventIds,
+    ...payload.discovery.collectionIds,
+    ...payload.discovery.seriesIds
+  ];
+  const discoveryTermsMap = await getDiscoveryTermsByIds(supabase, [...new Set(discoveryIds)]);
   const episodesMap = await getEpisodesByIds(
     supabase,
     payload.linkedEpisodes.map((item) => item.episodeId)
@@ -909,9 +1039,9 @@ export async function saveBlogPost(postId: string | null, input: unknown, option
     contentPlain: plainText,
     categories: payload.taxonomy.categoryIds.map((id) => categoriesMap.get(id)).filter(Boolean) as TaxonomyItem[],
     tags: payload.taxonomy.tagIds.map((id) => tagsMap.get(id)).filter(Boolean) as TaxonomyItem[],
-    series: payload.taxonomy.seriesIds.map((id) => seriesMap.get(id)).filter(Boolean) as TaxonomyItem[],
-    topics: payload.taxonomy.topicClusterIds.map((id) => topicsMap.get(id)).filter(Boolean) as TaxonomyItem[],
-    labels: payload.taxonomy.labelIds.map((id) => labelsMap.get(id)).filter(Boolean) as TaxonomyItem[],
+    discoveryTerms: discoveryIds
+      .map((id) => discoveryTermsMap.get(id)?.name || '')
+      .filter(Boolean),
     episodes: payload.linkedEpisodes.map((item) => episodesMap.get(item.episodeId)).filter(Boolean) as PodcastEpisodeRecord[]
   });
 
@@ -968,6 +1098,7 @@ export async function saveBlogPost(postId: string | null, input: unknown, option
   const savedId = upsert.data.id as string;
 
   await syncTaxonomyLinks(supabase, savedId, payload.taxonomy);
+  await syncBlogPostDiscovery(supabase, savedId, payload.discovery);
   await syncEpisodeLinks(supabase, savedId, payload.linkedEpisodes);
   await syncRelatedOverrides(supabase, savedId, payload.relatedPostIds);
 
@@ -988,7 +1119,10 @@ export async function saveBlogPost(postId: string | null, input: unknown, option
       contentJson: document,
       contentMarkdown: markdown,
       seoSnapshot: payload.seo,
-      taxonomySnapshot: payload.taxonomy,
+      taxonomySnapshot: {
+        taxonomy: payload.taxonomy,
+        discovery: payload.discovery
+      },
       linkedEpisodesSnapshot: payload.linkedEpisodes
     });
   }
@@ -1023,9 +1157,18 @@ async function getBlogPostForMutation(id: string): Promise<BlogPostWriteInput> {
     taxonomy: {
       categoryIds: post.taxonomies.categories.map((item: TaxonomyItem) => item.id),
       tagIds: post.taxonomies.tags.map((item: TaxonomyItem) => item.id),
-      seriesIds: post.taxonomies.series.map((item: TaxonomyItem) => item.id),
-      topicClusterIds: post.taxonomies.topicClusters.map((item: TaxonomyItem) => item.id),
-      labelIds: post.taxonomies.labels.map((item: TaxonomyItem) => item.id)
+      seriesIds: [],
+      topicClusterIds: [],
+      labelIds: []
+    },
+    discovery: {
+      primaryTopicId: post.discovery.primaryTopicId,
+      themeIds: post.discovery.themeIds,
+      entityIds: post.discovery.entityIds,
+      caseIds: post.discovery.caseIds,
+      eventIds: post.discovery.eventIds,
+      collectionIds: post.discovery.collectionIds,
+      seriesIds: post.discovery.seriesIds
     },
     linkedEpisodes: post.linked_episodes.map((item: { episode: PodcastEpisodeRecord; sort_order: number; is_primary: boolean }) => ({
       episodeId: item.episode.id,
@@ -1094,17 +1237,37 @@ export async function restoreBlogRevision(postId: string, revisionId: string) {
   if (error) throw error;
   const current = await getBlogPostForMutation(postId);
   const normalizedSnapshot = normalizeBlogDocument(data.content_json_snapshot);
+  const legacySnapshot = (data.taxonomy_snapshot || {}) as Record<string, any>;
+  const taxonomySnapshot = legacySnapshot.taxonomy || legacySnapshot;
+  const discoverySnapshot = legacySnapshot.discovery || {
+    primaryTopicId: Array.isArray(legacySnapshot.topicClusterIds) ? legacySnapshot.topicClusterIds[0] || null : null,
+    themeIds: [],
+    entityIds: [],
+    caseIds: [],
+    eventIds: [],
+    collectionIds: [],
+    seriesIds: Array.isArray(legacySnapshot.seriesIds) ? legacySnapshot.seriesIds : []
+  };
   return saveBlogPost(postId, {
     ...current,
     title: data.title_snapshot,
     excerpt: data.excerpt_snapshot,
     contentJson: normalizedSnapshot,
     taxonomy: {
-      categoryIds: data.taxonomy_snapshot?.categoryIds || [],
-      tagIds: data.taxonomy_snapshot?.tagIds || [],
-      seriesIds: data.taxonomy_snapshot?.seriesIds || [],
-      topicClusterIds: data.taxonomy_snapshot?.topicClusterIds || [],
-      labelIds: data.taxonomy_snapshot?.labelIds || []
+      categoryIds: taxonomySnapshot?.categoryIds || [],
+      tagIds: taxonomySnapshot?.tagIds || [],
+      seriesIds: taxonomySnapshot?.seriesIds || [],
+      topicClusterIds: taxonomySnapshot?.topicClusterIds || [],
+      labelIds: taxonomySnapshot?.labelIds || []
+    },
+    discovery: {
+      primaryTopicId: discoverySnapshot?.primaryTopicId || null,
+      themeIds: discoverySnapshot?.themeIds || [],
+      entityIds: discoverySnapshot?.entityIds || [],
+      caseIds: discoverySnapshot?.caseIds || [],
+      eventIds: discoverySnapshot?.eventIds || [],
+      collectionIds: discoverySnapshot?.collectionIds || [],
+      seriesIds: discoverySnapshot?.seriesIds || []
     },
     linkedEpisodes: data.linked_episodes_snapshot || [],
     seo: {
@@ -1161,6 +1324,32 @@ export async function listPublishedBlogPosts(params?: { page?: number; limit?: n
     items,
     pagination
   };
+}
+
+export type BlogPostSitemapRecord = {
+  slug: string;
+  author_id: string;
+  canonical_url: string | null;
+  noindex: boolean;
+  published_at: string | null;
+  updated_at: string;
+};
+
+export async function listPublishedBlogPostsForSitemap() {
+  const supabase = getSupabase();
+  const nowIso = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from('blog_posts')
+    .select('slug, author_id, canonical_url, noindex, published_at, updated_at')
+    .is('deleted_at', null)
+    .eq('status', 'published')
+    .lte('published_at', nowIso)
+    .order('published_at', { ascending: false })
+    .order('updated_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as BlogPostSitemapRecord[];
 }
 
 export async function listFeaturedBlogPosts(params?: { limit?: number }) {
@@ -1362,7 +1551,7 @@ async function getRelatedPostsForPost(postId: string) {
   return hydratePosts((posts || []) as BlogPostRecord[]);
 }
 
-export async function listTaxonomyArchive(kind: Exclude<TaxonomyKind, 'blog_authors'>, slug: string, page = 1) {
+export async function listTaxonomyArchive(kind: TaxonomyKind, slug: string, page = 1) {
   const supabase = getSupabase();
   const normalizedPage = normalizePageNumber(page);
   const config = TAXONOMY_CONFIG[kind];
@@ -1423,6 +1612,23 @@ export async function listTaxonomyArchive(kind: Exclude<TaxonomyKind, 'blog_auth
     items: await hydratePosts((data || []) as BlogPostRecord[]),
     pagination
   };
+}
+
+export async function resolveLegacyBlogTaxonomyRedirect(kind: 'series' | 'topic', slug: string) {
+  const supabase = getSupabase();
+  const normalizedSlug = slugifyBlogText(slug);
+  if (!normalizedSlug) return null;
+
+  const { data, error } = await supabase
+    .from('discovery_terms')
+    .select('slug')
+    .eq('term_type', kind === 'series' ? 'series' : 'topic')
+    .eq('slug', normalizedSlug)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return kind === 'series' ? `/series/${data.slug}` : `/topics/${data.slug}`;
 }
 
 export async function listAuthorArchive(slug: string, page = 1) {

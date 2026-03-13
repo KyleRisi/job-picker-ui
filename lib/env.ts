@@ -14,6 +14,8 @@ export const env = {
   blogAnalyticsSecret: process.env.BLOG_ANALYTICS_SECRET || '',
   blogAiProvider: process.env.BLOG_AI_PROVIDER || '',
   blogAiApiKey: process.env.BLOG_AI_API_KEY || '',
+  mixpanelToken: process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || '',
+  mixpanelApiHost: process.env.NEXT_PUBLIC_MIXPANEL_API_HOST || '',
   reviewsSyncSecret: process.env.REVIEWS_SYNC_SECRET || '',
   redirectResolveSecret: process.env.REDIRECT_RESOLVE_SECRET || '',
   adminAuthDisabled: (process.env.ADMIN_AUTH_DISABLED || '').toLowerCase() === 'true',

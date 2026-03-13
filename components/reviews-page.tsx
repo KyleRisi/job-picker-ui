@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useState, useRef } from 'react';
 import type { PublicReview } from '@/lib/reviews';
 
@@ -78,9 +77,9 @@ const COUNTRIES = [
 /* ─── Sub-components ─── */
 function StarRating({ rating }: { rating: number }) {
   return (
-    <div className="flex gap-0.5 text-carnival-gold" role="img" aria-label={`${rating} out of 5 stars`}>
+    <div className="flex gap-0.5 text-carnival-gold" aria-label={`${rating} out of 5 stars`}>
       {Array.from({ length: 5 }).map((_, i) => (
-        <svg key={i} viewBox="0 0 24 24" className={`h-5 w-5 ${i < rating ? 'fill-current' : 'fill-current opacity-20'}`} aria-hidden="true">
+        <svg key={i} viewBox="0 0 24 24" className={`h-5 w-5 ${i < rating ? 'fill-current' : 'fill-current opacity-20'}`}>
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
         </svg>
       ))}
@@ -118,17 +117,8 @@ function StarRatingInput({ value, onChange }: { value: number; onChange: (v: num
 
 function CompendiumIcon() {
   return (
-    <Image src="/website.png" alt="The Compendium" width={20} height={20} className="h-5 w-5 rounded" />
+    <img src="/website.png" alt="The Compendium" className="h-5 w-5 rounded" />
   );
-}
-
-function formatReviewDate(value: string): string {
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC'
-  }).format(new Date(value));
 }
 
 function ReviewCard({ review }: { review: Review }) {
@@ -153,9 +143,9 @@ function ReviewCard({ review }: { review: Review }) {
           <span />
         )}
         <span className="inline-flex items-center gap-2">
-          <span>{formatReviewDate(review.date)}</span>
+          <span>{new Date(review.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
           {review.platform === 'apple' ? (
-            <Image src="/ApplePodcast.png" alt="Apple Podcasts" width={20} height={20} className="h-5 w-5" />
+            <img src="/ApplePodcast.png" alt="Apple Podcasts" className="h-5 w-5" />
           ) : (
             <CompendiumIcon />
           )}

@@ -220,6 +220,29 @@ function blockToPlainText(block: BlogContentBlock): string {
   }
 }
 
+export function flattenBlogDocumentToRichText(document: BlogContentDocument): RichTextInlineNode[] {
+  const blocks = normalizeBlogDocument(document);
+  const text = blocks
+    .map((block) => blockToPlainText(block))
+    .filter(Boolean)
+    .join('\n\n')
+    .trim();
+
+  if (!text) return createRichText('');
+
+  const lines = text.split('\n');
+  const nodes: RichTextInlineNode[] = [];
+  lines.forEach((line, index) => {
+    if (line) {
+      nodes.push({ type: 'text', text: line, marks: [] });
+    }
+    if (index < lines.length - 1) {
+      nodes.push({ type: 'hard_break' });
+    }
+  });
+  return nodes;
+}
+
 function blockToMarkdown(block: BlogContentBlock): string {
   switch (block.type) {
     case 'paragraph':

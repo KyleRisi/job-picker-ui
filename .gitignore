@@ -4,6 +4,8 @@ node_modules
 .netlify
 .env*
 !.env.example
+tools/google-search-console/.env.local
+tools/google-search-console/.env
 .DS_Store
 supabase/.temp/
 *.tsbuildinfo

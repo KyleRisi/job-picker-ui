@@ -19,17 +19,21 @@ import { getImageBlockLayout } from '@/lib/blog/image-layout';
 import { getStoragePublicUrl } from '@/lib/blog/media-url';
 import { isYouTubeUrl, toYouTubeEmbedUrl } from '@/lib/blog/youtube';
 import {
+  blogDocumentToMarkdown,
   blocksToTiptapJson,
   createPrimaryListenEpisodeBlock,
   createRichText,
+  flattenBlogDocumentToRichText,
   hasPrimaryListenEpisodeBlock,
+  markdownToBlogDocument,
   normalizeBlogDocument,
   normalizePrimaryListenEpisodeBlocksForSave,
   removePrimaryListenEpisodeBlocks,
+  richTextToPlainText,
   syncPrimaryListenEpisodeBlocksEpisode,
   tiptapJsonToBlocks
 } from '@/lib/blog/content';
-import type { BlogContentBlock, BlogPostWriteInput } from '@/lib/blog/schema';
+import type { BlogContentBlock, BlogPostWriteInput, RichTextInlineNode } from '@/lib/blog/schema';
 import type { PodcastEpisode } from '@/lib/podcast-shared';
 import { MediaLibraryPickerModal, type MediaPickerAsset } from './media-library-picker-modal';
 import { ImageAssetPicker } from './image-asset-picker';
@@ -53,6 +57,44 @@ type AdminEpisodeOption = {
 type StructuredBlockOption = {
   type: BlogContentBlock['type'];
   label: string;
+};
+type EpisodeRelationshipType = 'related' | 'same_case' | 'same_person' | 'same_theme' | 'part_of_series' | 'recommended_next';
+type DiscoveryTermOption = {
+  id: string;
+  term_type: 'topic' | 'theme' | 'entity' | 'case' | 'event' | 'collection' | 'series';
+  entity_subtype: string | null;
+  name: string;
+  slug: string;
+  is_active: boolean;
+};
+type EpisodeEditorPayload = {
+  episode: any;
+  source: any;
+  editorial: any | null;
+  revisions: Array<{ id: string; revision_number: number; change_summary: string | null; created_at: string }>;
+  assignments: {
+    discovery?: {
+      primaryTopicId: string | null;
+      themeIds: string[];
+      entityIds: string[];
+      caseIds: string[];
+      eventIds: string[];
+      collectionIds: string[];
+      seriesIds: string[];
+    };
+    taxonomy?: {
+      primaryTopicId: string | null;
+      themeIds: string[];
+      entityIds: string[];
+      caseIds: string[];
+      eventIds: string[];
+      collectionIds: string[];
+      seriesIds: string[];
+    };
+    relatedEpisodes: Array<{ episodeId: string; relationshipType: EpisodeRelationshipType; sortOrder: number }>;
+    relatedPosts: Array<{ postId: string; sortOrder: number }>;
+  };
+  discoveryTerms: DiscoveryTermOption[];
 };
 
 const FontSize = Extension.create({
@@ -107,6 +149,8 @@ function createBlock(type: BlogContentBlock['type']): BlogContentBlock {
       return { id, type, heading: 'Related posts', postIds: [] };
     case 'faq':
       return { id, type, heading: 'FAQ', items: [] };
+    case 'transcript':
+      return { id, type, heading: 'Episode transcript', content: createRichText('') };
     default:
       return { id, type: 'resources', heading: 'Further resources', items: [] };
   }
@@ -122,7 +166,16 @@ const STRUCTURED_BLOCK_OPTIONS: StructuredBlockOption[] = [
   { type: 'resources', label: 'Further resources' },
   { type: 'related_episodes', label: 'Related episodes' },
   { type: 'related_posts', label: 'Related posts' },
-  { type: 'faq', label: 'FAQ' }
+  { type: 'faq', label: 'FAQ' },
+  { type: 'transcript', label: 'Transcript' }
+];
+const EPISODE_RELATIONSHIP_OPTIONS: Array<{ value: EpisodeRelationshipType; label: string }> = [
+  { value: 'related', label: 'Related' },
+  { value: 'same_case', label: 'Same case' },
+  { value: 'same_person', label: 'Same person' },
+  { value: 'same_theme', label: 'Same theme' },
+  { value: 'part_of_series', label: 'Part of series' },
+  { value: 'recommended_next', label: 'Recommended next' }
 ];
 
 function parseCsv(value: string) {
@@ -278,6 +331,21 @@ function sanitizePastedHtml(html: string) {
   });
 
   return container.innerHTML.trim();
+}
+
+function createTranscriptEditorDocument(blockId: string, content: RichTextInlineNode[]) {
+  return blocksToTiptapJson([
+    {
+      id: `${blockId}-transcript-content`,
+      type: 'paragraph',
+      align: 'left',
+      content
+    }
+  ]);
+}
+
+function createTranscriptContentFromTiptap(doc: Record<string, unknown> | null | undefined) {
+  return flattenBlogDocumentToRichText(tiptapJsonToBlocks(doc as any));
 }
 
 function ToolbarButton({
@@ -572,13 +640,26 @@ function InlineToolbar({
       </ToolbarButton>
       <div className="mx-1 h-5 w-px bg-[#e1e5f2]" />
       <ToolbarButton label="Link" active={effectiveToolbarState.link} disabled={disabled} onClick={() => {
-        if (effectiveToolbarState.link) {
-          editor.chain().focus().unsetLink().run();
+        const currentHref = typeof editor.getAttributes('link')?.href === 'string' ? editor.getAttributes('link').href.trim() : '';
+        const href = window.prompt('Link URL', currentHref);
+        if (href === null) return;
+
+        const normalizedHref = href.trim();
+        if (!normalizedHref) {
+          editor.chain().focus().extendMarkRange('link').unsetLink().run();
           return;
         }
-        const href = window.prompt('Link URL');
-        if (!href) return;
-        editor.chain().focus().extendMarkRange('link').setLink({ href, target: href.startsWith('/') ? '_self' : '_blank', rel: 'noreferrer' }).run();
+
+        editor
+          .chain()
+          .focus()
+          .extendMarkRange('link')
+          .setLink({
+            href: normalizedHref,
+            target: normalizedHref.startsWith('/') || normalizedHref.startsWith('#') ? '_self' : '_blank',
+            rel: 'noreferrer'
+          })
+          .run();
       }}>
         <IconLink />
       </ToolbarButton>
@@ -790,10 +871,7 @@ function SearchableOrderedMultiSelect({
                     checked={selectedSet.has(option.id)}
                     onChange={() => onChange(toggleOrderedSelection(selectedIds, option.id))}
                   />
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium text-[#273058]">{option.label}</span>
-                    <span className="block truncate text-[11px] text-[#7b819f]">{option.id}</span>
-                  </span>
+                  <span className="min-w-0 truncate font-medium text-[#273058]">{option.label}</span>
                 </label>
               )) : (
                 <p className="px-2 py-1 text-xs text-[#7b819f]">{emptySearchLabel}</p>
@@ -810,10 +888,9 @@ function SearchableOrderedMultiSelect({
             <div key={`${id}-${index}`} className="flex items-start justify-between gap-2 rounded-xl border border-[#dfe3ef] bg-white px-2.5 py-2">
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-[#273058]">{index + 1}. {option?.label || 'Unavailable item'}</p>
-                <p className="truncate text-xs text-[#7b819f]">
-                  {id}
-                  {firstItemLabel && index === 0 ? `  |  ${firstItemLabel}` : ''}
-                </p>
+                {firstItemLabel && index === 0 ? (
+                  <p className="truncate text-xs text-[#7b819f]">{firstItemLabel}</p>
+                ) : null}
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <button
@@ -860,6 +937,107 @@ function toMediaPickerAsset(input: any): MediaPickerAsset | null {
     credit_source: input.credit_source || '',
     mime_type: input.mime_type || ''
   };
+}
+
+function createPseudoMediaAsset(storagePath: string): MediaPickerAsset {
+  return {
+    id: `episode-hero:${storagePath}`,
+    storage_path: storagePath,
+    alt_text_default: '',
+    caption_default: '',
+    credit_source: '',
+    mime_type: 'image/*'
+  };
+}
+
+function stripHtmlToPlainText(value: string) {
+  return value
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function decodeCommonHtmlEntities(value: string) {
+  return value
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>');
+}
+
+function pickPreferredEpisodeSourceHtml(source: Record<string, any> | null | undefined) {
+  const showNotes = `${source?.show_notes || source?.showNotes || ''}`.trim();
+  const descriptionHtml = `${source?.description_html || source?.descriptionHtml || ''}`.trim();
+
+  if (descriptionHtml && looksLikeHtml(descriptionHtml)) return descriptionHtml;
+  if (showNotes && looksLikeHtml(showNotes)) return showNotes;
+  return descriptionHtml || showNotes || '';
+}
+
+function htmlToEditorSeedMarkdown(value: string) {
+  const source = `${value || ''}`.trim();
+  if (!source) return '';
+
+  const normalized = decodeCommonHtmlEntities(
+    source
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(p|div|section|article|blockquote|h1|h2|h3|h4|h5|h6)>/gi, '\n\n')
+      .replace(/<li[^>]*>/gi, '- ')
+      .replace(/<\/li>/gi, '\n')
+      .replace(/<\/(ul|ol)>/gi, '\n\n')
+      .replace(/<[^>]+>/g, ' ')
+  )
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n[ \t]+/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+
+  return normalized;
+}
+
+function getEpisodeInitialDocument(payload: EpisodeEditorPayload): BlogContentBlock[] {
+  if (Array.isArray(payload.editorial?.body_json) && payload.editorial.body_json.length > 0) {
+    return normalizeBlogDocument(payload.editorial.body_json);
+  }
+
+  if (typeof payload.editorial?.body_markdown === 'string' && payload.editorial.body_markdown.trim()) {
+    return markdownToBlogDocument(payload.editorial.body_markdown);
+  }
+
+  if (typeof payload.episode?.bodyMarkdown === 'string' && payload.episode.bodyMarkdown.trim()) {
+    return markdownToBlogDocument(payload.episode.bodyMarkdown);
+  }
+
+  const sourceSeed = [
+    htmlToEditorSeedMarkdown(pickPreferredEpisodeSourceHtml(payload.source)),
+    payload.source?.description_plain || ''
+  ].find((value) => typeof value === 'string' && value.trim());
+
+  return sourceSeed ? markdownToBlogDocument(sourceSeed) : normalizeBlogDocument([]);
+}
+
+function getEpisodeInitialEditorContent(payload: EpisodeEditorPayload): BlogContentBlock[] | string {
+  if (Array.isArray(payload.editorial?.body_json) && payload.editorial.body_json.length > 0) {
+    return normalizeBlogDocument(payload.editorial.body_json);
+  }
+
+  if (typeof payload.editorial?.body_markdown === 'string' && payload.editorial.body_markdown.trim()) {
+    return markdownToBlogDocument(payload.editorial.body_markdown);
+  }
+
+  const sourceHtml = pickPreferredEpisodeSourceHtml(payload.source);
+  if (sourceHtml && looksLikeHtml(sourceHtml)) {
+    const sanitized = sanitizePastedHtml(sourceHtml);
+    if (sanitized) return sanitized;
+  }
+
+  return getEpisodeInitialDocument(payload);
 }
 
 function prefillImageBlockFromAsset(
@@ -935,9 +1113,15 @@ function ImageBlockFields({
         method: 'POST',
         body: formData
       });
-      const data = await response.json().catch(() => ({}));
+      const raw = await response.text();
+      let data: any = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = {};
+      }
       if (!response.ok) {
-        setUploadMessage(data?.error || 'Failed to upload image.');
+        setUploadMessage(data?.error || raw || 'Failed to upload image.');
         return;
       }
       const uploaded = toMediaPickerAsset(data);
@@ -1106,6 +1290,121 @@ function YouTubeBlockFields({
       {status ? (
         <p className={`text-xs ${status.tone === 'success' ? 'text-[#3e7a50]' : 'text-[#9a2b2b]'}`}>{status.text}</p>
       ) : null}
+    </div>
+  );
+}
+
+function TranscriptBlockFields({
+  block,
+  onChange
+}: {
+  block: Extract<BlogContentBlock, { type: 'transcript' }>;
+  onChange: (block: BlogContentBlock) => void;
+}) {
+  const latestBlockRef = useRef(block);
+
+  useEffect(() => {
+    latestBlockRef.current = block;
+  }, [block]);
+
+  const transcriptEditor = useEditor({
+    immediatelyRender: false,
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [2, 3, 4, 5, 6] }
+      }),
+      TextStyle,
+      Color,
+      FontSize,
+      TextAlign.configure({
+        types: ['heading', 'paragraph']
+      }),
+      Link.configure({ openOnClick: false }),
+      Underline,
+      Placeholder.configure({
+        placeholder: 'Paste transcript content here'
+      })
+    ],
+    editorProps: {
+      attributes: {
+        class: 'min-h-[240px] w-full bg-transparent px-0 py-0 text-[14px] leading-6 outline-none'
+      },
+      handlePaste: (_view, event) => {
+        const html = event.clipboardData?.getData('text/html')?.trim() ?? '';
+        const text = event.clipboardData?.getData('text/plain')?.replace(/\r\n/g, '\n') ?? '';
+
+        if (text && looksLikeMarkdown(text)) {
+          const markdownHtml = marked.parse(text, {
+            async: false,
+            breaks: true,
+            gfm: true
+          });
+          const sanitizedMarkdownHtml = sanitizePastedHtml(typeof markdownHtml === 'string' ? markdownHtml : '');
+          if (sanitizedMarkdownHtml) {
+            transcriptEditor?.chain().focus().insertContent(sanitizedMarkdownHtml).run();
+            return true;
+          }
+        }
+
+        if (html && looksLikeHtml(html)) {
+          const sanitizedHtml = sanitizePastedHtml(html);
+          if (sanitizedHtml) {
+            transcriptEditor?.chain().focus().insertContent(sanitizedHtml).run();
+            return true;
+          }
+        }
+
+        if (text) {
+          transcriptEditor?.chain().focus().insertContent(plainTextToTiptapContent(text) as any).run();
+          return true;
+        }
+
+        return false;
+      }
+    },
+    content: createTranscriptEditorDocument(block.id, block.content) as any,
+    onUpdate({ editor }) {
+      const currentBlock = latestBlockRef.current;
+      onChange({
+        ...currentBlock,
+        content: createTranscriptContentFromTiptap(editor.getJSON() as any)
+      });
+    }
+  });
+
+  useEffect(() => {
+    if (!transcriptEditor) return;
+    const nextContent = createTranscriptEditorDocument(block.id, block.content);
+    if (JSON.stringify(transcriptEditor.getJSON()) === JSON.stringify(nextContent)) return;
+    transcriptEditor.commands.setContent(nextContent as any, false);
+  }, [block.content, block.id, transcriptEditor]);
+
+  const transcriptWordCount = useMemo(() => {
+    const plain = richTextToPlainText(block.content);
+    return plain ? plain.split(/\s+/).filter(Boolean).length : 0;
+  }, [block.content]);
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="label">Heading</label>
+        <input className="input" value={block.heading} onChange={(event) => onChange({ ...block, heading: event.currentTarget.value })} />
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <label className="label !mb-0">Transcript content</label>
+          <p className="text-xs text-[#7b819f]">{transcriptWordCount} word{transcriptWordCount === 1 ? '' : 's'}</p>
+        </div>
+        <div className="rounded-xl border border-[#dfe3ef] bg-white p-2">
+          <div className="mb-2 flex flex-wrap items-center gap-1 border-b border-[#e8ebf5] pb-2">
+            <InlineToolbar editor={transcriptEditor} />
+          </div>
+          <EditorContent editor={transcriptEditor} />
+        </div>
+        <p className="text-xs text-[#7b819f]">
+          Paste transcript text here. Supported inline formatting and links will be preserved inside this block.
+        </p>
+      </div>
     </div>
   );
 }
@@ -1455,6 +1754,9 @@ function BlockFields({
       </div>
     );
   }
+  if (block.type === 'transcript') {
+    return <TranscriptBlockFields block={block} onChange={onChange} />;
+  }
   return <p className="text-sm text-carnival-ink/60">No extra fields for this block type.</p>;
 }
 
@@ -1508,6 +1810,11 @@ function structuredBlockPreviewLines(
   }
   if (block.type === 'faq') {
     return [block.heading || 'FAQ', `${block.items.length} FAQ item${block.items.length === 1 ? '' : 's'}.`];
+  }
+  if (block.type === 'transcript') {
+    const plain = richTextToPlainText(block.content);
+    const wordCount = plain ? plain.split(/\s+/).filter(Boolean).length : 0;
+    return [block.heading || 'Episode transcript', wordCount ? `${wordCount} words` : 'No transcript content yet.'];
   }
   return ['Structured block'];
 }
@@ -1984,86 +2291,145 @@ export function AdminPostEditor({
   authors,
   categories,
   tags,
-  series,
-  topicClusters,
-  labels,
   episodes,
-  relatedPostOptions
+  relatedPostOptions,
+  mode = 'blog',
+  discoveryTerms = []
 }: {
   initialPost: any;
   authors: Array<{ id: string; name: string }>;
   categories: Array<{ id: string; name: string }>;
   tags: Array<{ id: string; name: string }>;
-  series: Array<{ id: string; name: string }>;
-  topicClusters: Array<{ id: string; name: string }>;
-  labels: Array<{ id: string; name: string }>;
   episodes: AdminEpisodeOption[];
   relatedPostOptions: Array<{ id: string; title: string }>;
+  mode?: 'blog' | 'episode';
+  discoveryTerms?: DiscoveryTermOption[];
 }) {
   const router = useRouter();
-  const [title, setTitle] = useState(initialPost.title);
-  const [slug, setSlug] = useState(initialPost.slug);
+  const isEpisodeMode = mode === 'episode';
+  const episodeInitial = (isEpisodeMode ? initialPost : null) as EpisodeEditorPayload | null;
+  const initialDocument = isEpisodeMode && episodeInitial ? getEpisodeInitialDocument(episodeInitial) : normalizeBlogDocument(initialPost.content_json || []);
+  const initialEditorContent = isEpisodeMode && episodeInitial
+    ? getEpisodeInitialEditorContent(episodeInitial)
+    : initialDocument;
+  const initialTaxonomies = isEpisodeMode
+    ? {
+        categories: [],
+        tags: []
+      }
+    : initialPost.taxonomies;
+  const initialDiscoveryAssignments = isEpisodeMode
+    ? (episodeInitial?.assignments?.discovery || episodeInitial?.assignments?.taxonomy || {
+        primaryTopicId: null,
+        themeIds: [],
+        entityIds: [],
+        caseIds: [],
+        eventIds: [],
+        collectionIds: [],
+        seriesIds: []
+      })
+    : (initialPost.discovery || {
+        primaryTopicId: null,
+        themeIds: [],
+        entityIds: [],
+        caseIds: [],
+        eventIds: [],
+        collectionIds: [],
+        seriesIds: []
+      });
+  const initialFeaturedMedia = isEpisodeMode
+    ? (
+        episodeInitial?.editorial?.hero_image_storage_path
+          ? [createPseudoMediaAsset(episodeInitial.editorial.hero_image_storage_path)]
+          : []
+      )
+    : (
+        initialPost.featured_image?.id
+          ? [{
+              id: initialPost.featured_image.id,
+              storage_path: initialPost.featured_image.storage_path,
+              alt_text_default: initialPost.featured_image.alt_text_default,
+              caption_default: initialPost.featured_image.caption_default,
+              credit_source: initialPost.featured_image.credit_source,
+              mime_type: initialPost.featured_image.mime_type
+            }]
+          : []
+      );
+  const [title, setTitle] = useState(isEpisodeMode ? (episodeInitial?.editorial?.web_title || episodeInitial?.episode?.title || '') : initialPost.title);
+  const [slug, setSlug] = useState(isEpisodeMode ? (episodeInitial?.editorial?.web_slug || episodeInitial?.episode?.slug || '') : initialPost.slug);
   const [slugEditorOpen, setSlugEditorOpen] = useState(false);
-  const [slugDraft, setSlugDraft] = useState(normalizeSlugInput(initialPost.slug || ''));
+  const [slugDraft, setSlugDraft] = useState(normalizeSlugInput(isEpisodeMode ? (episodeInitial?.editorial?.web_slug || episodeInitial?.episode?.slug || '') : initialPost.slug || ''));
   const [slugCopyMessage, setSlugCopyMessage] = useState('');
-  const [excerpt, setExcerpt] = useState(initialPost.excerpt || '');
+  const [slugValidationMessage, setSlugValidationMessage] = useState('');
+  const [excerpt, setExcerpt] = useState(isEpisodeMode ? (episodeInitial?.editorial?.excerpt || episodeInitial?.episode?.excerpt || '') : initialPost.excerpt || '');
   const [status, setStatus] = useState<BlogPostWriteInput['status']>(() => deriveInitialPostStatus(initialPost));
-  const [featuredImageId, setFeaturedImageId] = useState(initialPost.featured_image_id || '');
-  const [featuredMediaOptions, setFeaturedMediaOptions] = useState<MediaOption[]>(
-    initialPost.featured_image?.id
-      ? [{
-          id: initialPost.featured_image.id,
-          storage_path: initialPost.featured_image.storage_path,
-          alt_text_default: initialPost.featured_image.alt_text_default,
-          caption_default: initialPost.featured_image.caption_default,
-          credit_source: initialPost.featured_image.credit_source,
-          mime_type: initialPost.featured_image.mime_type
-        }]
-      : []
-  );
+  const [featuredImageId, setFeaturedImageId] = useState(isEpisodeMode ? (episodeInitial?.editorial?.hero_image_storage_path || '') : initialPost.featured_image_id || '');
+  const [featuredMediaOptions, setFeaturedMediaOptions] = useState<MediaOption[]>(initialFeaturedMedia);
   const [featuredUploadMessage, setFeaturedUploadMessage] = useState('');
-  const [featuredAssetAlt, setFeaturedAssetAlt] = useState(initialPost.featured_image?.alt_text_default || '');
-  const [featuredAssetCaption, setFeaturedAssetCaption] = useState(initialPost.featured_image?.caption_default || '');
-  const [featuredAssetCredit, setFeaturedAssetCredit] = useState(initialPost.featured_image?.credit_source || '');
+  const [featuredAssetAlt, setFeaturedAssetAlt] = useState(isEpisodeMode ? '' : initialPost.featured_image?.alt_text_default || '');
+  const [featuredAssetCaption, setFeaturedAssetCaption] = useState(isEpisodeMode ? '' : initialPost.featured_image?.caption_default || '');
+  const [featuredAssetCredit, setFeaturedAssetCredit] = useState(isEpisodeMode ? '' : initialPost.featured_image?.credit_source || '');
   const [featuredAssetMetaMessage, setFeaturedAssetMetaMessage] = useState('');
   const [featuredAssetMetaSaving, setFeaturedAssetMetaSaving] = useState(false);
-  const [authorId, setAuthorId] = useState(initialPost.author_id);
-  const [publishAt, setPublishAt] = useState(toLocalDateTimeInput(initialPost.scheduled_at || initialPost.published_at || null));
-  const [primaryCategoryId, setPrimaryCategoryId] = useState(initialPost.primary_category_id || '');
-  const [isFeatured, setIsFeatured] = useState(Boolean(initialPost.is_featured));
-  const [seoTitle, setSeoTitle] = useState(initialPost.seo_title || '');
-  const [seoDescription, setSeoDescription] = useState(initialPost.seo_description || '');
-  const [socialTitle, setSocialTitle] = useState(initialPost.social_title || '');
-  const [socialDescription, setSocialDescription] = useState(initialPost.social_description || '');
-  const [canonicalUrl, setCanonicalUrl] = useState(initialPost.canonical_url || '');
-  const [focusKeyword, setFocusKeyword] = useState(initialPost.focus_keyword || '');
-  const [ogImageId, setOgImageId] = useState(initialPost.og_image_id || '');
-  const [schemaType, setSchemaType] = useState(initialPost.schema_type || 'BlogPosting');
-  const [noindex, setNoindex] = useState(Boolean(initialPost.noindex));
-  const [nofollow, setNofollow] = useState(Boolean(initialPost.nofollow));
-  const [categoryIds, setCategoryIds] = useState<string[]>(initialPost.taxonomies.categories.map((item: { id: string }) => item.id));
-  const [tagIds, setTagIds] = useState<string[]>(initialPost.taxonomies.tags.map((item: { id: string }) => item.id));
-  const [seriesIds, setSeriesIds] = useState<string[]>(initialPost.taxonomies.series.map((item: { id: string }) => item.id));
-  const [topicClusterIds, setTopicClusterIds] = useState<string[]>(initialPost.taxonomies.topicClusters.map((item: { id: string }) => item.id));
-  const [labelIds, setLabelIds] = useState<string[]>(initialPost.taxonomies.labels.map((item: { id: string }) => item.id));
+  const [authorId, setAuthorId] = useState(isEpisodeMode ? '' : initialPost.author_id);
+  const [publishAt, setPublishAt] = useState(toLocalDateTimeInput(isEpisodeMode ? episodeInitial?.source?.published_at || episodeInitial?.source?.publishedAt || null : initialPost.scheduled_at || initialPost.published_at || null));
+  const [primaryCategoryId, setPrimaryCategoryId] = useState(isEpisodeMode ? '' : initialPost.primary_category_id || '');
+  const [isFeatured, setIsFeatured] = useState(Boolean(isEpisodeMode ? (episodeInitial?.editorial?.is_featured ?? episodeInitial?.episode?.isFeatured) : initialPost.is_featured));
+  const [seoTitle, setSeoTitle] = useState(isEpisodeMode ? (episodeInitial?.editorial?.seo_title || episodeInitial?.episode?.seoTitle || '') : initialPost.seo_title || '');
+  const [seoDescription, setSeoDescription] = useState(isEpisodeMode ? (episodeInitial?.editorial?.meta_description || episodeInitial?.episode?.metaDescription || '') : initialPost.seo_description || '');
+  const [socialTitle, setSocialTitle] = useState(isEpisodeMode ? (episodeInitial?.editorial?.social_title || '') : initialPost.social_title || '');
+  const [socialDescription, setSocialDescription] = useState(isEpisodeMode ? (episodeInitial?.editorial?.social_description || '') : initialPost.social_description || '');
+  const [canonicalUrl, setCanonicalUrl] = useState(isEpisodeMode ? (episodeInitial?.editorial?.canonical_url_override || '') : initialPost.canonical_url || '');
+  const [focusKeyword, setFocusKeyword] = useState(isEpisodeMode ? '' : initialPost.focus_keyword || '');
+  const [ogImageId, setOgImageId] = useState(isEpisodeMode ? (episodeInitial?.editorial?.social_image_url || '') : initialPost.og_image_id || '');
+  const [schemaType, setSchemaType] = useState(isEpisodeMode ? 'PodcastEpisode' : initialPost.schema_type || 'BlogPosting');
+  const [noindex, setNoindex] = useState(Boolean(isEpisodeMode ? episodeInitial?.editorial?.noindex : initialPost.noindex));
+  const [nofollow, setNofollow] = useState(Boolean(isEpisodeMode ? episodeInitial?.editorial?.nofollow : initialPost.nofollow));
+  const [categoryIds, setCategoryIds] = useState<string[]>(initialTaxonomies.categories.map((item: { id: string }) => item.id));
+  const [tagIds, setTagIds] = useState<string[]>(initialTaxonomies.tags.map((item: { id: string }) => item.id));
+  const [primaryTopicId, setPrimaryTopicId] = useState<string | null>(initialDiscoveryAssignments.primaryTopicId || null);
+  const [themeIds, setThemeIds] = useState<string[]>(initialDiscoveryAssignments.themeIds || []);
+  const [entityIds, setEntityIds] = useState<string[]>(initialDiscoveryAssignments.entityIds || []);
+  const [caseIds, setCaseIds] = useState<string[]>(initialDiscoveryAssignments.caseIds || []);
+  const [eventIds, setEventIds] = useState<string[]>(initialDiscoveryAssignments.eventIds || []);
+  const [collectionIds, setCollectionIds] = useState<string[]>(initialDiscoveryAssignments.collectionIds || []);
+  const [seriesIds, setSeriesIds] = useState<string[]>(initialDiscoveryAssignments.seriesIds || []);
   const [linkedEpisodes, setLinkedEpisodes] = useState<Array<{ episodeId: string; isPrimary: boolean }>>(
-    initialPost.linked_episodes.map((item: { episode: { id: string }; is_primary: boolean }) => ({
+    (isEpisodeMode ? [] : initialPost.linked_episodes).map((item: { episode: { id: string }; is_primary: boolean }) => ({
       episodeId: item.episode.id,
       isPrimary: item.is_primary
     }))
   );
-  const [relatedPostIds, setRelatedPostIds] = useState<string[]>(initialPost.related_override_ids || []);
+  const [relatedPostIds, setRelatedPostIds] = useState<string[]>(isEpisodeMode ? [] : initialPost.related_override_ids || []);
+  const [episodeHeroImageUrl, setEpisodeHeroImageUrl] = useState(isEpisodeMode ? (episodeInitial?.editorial?.hero_image_url || '') : '');
+  const [episodeHeroImageStoragePath, setEpisodeHeroImageStoragePath] = useState(isEpisodeMode ? (episodeInitial?.editorial?.hero_image_storage_path || '') : '');
+  const [episodeVisibility, setEpisodeVisibility] = useState(isEpisodeMode ? Boolean(episodeInitial?.editorial ? episodeInitial.editorial.is_visible : episodeInitial?.source?.is_visible) : true);
+  const [episodeArchived, setEpisodeArchived] = useState(isEpisodeMode ? Boolean(episodeInitial?.editorial ? episodeInitial.editorial.is_archived : episodeInitial?.source?.is_archived) : false);
+  const [editorialNotes, setEditorialNotes] = useState(isEpisodeMode ? (episodeInitial?.editorial?.editorial_notes || '') : '');
+  const [episodeRelationshipRows, setEpisodeRelationshipRows] = useState<Array<{ episodeId: string; relationshipType: EpisodeRelationshipType }>>(
+    isEpisodeMode
+      ? (episodeInitial?.assignments?.relatedEpisodes || []).map((item) => ({
+          episodeId: item.episodeId,
+          relationshipType: item.relationshipType
+        }))
+      : []
+  );
+  const [episodeRelatedPostIds, setEpisodeRelatedPostIds] = useState<string[]>(
+    isEpisodeMode ? (episodeInitial?.assignments?.relatedPosts || []).map((item) => item.postId) : []
+  );
+  const [revisionItems, setRevisionItems] = useState<any[]>(initialPost.revisions || []);
   const [saveMessage, setSaveMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const [autosaveEnabled, setAutosaveEnabled] = useState(false);
+  const [episodeRssAction, setEpisodeRssAction] = useState<'source' | 'full' | null>(null);
+  const [episodeResetConfirmOpen, setEpisodeResetConfirmOpen] = useState(false);
+  const [episodeResetError, setEpisodeResetError] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [editorBaseOrigin, setEditorBaseOrigin] = useState('');
   const [authorOptions, setAuthorOptions] = useState(authors);
   const [categoryOptions, setCategoryOptions] = useState(categories);
   const [tagOptions, setTagOptions] = useState(tags);
-  const [seriesOptions, setSeriesOptions] = useState(series);
-  const [topicClusterOptions, setTopicClusterOptions] = useState(topicClusters);
-  const [labelOptions, setLabelOptions] = useState(labels);
+  const [discoveryOptions, setDiscoveryOptions] = useState(discoveryTerms);
   const episodeSelectOptions = useMemo<SelectOption[]>(
     () => episodes.map((episode) => ({ id: episode.id, label: episode.title })),
     [episodes]
@@ -2072,13 +2438,25 @@ export function AdminPostEditor({
     () => relatedPostOptions.map((post) => ({ id: post.id, label: post.title })),
     [relatedPostOptions]
   );
+  const discoveryOptionsByType = useMemo(() => ({
+    topic: discoveryOptions.filter((term) => term.term_type === 'topic' && term.is_active).map((term) => ({ id: term.id, label: term.name })),
+    theme: discoveryOptions.filter((term) => term.term_type === 'theme' && term.is_active).map((term) => ({ id: term.id, label: term.name })),
+    entity: discoveryOptions.filter((term) => term.term_type === 'entity' && term.is_active).map((term) => ({ id: term.id, label: term.name })),
+    case: discoveryOptions.filter((term) => term.term_type === 'case' && term.is_active).map((term) => ({ id: term.id, label: term.name })),
+    event: discoveryOptions.filter((term) => term.term_type === 'event' && term.is_active).map((term) => ({ id: term.id, label: term.name })),
+    collection: discoveryOptions.filter((term) => term.term_type === 'collection' && term.is_active).map((term) => ({ id: term.id, label: term.name })),
+    series: discoveryOptions.filter((term) => term.term_type === 'series' && term.is_active).map((term) => ({ id: term.id, label: term.name }))
+  }), [discoveryOptions]);
   const structuredBlockExtension = useMemo(
     () => StructuredBlockNode.configure({ episodes, posts: relatedPostOptions }),
     [episodes, relatedPostOptions]
   );
-  const linkedEpisodeIds = useMemo(() => linkedEpisodes.map((item) => item.episodeId), [linkedEpisodes]);
+  const linkedEpisodeIds = useMemo(
+    () => (isEpisodeMode ? episodeRelationshipRows.map((item) => item.episodeId) : linkedEpisodes.map((item) => item.episodeId)),
+    [episodeRelationshipRows, isEpisodeMode, linkedEpisodes]
+  );
   const [hasPrimaryListenBlockInEditor, setHasPrimaryListenBlockInEditor] = useState<boolean>(
-    () => hasPrimaryListenEpisodeBlock(normalizeBlogDocument(initialPost.content_json || []))
+    () => hasPrimaryListenEpisodeBlock(initialDocument)
   );
   const [openPanels, setOpenPanels] = useState({
     url: true,
@@ -2086,6 +2464,7 @@ export function AdminPostEditor({
     taxonomy: false,
     episodes: false,
     seo: false,
+    sourceFeed: false,
     revisions: false
   });
   const autosaveTimer = useRef<number | null>(null);
@@ -2105,7 +2484,11 @@ export function AdminPostEditor({
       mime_type: asset.mime_type || ''
     };
     upsertFeaturedMediaOption(option);
-    setFeaturedImageId(option.id);
+    setFeaturedImageId(isEpisodeMode ? option.storage_path : option.id);
+    if (isEpisodeMode) {
+      setEpisodeHeroImageStoragePath(option.storage_path);
+      setEpisodeHeroImageUrl(getStoragePublicUrl(option.storage_path));
+    }
     setFeaturedUploadMessage('');
   }
   const taxonomyGroups: Array<{
@@ -2115,15 +2498,13 @@ export function AdminPostEditor({
     setter: (next: string[]) => void;
   }> = [
     { label: 'Categories', items: categoryOptions, values: categoryIds, setter: setCategoryIds },
-    { label: 'Tags', items: tagOptions, values: tagIds, setter: setTagIds },
-    { label: 'Series', items: seriesOptions, values: seriesIds, setter: setSeriesIds },
-    { label: 'Topics', items: topicClusterOptions, values: topicClusterIds, setter: setTopicClusterIds },
-    { label: 'Labels', items: labelOptions, values: labelIds, setter: setLabelIds }
+    { label: 'Tags', items: tagOptions, values: tagIds, setter: setTagIds }
   ];
 
   useEffect(() => {
+    if (isEpisodeMode) return;
     let active = true;
-    type TaxonomyKind = 'blog_authors' | 'categories' | 'tags' | 'series' | 'topic_clusters' | 'post_labels';
+    type TaxonomyKind = 'categories' | 'tags';
 
     async function loadTaxonomyOptions(kind: TaxonomyKind) {
       try {
@@ -2133,39 +2514,52 @@ export function AdminPostEditor({
         const mapped = data.items
           .filter((item: any) => item?.id && item?.name)
           .map((item: any) => ({ id: item.id as string, name: item.name as string }));
-        if (kind === 'blog_authors') setAuthorOptions(mapped);
         if (kind === 'categories') setCategoryOptions(mapped);
         if (kind === 'tags') setTagOptions(mapped);
-        if (kind === 'series') setSeriesOptions(mapped);
-        if (kind === 'topic_clusters') setTopicClusterOptions(mapped);
-        if (kind === 'post_labels') setLabelOptions(mapped);
       } catch {
         // Keep server-provided props as fallback when the client refresh call fails.
       }
     }
 
-    void Promise.all([
-      loadTaxonomyOptions('blog_authors'),
-      loadTaxonomyOptions('categories'),
-      loadTaxonomyOptions('tags'),
-      loadTaxonomyOptions('series'),
-      loadTaxonomyOptions('topic_clusters'),
-      loadTaxonomyOptions('post_labels')
-    ]);
+    async function loadAuthors() {
+      try {
+        const response = await fetch('/api/admin/blog/authors', { cache: 'no-store' });
+        const data = await response.json().catch(() => ({}));
+        if (!active || !response.ok || !Array.isArray(data?.items)) return;
+        setAuthorOptions(data.items.filter((item: any) => item?.id && item?.name).map((item: any) => ({ id: item.id as string, name: item.name as string })));
+      } catch {
+        // Keep server-provided props as fallback when the client refresh call fails.
+      }
+    }
+
+    async function loadDiscoveryOptions() {
+      try {
+        const response = await fetch('/api/admin/blog/discovery-terms', { cache: 'no-store' });
+        const data = await response.json().catch(() => ({}));
+        if (!active || !response.ok || !Array.isArray(data?.items)) return;
+        setDiscoveryOptions(data.items as DiscoveryTermOption[]);
+      } catch {
+        // Keep server-provided props as fallback when the client refresh call fails.
+      }
+    }
+
+    void Promise.all([loadAuthors(), loadTaxonomyOptions('categories'), loadTaxonomyOptions('tags'), loadDiscoveryOptions()]);
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [isEpisodeMode]);
 
   const selectedFeaturedAsset = useMemo(() => {
     if (!featuredImageId) return null;
-    return featuredMediaOptions.find((asset) => asset.id === featuredImageId) || null;
+    return featuredMediaOptions.find((asset) => asset.id === featuredImageId || asset.storage_path === featuredImageId) || null;
   }, [featuredImageId, featuredMediaOptions]);
 
   const selectedFeaturedAssetUrl = selectedFeaturedAsset?.storage_path
     ? getStoragePublicUrl(selectedFeaturedAsset.storage_path)
-    : null;
+    : isEpisodeMode
+      ? (episodeHeroImageUrl || episodeInitial?.episode?.heroImageUrl || episodeInitial?.episode?.artworkUrl || null)
+      : null;
 
   useEffect(() => {
     if (!selectedFeaturedAsset) {
@@ -2203,6 +2597,7 @@ export function AdminPostEditor({
   }
 
   async function persistFeaturedImageMeta() {
+    if (isEpisodeMode) return;
     if (!selectedFeaturedAsset) return;
     const nextAlt = featuredAssetAlt.trim();
     const nextCaption = featuredAssetCaption.trim();
@@ -2253,16 +2648,26 @@ export function AdminPostEditor({
         method: 'POST',
         body: formData
       });
-      const data = await response.json().catch(() => ({}));
+      const raw = await response.text();
+      let data: any = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = {};
+      }
       if (!response.ok) {
-        setFeaturedUploadMessage(data?.error || 'Failed to upload featured image.');
+        setFeaturedUploadMessage(data?.error || raw || 'Failed to upload featured image.');
         return;
       }
 
       const uploaded = toMediaOption(data);
       if (uploaded) {
         upsertFeaturedMediaOption(uploaded);
-        setFeaturedImageId(uploaded.id);
+        setFeaturedImageId(isEpisodeMode ? uploaded.storage_path : uploaded.id);
+        if (isEpisodeMode) {
+          setEpisodeHeroImageStoragePath(uploaded.storage_path);
+          setEpisodeHeroImageUrl(getStoragePublicUrl(uploaded.storage_path));
+        }
         setFeaturedUploadMessage('Image uploaded and selected.');
       } else {
         setFeaturedUploadMessage('Image uploaded.');
@@ -2282,6 +2687,10 @@ export function AdminPostEditor({
 
   function handleRemoveFeaturedImage() {
     setFeaturedImageId('');
+    if (isEpisodeMode) {
+      setEpisodeHeroImageStoragePath('');
+      setEpisodeHeroImageUrl('');
+    }
     setFeaturedUploadMessage('');
     setFeaturedAssetMetaMessage('');
   }
@@ -2342,7 +2751,9 @@ export function AdminPostEditor({
         return false;
       }
     },
-    content: blocksToTiptapJson(initialPost.content_json || []) as any
+    content: typeof initialEditorContent === 'string'
+      ? initialEditorContent
+      : (blocksToTiptapJson(initialEditorContent) as any)
   });
 
   function getEditorBlocks() {
@@ -2405,10 +2816,54 @@ export function AdminPostEditor({
   );
   const postSlug = useMemo(() => normalizeSlugInput(slug), [slug]);
   const postUrlBase = canonicalOrigin || editorBaseOrigin || defaultPublicOrigin;
-  const postUrlPrefix = `${postUrlBase}/blog/`;
+  const postUrlPrefix = `${postUrlBase}/${isEpisodeMode ? 'episodes' : 'blog'}/`;
   const statusControlValue = status === 'scheduled' ? 'published' : status;
 
-  function getPayload(): BlogPostWriteInput {
+  function getPayload(): BlogPostWriteInput | Record<string, unknown> {
+    if (isEpisodeMode) {
+      const documentBlocks = normalizeBlogDocument(getEditorBlocks());
+      return {
+        webTitle: title.trim() || null,
+        webSlug: postSlug || null,
+        excerpt: excerpt.trim() || null,
+        bodyJson: documentBlocks,
+        bodyMarkdown: blogDocumentToMarkdown(documentBlocks) || null,
+        heroImageUrl: episodeHeroImageUrl || null,
+        heroImageStoragePath: episodeHeroImageStoragePath || null,
+        seoTitle: seoTitle.trim() || null,
+        metaDescription: seoDescription.trim() || null,
+        canonicalUrlOverride: canonicalUrl.trim() || null,
+        socialTitle: socialTitle.trim() || null,
+        socialDescription: socialDescription.trim() || null,
+        socialImageUrl: ogImageId.trim() || null,
+        noindex,
+        nofollow,
+        isFeatured,
+        isVisible: episodeVisibility,
+        isArchived: episodeArchived,
+        editorialNotes: editorialNotes.trim() || null,
+        discovery: {
+          primaryTopicId,
+          themeIds,
+          entityIds,
+          caseIds,
+          eventIds,
+          collectionIds,
+          seriesIds
+        },
+        relatedEpisodes: episodeRelationshipRows.map((item, index) => ({
+          episodeId: item.episodeId,
+          relationshipType: item.relationshipType,
+          sortOrder: index
+        })),
+        relatedPosts: episodeRelatedPostIds.map((postId, index) => ({
+          postId,
+          sortOrder: index
+        })),
+        changeSummary: null
+      };
+    }
+
     const normalizedLinkedEpisodeIds = linkedEpisodes.map((item) => item.episodeId);
     const documentBlocks = normalizePrimaryListenEpisodeBlocksForSave(
       syncPrimaryListenEpisodeBlocksEpisode(getEditorBlocks(), normalizedLinkedEpisodeIds[0]),
@@ -2429,10 +2884,16 @@ export function AdminPostEditor({
       primaryCategoryId: primaryCategoryId || null,
       taxonomy: {
         categoryIds,
-        tagIds,
-        seriesIds,
-        topicClusterIds,
-        labelIds
+        tagIds
+      },
+      discovery: {
+        primaryTopicId,
+        themeIds,
+        entityIds,
+        caseIds,
+        eventIds,
+        collectionIds,
+        seriesIds
       },
       linkedEpisodes: normalizedLinkedEpisodeIds.map((episodeId, index) => ({
         episodeId,
@@ -2459,7 +2920,7 @@ export function AdminPostEditor({
   async function persist(autosave = false) {
     setSaving(true);
 
-    if (!autosave && (effectiveStatus === 'published' || effectiveStatus === 'scheduled')) {
+    if (!isEpisodeMode && !autosave && (effectiveStatus === 'published' || effectiveStatus === 'scheduled')) {
       const publishErrors: string[] = [];
       if (!seoTitle?.trim()) publishErrors.push('SEO title is required');
       if (!seoDescription?.trim()) publishErrors.push('Meta description is required');
@@ -2473,31 +2934,58 @@ export function AdminPostEditor({
     }
 
     try {
-      const endpoint = autosave
-        ? `/api/admin/blog/posts/${initialPost.id}/autosave`
-        : `/api/admin/blog/posts/${initialPost.id}`;
+      const endpoint = isEpisodeMode
+        ? `/api/admin/blog/episodes/${episodeInitial?.episode?.id}`
+        : autosave
+          ? `/api/admin/blog/posts/${initialPost.id}/autosave`
+          : `/api/admin/blog/posts/${initialPost.id}`;
       const response = await fetch(endpoint, {
-        method: autosave ? 'POST' : 'PATCH',
+        method: isEpisodeMode ? 'PATCH' : autosave ? 'POST' : 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(getPayload())
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setSaveMessage(data.error || 'Failed to save post.');
+        setSaveMessage(data.error || (isEpisodeMode ? 'Failed to save episode.' : 'Failed to save post.'));
         return;
       }
-      if (!autosave) {
+      if (isEpisodeMode) {
+        setRevisionItems(data.revisions || []);
+        const nextSlug = data?.editorial?.web_slug || data?.episode?.slug || postSlug || '';
+        const nextHeroStoragePath = data?.editorial?.hero_image_storage_path || '';
+        const nextHeroUrl = data?.editorial?.hero_image_url || '';
+        setSlug(nextSlug);
+        setSlugDraft(normalizeSlugInput(nextSlug));
+        setEpisodeHeroImageStoragePath(nextHeroStoragePath);
+        setEpisodeHeroImageUrl(nextHeroUrl);
+        setEpisodeVisibility(Boolean(data?.editorial ? data.editorial.is_visible : episodeVisibility));
+        setEpisodeArchived(Boolean(data?.editorial ? data.editorial.is_archived : episodeArchived));
+        setFeaturedImageId(nextHeroStoragePath || '');
+        if (nextHeroStoragePath) {
+          upsertFeaturedMediaOption(createPseudoMediaAsset(nextHeroStoragePath));
+        }
+      } else if (!autosave) {
         setAutosaveEnabled(true);
       }
-      setSaveMessage(autosave ? `Autosaved at ${new Date().toLocaleTimeString()}` : 'Post saved.');
+      setSaveMessage(
+        isEpisodeMode
+          ? 'Episode saved.'
+          : autosave
+            ? `Autosaved at ${new Date().toLocaleTimeString()}`
+            : 'Post saved.'
+      );
     } catch {
-      setSaveMessage('Failed to save post.');
+      setSaveMessage(isEpisodeMode ? 'Failed to save episode.' : 'Failed to save post.');
     } finally {
       setSaving(false);
     }
   }
 
   async function openPreview() {
+    if (isEpisodeMode) {
+      window.open(`${postUrlPrefix}${postSlug || episodeInitial?.episode?.slug || ''}`, '_blank', 'noopener,noreferrer');
+      return;
+    }
     try {
       const response = await fetch(`/api/admin/blog/posts/${initialPost.id}/autosave`, {
         method: 'POST',
@@ -2517,8 +3005,47 @@ export function AdminPostEditor({
     }
   }
 
+  async function runEpisodeRssAction(mode: 'source' | 'full') {
+    if (!isEpisodeMode || !episodeInitial?.episode?.id || episodeRssAction) return;
+
+    setEpisodeRssAction(mode);
+    setEpisodeResetError('');
+    setSaveMessage(mode === 'source' ? 'Syncing source from RSS…' : 'Resetting episode from RSS…');
+
+    try {
+      const endpoint = mode === 'source'
+        ? `/api/admin/blog/episodes/${episodeInitial.episode.id}/sync`
+        : `/api/admin/blog/episodes/${episodeInitial.episode.id}/reset-from-rss`;
+      const response = await fetch(endpoint, { method: 'POST' });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const message = data?.error || (mode === 'source'
+          ? 'Failed to sync source from RSS.'
+          : 'Failed to fully reset episode from RSS.');
+        setSaveMessage(message);
+        if (mode === 'full') setEpisodeResetError(message);
+        return;
+      }
+
+      if (mode === 'full') {
+        setEpisodeResetConfirmOpen(false);
+      }
+      setSaveMessage(mode === 'source' ? 'Episode source synced from RSS.' : 'Episode fully reset from RSS.');
+      window.location.reload();
+    } catch {
+      const message = mode === 'source'
+        ? 'Failed to sync source from RSS.'
+        : 'Failed to fully reset episode from RSS.';
+      setSaveMessage(message);
+      if (mode === 'full') setEpisodeResetError(message);
+    } finally {
+      setEpisodeRssAction(null);
+    }
+  }
+
   useEffect(() => {
-    if (!editor || !autosaveEnabled) return;
+    if (!editor || !autosaveEnabled || isEpisodeMode) return;
     const schedule = () => {
       if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
       autosaveTimer.current = window.setTimeout(() => {
@@ -2532,10 +3059,10 @@ export function AdminPostEditor({
     };
     // `persist` is intentionally omitted to avoid re-binding editor listeners on every field change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autosaveEnabled, editor]);
+  }, [autosaveEnabled, editor, isEpisodeMode]);
 
   useEffect(() => {
-    if (!editor || !autosaveEnabled) return;
+    if (!editor || !autosaveEnabled || isEpisodeMode) return;
     if (autosaveTimer.current) window.clearTimeout(autosaveTimer.current);
     autosaveTimer.current = window.setTimeout(() => {
       void persist(true);
@@ -2550,17 +3077,27 @@ export function AdminPostEditor({
     autosaveEnabled,
     canonicalUrl,
     categoryIds,
+    caseIds,
+    collectionIds,
     editor,
+    episodeArchived,
+    episodeRelatedPostIds,
+    episodeRelationshipRows,
+    episodeVisibility,
+    entityIds,
+    editorialNotes,
+    eventIds,
     excerpt,
     featuredImageId,
     focusKeyword,
     isFeatured,
-    labelIds,
+    isEpisodeMode,
     linkedEpisodes,
     nofollow,
     noindex,
     ogImageId,
     primaryCategoryId,
+    primaryTopicId,
     publishAt,
     relatedPostIds,
     schemaType,
@@ -2572,8 +3109,8 @@ export function AdminPostEditor({
     socialTitle,
     status,
     tagIds,
-    title,
-    topicClusterIds
+    themeIds,
+    title
   ]);
 
   useEffect(() => {
@@ -2609,10 +3146,9 @@ export function AdminPostEditor({
   }, [editor]);
 
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || isEpisodeMode) return;
 
     const currentCount = linkedEpisodeIds.length;
-    const previousCount = previousLinkedEpisodeCountRef.current;
     const firstEpisodeId = linkedEpisodeIds[0] || null;
     const currentBlocks = getEditorBlocks();
 
@@ -2641,20 +3177,15 @@ export function AdminPostEditor({
       return;
     }
 
-    let nextBlocks = currentBlocks;
-    if (previousCount === 0 && !hasPrimaryListenEpisodeBlock(currentBlocks)) {
-      nextBlocks = [createPrimaryListenEpisodeBlock(firstEpisodeId), ...currentBlocks];
-    }
-
-    nextBlocks = normalizePrimaryListenEpisodeBlocksForSave(
-      syncPrimaryListenEpisodeBlocksEpisode(nextBlocks, firstEpisodeId),
+    const nextBlocks = normalizePrimaryListenEpisodeBlocksForSave(
+      syncPrimaryListenEpisodeBlocksEpisode(currentBlocks, firstEpisodeId),
       linkedEpisodeIds
     );
     replaceEditorBlocksIfChanged(nextBlocks);
     previousLinkedEpisodeCountRef.current = currentCount;
     // We only react to linked episode ordering/selection changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editor, linkedEpisodeIds]);
+  }, [editor, isEpisodeMode, linkedEpisodeIds]);
 
   function insertStructuredBlock(type: BlogContentBlock['type']) {
     if (!editor) return;
@@ -2679,6 +3210,15 @@ export function AdminPostEditor({
 
   function setLinkedEpisodeIds(nextEpisodeIds: string[]) {
     setLinkedEpisodes(nextEpisodeIds.map((episodeId, index) => ({ episodeId, isPrimary: index === 0 })));
+  }
+
+  function setEpisodeRelationshipIds(nextEpisodeIds: string[]) {
+    setEpisodeRelationshipRows(
+      nextEpisodeIds.map((episodeId) => ({
+        episodeId,
+        relationshipType: episodeRelationshipRows.find((item) => item.episodeId === episodeId)?.relationshipType || 'related'
+      }))
+    );
   }
 
   function focusVisualEditorAtEnd() {
@@ -2712,10 +3252,27 @@ export function AdminPostEditor({
   function closeSlugEditor() {
     setSlugEditorOpen(false);
     setSlugCopyMessage('');
+    setSlugValidationMessage('');
   }
 
-  function applySlugDraft() {
+  async function applySlugDraft() {
     const normalized = normalizeSlugInput(slugDraft);
+    if (isEpisodeMode && normalized) {
+      try {
+        const response = await fetch(`/api/admin/blog/episodes/slug-check?slug=${encodeURIComponent(normalized)}&episodeId=${encodeURIComponent(episodeInitial?.episode?.id || '')}`, {
+          cache: 'no-store'
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data?.ok === false) {
+          setSlugValidationMessage(data?.error || 'This slug is not available.');
+          return;
+        }
+        setSlugValidationMessage('Slug is available.');
+      } catch {
+        setSlugValidationMessage('Unable to validate slug right now.');
+        return;
+      }
+    }
     setSlug(normalized);
     setSlugDraft(normalized);
     setSlugEditorOpen(false);
@@ -2741,7 +3298,7 @@ export function AdminPostEditor({
             <button
               type="button"
               onClick={() => {
-                window.location.assign('/admin/blog');
+                window.location.assign(isEpisodeMode ? '/admin/episodes' : '/admin/blog');
               }}
               className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-[12px] font-semibold text-[#2f295d] transition hover:bg-[#f3f5fb]"
             >
@@ -2751,7 +3308,7 @@ export function AdminPostEditor({
             <div className="hidden h-6 w-px bg-[#e3e6f2] md:block" />
             {saveMessage || saving || autosaveEnabled ? (
               <div className="text-[12px] text-[#6b7197]">
-                {saveMessage || (saving ? 'Saving…' : 'Autosave on')}
+                {saveMessage || (saving ? 'Saving…' : isEpisodeMode ? 'Manual save' : 'Autosave on')}
               </div>
             ) : null}
           </div>
@@ -2794,8 +3351,8 @@ export function AdminPostEditor({
               type="button"
               className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#dfe3ef] bg-white text-[12px] font-semibold text-[#2f295d] transition hover:bg-[#f4f6fc]"
               onClick={() => void openPreview()}
-              aria-label="Preview post"
-              title="Preview post"
+              aria-label={isEpisodeMode ? 'Preview episode' : 'Preview post'}
+              title={isEpisodeMode ? 'Preview episode' : 'Preview post'}
             >
               <IconPreview />
             </button>
@@ -2805,7 +3362,7 @@ export function AdminPostEditor({
               onClick={() => void persist(false)}
               disabled={saving}
             >
-              {saving ? 'Saving…' : effectiveStatus === 'published' ? 'Update' : effectiveStatus === 'scheduled' ? 'Schedule' : 'Publish'}
+              {saving ? 'Saving…' : isEpisodeMode ? (episodeVisibility && !episodeArchived ? 'Update' : 'Save') : effectiveStatus === 'published' ? 'Update' : effectiveStatus === 'scheduled' ? 'Schedule' : 'Publish'}
             </button>
           </div>
         </div>
@@ -2825,23 +3382,25 @@ export function AdminPostEditor({
               <button
                 type="button"
                 className={`group mb-4 overflow-hidden rounded-2xl border border-[#dfe3ef] bg-white text-left shadow-[0_8px_30px_rgba(24,31,68,0.06)] transition hover:border-[#c7cfe8] ${
+                  isEpisodeMode ? 'w-full max-w-[420px]' : ''
+                } ${
                   selectedFeaturedAssetUrl ? 'block' : 'hidden'
                 }`}
                 onClick={() => featuredQuickUploadInputRef.current?.click()}
                 title="Click to replace featured image"
               >
-                <div className="relative aspect-[16/8] w-full bg-[#f3f5fb]">
+                <div className={`relative w-full bg-[#f3f5fb] ${isEpisodeMode ? 'aspect-square' : 'aspect-[16/8]'}`}>
                   {selectedFeaturedAssetUrl ? (
                     <Image
                       src={selectedFeaturedAssetUrl}
                       alt={selectedFeaturedAsset?.alt_text_default || title || 'Featured image'}
                       fill
-                      sizes="(max-width: 1200px) 100vw, 860px"
+                      sizes={isEpisodeMode ? '(max-width: 768px) 100vw, 420px' : '(max-width: 1200px) 100vw, 860px'}
                       className="object-cover"
                     />
                   ) : null}
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent px-4 py-3 text-xs font-semibold text-white/90">
-                    Featured image preview. Click to replace.
+                    {isEpisodeMode ? 'Episode hero image preview. Click to replace.' : 'Featured image preview. Click to replace.'}
                   </div>
                 </div>
               </button>
@@ -2849,14 +3408,14 @@ export function AdminPostEditor({
                 className={`w-full border-0 bg-transparent px-0 text-[2.15rem] font-black tracking-tight outline-none placeholder:text-[#a6acbe] md:text-[2.4rem] ${
                   title.trim() ? 'text-[#231d46]' : 'text-[#9ca3b7]'
                 }`}
-                placeholder="Add post title..."
+                placeholder={isEpisodeMode ? 'Add episode title...' : 'Add post title...'}
                 value={title}
                 onChange={(event) => setTitle(event.currentTarget.value)}
               />
               <div className="relative mt-4 flex flex-wrap items-start gap-3 text-[12px] text-[#6a7094]">
                 <textarea
                   className="min-h-[3rem] min-w-[180px] flex-1 resize-none border-0 bg-transparent px-0 py-0 text-[13px] leading-6 text-[#656d8f] outline-none placeholder:text-[#9ea7c0]"
-                  placeholder="Post excerpt or dek"
+                  placeholder={isEpisodeMode ? 'Episode excerpt or dek' : 'Post excerpt or dek'}
                   value={excerpt}
                   onChange={(event) => setExcerpt(event.currentTarget.value)}
                 />
@@ -2901,7 +3460,9 @@ export function AdminPostEditor({
                       </button>
                     </div>
                   </div>
-                  <p className="text-[13px] text-[#606789]">The URL slug for your post.</p>
+                  <p className="text-[13px] text-[#606789]">
+                    {isEpisodeMode ? 'The public URL slug for your episode.' : 'The URL slug for your post.'}
+                  </p>
                 </div>
 
                 {slugEditorOpen ? (
@@ -2924,12 +3485,12 @@ export function AdminPostEditor({
                         className="input h-12 rounded-xl border-[#3558ff] bg-white !pl-7 !pr-12 text-[1rem] font-medium"
                         value={slugDraft}
                         onChange={(event) => setSlugDraft(normalizeSlugInput(event.currentTarget.value))}
-                        placeholder="post-slug"
+                        placeholder={isEpisodeMode ? 'episode-slug' : 'post-slug'}
                         autoFocus
                         onKeyDown={(event) => {
                           if (event.key === 'Enter') {
                             event.preventDefault();
-                            applySlugDraft();
+                            void applySlugDraft();
                           } else if (event.key === 'Escape') {
                             event.preventDefault();
                             closeSlugEditor();
@@ -2957,7 +3518,7 @@ export function AdminPostEditor({
                       <button
                         type="button"
                         className="rounded-lg bg-[#3558ff] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[#2748ea] disabled:opacity-60"
-                        onClick={applySlugDraft}
+                        onClick={() => void applySlugDraft()}
                         disabled={!slugDraft.trim()}
                       >
                         Save slug
@@ -2966,14 +3527,19 @@ export function AdminPostEditor({
                     {slugCopyMessage ? (
                       <p className="mt-2 text-xs font-semibold text-[#5f668d]">{slugCopyMessage}</p>
                     ) : null}
+                    {slugValidationMessage ? (
+                      <p className={`mt-2 text-xs font-semibold ${/available/i.test(slugValidationMessage) ? 'text-[#3e7a50]' : 'text-[#9a2b2b]'}`}>
+                        {slugValidationMessage}
+                      </p>
+                    ) : null}
                   </div>
                 ) : null}
               </SidebarSection>
 
-              <SidebarSection title="Post Settings" open={openPanels.settings} onToggle={() => togglePanel('settings')}>
+              <SidebarSection title={isEpisodeMode ? 'Episode Settings' : 'Post Settings'} open={openPanels.settings} onToggle={() => togglePanel('settings')}>
                 <label className="inline-flex items-center gap-2 text-sm font-semibold text-[#2b3150]">
                   <input type="checkbox" checked={isFeatured} onChange={(event) => setIsFeatured(event.currentTarget.checked)} />
-                  Featured post
+                  {isEpisodeMode ? 'Featured episode' : 'Featured post'}
                 </label>
                 <div>
                   <label className="label text-sm">Date</label>
@@ -2981,6 +3547,8 @@ export function AdminPostEditor({
                     className="input rounded-xl border-[#dfe3ef]"
                     type="datetime-local"
                     value={publishAt}
+                    readOnly={isEpisodeMode}
+                    disabled={isEpisodeMode}
                     onChange={(event) => {
                       setPublishAt(event.currentTarget.value);
                       if (status === 'archived') {
@@ -2989,42 +3557,73 @@ export function AdminPostEditor({
                     }}
                   />
                   <p className="mt-1 text-xs text-[#7b819f]">
-                    {publishAt
-                      ? temporalStatus === 'scheduled'
-                        ? 'Future date: this post will be scheduled.'
-                        : 'Past/current date: this post will be published.'
-                      : status === 'draft'
-                        ? 'Leave empty to keep this as a draft.'
-                        : 'Add a date to publish this post.'}
+                    {isEpisodeMode
+                      ? 'Feed-owned publish date. This updates from RSS sync.'
+                      : publishAt
+                        ? temporalStatus === 'scheduled'
+                          ? 'Future date: this post will be scheduled.'
+                          : 'Past/current date: this post will be published.'
+                        : status === 'draft'
+                          ? 'Leave empty to keep this as a draft.'
+                          : 'Add a date to publish this post.'}
                   </p>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                  <div>
-                    <label className="label text-sm">Status</label>
-                    <select
-                      className="input rounded-xl border-[#dfe3ef]"
-                      value={statusControlValue}
-                      onChange={(event) => setStatus(event.currentTarget.value as BlogPostWriteInput['status'])}
-                    >
-                      <option value="draft">Draft</option>
-                      <option value="published">Published</option>
-                      <option value="archived">Archived</option>
-                    </select>
-                    {statusControlValue === 'published' && temporalStatus === 'scheduled' ? (
-                      <p className="mt-1 text-xs text-[#7b819f]">With this date, status will publish as scheduled.</p>
-                    ) : null}
-                  </div>
-                  <div>
-                    <label className="label text-sm">Author</label>
-                    <select className="input rounded-xl border-[#dfe3ef]" value={authorId} onChange={(event) => setAuthorId(event.currentTarget.value)}>
-                      {authorOptions.map((author) => (
-                        <option key={author.id} value={author.id}>{author.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                  {isEpisodeMode ? (
+                    <>
+                      <div>
+                        <label className="label text-sm">Visibility</label>
+                        <select
+                          className="input rounded-xl border-[#dfe3ef]"
+                          value={episodeVisibility ? 'visible' : 'hidden'}
+                          onChange={(event) => setEpisodeVisibility(event.currentTarget.value === 'visible')}
+                        >
+                          <option value="visible">Visible</option>
+                          <option value="hidden">Hidden</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="label text-sm">Archive</label>
+                        <select
+                          className="input rounded-xl border-[#dfe3ef]"
+                          value={episodeArchived ? 'archived' : 'active'}
+                          onChange={(event) => setEpisodeArchived(event.currentTarget.value === 'archived')}
+                        >
+                          <option value="active">Active</option>
+                          <option value="archived">Archived</option>
+                        </select>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="label text-sm">Status</label>
+                        <select
+                          className="input rounded-xl border-[#dfe3ef]"
+                          value={statusControlValue}
+                          onChange={(event) => setStatus(event.currentTarget.value as BlogPostWriteInput['status'])}
+                        >
+                          <option value="draft">Draft</option>
+                          <option value="published">Published</option>
+                          <option value="archived">Archived</option>
+                        </select>
+                        {statusControlValue === 'published' && temporalStatus === 'scheduled' ? (
+                          <p className="mt-1 text-xs text-[#7b819f]">With this date, status will publish as scheduled.</p>
+                        ) : null}
+                      </div>
+                      <div>
+                        <label className="label text-sm">Author</label>
+                        <select className="input rounded-xl border-[#dfe3ef]" value={authorId} onChange={(event) => setAuthorId(event.currentTarget.value)}>
+                          {authorOptions.map((author) => (
+                            <option key={author.id} value={author.id}>{author.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </>
+                  )}
                   <div className="space-y-2.5 sm:col-span-2 xl:col-span-1">
-                    <label className="label text-sm">Featured Image</label>
+                    <label className="label text-sm">{isEpisodeMode ? 'Hero Image' : 'Featured Image'}</label>
                     <ImageAssetPicker
                       selectedAsset={selectedFeaturedAsset}
                       onUploadFile={uploadFeaturedImage}
@@ -3033,7 +3632,7 @@ export function AdminPostEditor({
                       uploadMessage={featuredUploadMessage}
                       recommendedText="Recommended image size: 720 x 450 pixels"
                     />
-                    {selectedFeaturedAsset ? (
+                    {!isEpisodeMode && selectedFeaturedAsset ? (
                       <div className="space-y-2 rounded-xl border border-[#dfe3ef] bg-white p-2.5">
                         <input
                           className="input rounded-xl border-[#dfe3ef] !px-2 !py-1.5 text-xs"
@@ -3073,6 +3672,17 @@ export function AdminPostEditor({
                     />
                   </div>
                 </div>
+                {isEpisodeMode ? (
+                  <div>
+                    <label className="label text-sm">Editorial notes</label>
+                    <textarea
+                      className="input min-h-24 rounded-xl border-[#dfe3ef]"
+                      value={editorialNotes}
+                      onChange={(event) => setEditorialNotes(event.currentTarget.value)}
+                      placeholder="Internal editorial notes"
+                    />
+                  </div>
+                ) : null}
                 {/* Archive / Restore / Soft-delete buttons removed from editor sidebar.
                    API routes are still available at:
                      POST /api/admin/blog/posts/[id]/archive
@@ -3082,71 +3692,220 @@ export function AdminPostEditor({
               </SidebarSection>
 
               <SidebarSection title="Taxonomy" open={openPanels.taxonomy} onToggle={() => togglePanel('taxonomy')}>
-                <div>
-                  <label className="label text-sm">Primary category</label>
-                  <select className="input rounded-xl border-[#dfe3ef]" value={primaryCategoryId} onChange={(event) => setPrimaryCategoryId(event.currentTarget.value)}>
-                    <option value="">None</option>
-                    {categoryOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-                  </select>
-                </div>
                 <div className="space-y-4">
-                  {taxonomyGroups.map(({ label, items, values, setter }) => (
-                    <div key={label}>
-                      <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-[#72789b]">{label}</p>
-                      <div className="max-h-44 space-y-2 overflow-auto rounded-xl border border-[#e2e6f2] bg-white p-3">
-                        {items.length ? items.map((item) => (
-                          <label key={item.id} className="flex items-center gap-2 text-sm">
-                            <input
-                              type="checkbox"
-                              checked={values.includes(item.id)}
-                              onChange={() => toggleMultiValue(values, setter, item.id)}
-                            />
-                            {item.name}
-                          </label>
-                        )) : <p className="text-xs text-[#7b819f]">No items yet.</p>}
+                  <div className="rounded-xl border border-[#dfe3ef] bg-white px-3 py-2.5 text-xs text-[#6f7598]">
+                    Manage taxonomy in{' '}
+                    <a className="font-semibold text-[#3558ff]" href="/admin/blog/taxonomies">
+                      Taxonomy
+                    </a>
+                    .
+                  </div>
+                  {!isEpisodeMode ? (
+                    <>
+                      <div>
+                        <label className="label text-sm">Primary category</label>
+                        <select className="input rounded-xl border-[#dfe3ef]" value={primaryCategoryId} onChange={(event) => setPrimaryCategoryId(event.currentTarget.value)}>
+                          <option value="">None</option>
+                          {categoryOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                        </select>
                       </div>
-                    </div>
-                  ))}
+                      <div className="space-y-4">
+                        {taxonomyGroups.map(({ label, items, values, setter }) => (
+                          <div key={label}>
+                            <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-[#72789b]">{label}</p>
+                            <div className="max-h-44 space-y-2 overflow-auto rounded-xl border border-[#e2e6f2] bg-white p-3">
+                              {items.length ? items.map((item) => (
+                                <label key={item.id} className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    checked={values.includes(item.id)}
+                                    onChange={() => toggleMultiValue(values, setter, item.id)}
+                                  />
+                                  {item.name}
+                                </label>
+                              )) : <p className="text-xs text-[#7b819f]">No items yet.</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : null}
+                  <SearchableOrderedMultiSelect
+                    label="Primary topic"
+                    options={discoveryOptionsByType.topic}
+                    selectedIds={primaryTopicId ? [primaryTopicId] : []}
+                    onChange={(next) => setPrimaryTopicId(next[next.length - 1] || null)}
+                    buttonLabel="Select a primary topic"
+                    searchPlaceholder="Search topics"
+                    emptySearchLabel="No topics match your search."
+                    selectedListLabel="Primary topic"
+                    emptySelectionLabel="No primary topic selected."
+                  />
+                  <SearchableOrderedMultiSelect
+                    label="Themes"
+                    options={discoveryOptionsByType.theme}
+                    selectedIds={themeIds}
+                    onChange={setThemeIds}
+                    buttonLabel="Select themes"
+                    searchPlaceholder="Search themes"
+                    emptySearchLabel="No themes match your search."
+                    selectedListLabel="Assigned themes"
+                    emptySelectionLabel="No themes assigned."
+                  />
+                  <SearchableOrderedMultiSelect
+                    label="People and entities"
+                    options={discoveryOptionsByType.entity}
+                    selectedIds={entityIds}
+                    onChange={setEntityIds}
+                    buttonLabel="Select people and entities"
+                    searchPlaceholder="Search entities"
+                    emptySearchLabel="No entities match your search."
+                    selectedListLabel="Assigned entities"
+                    emptySelectionLabel="No entities assigned."
+                  />
+                  <SearchableOrderedMultiSelect
+                    label="Cases"
+                    options={discoveryOptionsByType.case}
+                    selectedIds={caseIds}
+                    onChange={setCaseIds}
+                    buttonLabel="Select cases"
+                    searchPlaceholder="Search cases"
+                    emptySearchLabel="No cases match your search."
+                    selectedListLabel="Assigned cases"
+                    emptySelectionLabel="No cases assigned."
+                  />
+                  <SearchableOrderedMultiSelect
+                    label="Events"
+                    options={discoveryOptionsByType.event}
+                    selectedIds={eventIds}
+                    onChange={setEventIds}
+                    buttonLabel="Select events"
+                    searchPlaceholder="Search events"
+                    emptySearchLabel="No events match your search."
+                    selectedListLabel="Assigned events"
+                    emptySelectionLabel="No events assigned."
+                  />
+                  <SearchableOrderedMultiSelect
+                    label="Collections"
+                    options={discoveryOptionsByType.collection}
+                    selectedIds={collectionIds}
+                    onChange={setCollectionIds}
+                    buttonLabel="Select collections"
+                    searchPlaceholder="Search collections"
+                    emptySearchLabel="No collections match your search."
+                    selectedListLabel="Assigned collections"
+                    emptySelectionLabel="No collections assigned."
+                  />
+                  <SearchableOrderedMultiSelect
+                    label="Series"
+                    options={discoveryOptionsByType.series}
+                    selectedIds={seriesIds}
+                    onChange={setSeriesIds}
+                    buttonLabel="Select series"
+                    searchPlaceholder="Search series"
+                    emptySearchLabel="No series match your search."
+                    selectedListLabel="Assigned series"
+                    emptySelectionLabel="No series assigned."
+                  />
                 </div>
               </SidebarSection>
 
               <SidebarSection title="Episodes & Related" open={openPanels.episodes} onToggle={() => togglePanel('episodes')}>
-                <div className="space-y-2 rounded-xl border border-[#dfe3ef] bg-white p-2.5">
-                  <button
-                    type="button"
-                    className="rounded-md border border-[#dfe3ef] bg-[#f7f9ff] px-3 py-1.5 text-xs font-semibold text-[#2f295d] disabled:cursor-not-allowed disabled:opacity-50"
-                    onClick={insertPrimaryListenEpisodeAtCursor}
-                    disabled={!linkedEpisodeIds.length || hasPrimaryListenBlockInEditor}
-                  >
-                    Insert primary episode card
-                  </button>
-                  <p className="text-xs text-[#6f7598]">
-                    The first linked episode powers the in-canvas primary card.
-                  </p>
-                </div>
-                <SearchableOrderedMultiSelect
-                  label="Linked episode IDs"
-                  options={episodeSelectOptions}
-                  selectedIds={linkedEpisodeIds}
-                  onChange={setLinkedEpisodeIds}
-                  buttonLabel="Select episodes"
-                  searchPlaceholder="Search episodes by title or ID"
-                  emptySearchLabel="No episodes match your search."
-                  selectedListLabel="Selected episodes (save order)"
-                  firstItemLabel="Primary episode"
-                  emptySelectionLabel="No linked episodes selected."
-                />
-                <SearchableOrderedMultiSelect
-                  label="Manual related post IDs"
-                  options={relatedPostSelectOptions}
-                  selectedIds={relatedPostIds}
-                  onChange={setRelatedPostIds}
-                  buttonLabel="Select posts"
-                  searchPlaceholder="Search posts by title or ID"
-                  emptySearchLabel="No posts match your search."
-                  selectedListLabel="Selected posts (save order)"
-                  emptySelectionLabel="No manual related posts selected."
-                />
+                {isEpisodeMode ? (
+                  <>
+                    <SearchableOrderedMultiSelect
+                      label="Related episodes"
+                      options={episodeSelectOptions.filter((option) => option.id !== episodeInitial?.episode?.id)}
+                      selectedIds={episodeRelationshipRows.map((item) => item.episodeId)}
+                      onChange={setEpisodeRelationshipIds}
+                      buttonLabel="Select related episodes"
+                      searchPlaceholder="Search episodes by title or ID"
+                      emptySearchLabel="No episodes match your search."
+                      selectedListLabel="Selected related episodes"
+                      emptySelectionLabel="No related episodes selected."
+                    />
+                    {episodeRelationshipRows.length ? (
+                      <div className="space-y-2">
+                        <p className="text-xs font-black uppercase tracking-[0.14em] text-[#72789b]">Relationship types</p>
+                        {episodeRelationshipRows.map((item) => (
+                          <div key={item.episodeId} className="rounded-xl border border-[#dfe3ef] bg-white px-3 py-2.5">
+                            <p className="mb-2 text-sm font-semibold text-[#273058]">
+                              {episodeSelectOptions.find((option) => option.id === item.episodeId)?.label || item.episodeId}
+                            </p>
+                            <select
+                              className="input rounded-xl border-[#dfe3ef]"
+                              value={item.relationshipType}
+                              onChange={(event) => {
+                                const nextValue = event.currentTarget.value as EpisodeRelationshipType;
+                                setEpisodeRelationshipRows((current) =>
+                                  current.map((currentItem) =>
+                                    currentItem.episodeId === item.episodeId
+                                      ? { ...currentItem, relationshipType: nextValue }
+                                      : currentItem
+                                  )
+                                );
+                              }}
+                            >
+                              {EPISODE_RELATIONSHIP_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    <SearchableOrderedMultiSelect
+                      label="Related blog posts"
+                      options={relatedPostSelectOptions}
+                      selectedIds={episodeRelatedPostIds}
+                      onChange={setEpisodeRelatedPostIds}
+                      buttonLabel="Select blog posts"
+                      searchPlaceholder="Search posts by title or ID"
+                      emptySearchLabel="No posts match your search."
+                      selectedListLabel="Selected related posts"
+                      emptySelectionLabel="No related posts selected."
+                    />
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-2 rounded-xl border border-[#dfe3ef] bg-white p-2.5">
+                      <button
+                        type="button"
+                        className="rounded-md border border-[#dfe3ef] bg-[#f7f9ff] px-3 py-1.5 text-xs font-semibold text-[#2f295d] disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={insertPrimaryListenEpisodeAtCursor}
+                        disabled={!linkedEpisodeIds.length || hasPrimaryListenBlockInEditor}
+                      >
+                        Insert primary episode card
+                      </button>
+                      <p className="text-xs text-[#6f7598]">
+                        Linked episodes do not render a primary card unless you insert one.
+                      </p>
+                    </div>
+                    <SearchableOrderedMultiSelect
+                      label="Linked episode IDs"
+                      options={episodeSelectOptions}
+                      selectedIds={linkedEpisodeIds}
+                      onChange={setLinkedEpisodeIds}
+                      buttonLabel="Select episodes"
+                      searchPlaceholder="Search episodes by title or ID"
+                      emptySearchLabel="No episodes match your search."
+                      selectedListLabel="Selected episodes (save order)"
+                      firstItemLabel="Primary episode"
+                      emptySelectionLabel="No linked episodes selected."
+                    />
+                    <SearchableOrderedMultiSelect
+                      label="Manual related post IDs"
+                      options={relatedPostSelectOptions}
+                      selectedIds={relatedPostIds}
+                      onChange={setRelatedPostIds}
+                      buttonLabel="Select posts"
+                      searchPlaceholder="Search posts by title or ID"
+                      emptySearchLabel="No posts match your search."
+                      selectedListLabel="Selected posts (save order)"
+                      emptySelectionLabel="No manual related posts selected."
+                    />
+                  </>
+                )}
               </SidebarSection>
 
               <SidebarSection title="SEO" open={openPanels.seo} onToggle={() => togglePanel('seo')}>
@@ -3159,10 +3918,12 @@ export function AdminPostEditor({
                     <label className="label text-sm">SEO description</label>
                     <textarea className="input min-h-24 rounded-xl border-[#dfe3ef]" value={seoDescription} onChange={(event) => setSeoDescription(event.currentTarget.value)} />
                   </div>
-                  <div>
-                    <label className="label text-sm">Focus keyword</label>
-                    <input className="input rounded-xl border-[#dfe3ef]" value={focusKeyword} onChange={(event) => setFocusKeyword(event.currentTarget.value)} />
-                  </div>
+                  {!isEpisodeMode ? (
+                    <div>
+                      <label className="label text-sm">Focus keyword</label>
+                      <input className="input rounded-xl border-[#dfe3ef]" value={focusKeyword} onChange={(event) => setFocusKeyword(event.currentTarget.value)} />
+                    </div>
+                  ) : null}
                   <div>
                     <label className="label text-sm">Canonical URL</label>
                     <input className="input rounded-xl border-[#dfe3ef]" value={canonicalUrl} onChange={(event) => setCanonicalUrl(event.currentTarget.value)} />
@@ -3176,14 +3937,23 @@ export function AdminPostEditor({
                       <label className="label text-sm">Social description</label>
                       <input className="input rounded-xl border-[#dfe3ef]" value={socialDescription} onChange={(event) => setSocialDescription(event.currentTarget.value)} />
                     </div>
-                    <div>
-                      <label className="label text-sm">OG image asset ID</label>
-                      <input className="input rounded-xl border-[#dfe3ef]" value={ogImageId} onChange={(event) => setOgImageId(event.currentTarget.value)} />
-                    </div>
-                    <div>
-                      <label className="label text-sm">Schema type</label>
-                      <input className="input rounded-xl border-[#dfe3ef]" value={schemaType} onChange={(event) => setSchemaType(event.currentTarget.value)} />
-                    </div>
+                    {isEpisodeMode ? (
+                      <div>
+                        <label className="label text-sm">Social image URL</label>
+                        <input className="input rounded-xl border-[#dfe3ef]" value={ogImageId} onChange={(event) => setOgImageId(event.currentTarget.value)} />
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="label text-sm">OG image asset ID</label>
+                          <input className="input rounded-xl border-[#dfe3ef]" value={ogImageId} onChange={(event) => setOgImageId(event.currentTarget.value)} />
+                        </div>
+                        <div>
+                          <label className="label text-sm">Schema type</label>
+                          <input className="input rounded-xl border-[#dfe3ef]" value={schemaType} onChange={(event) => setSchemaType(event.currentTarget.value)} />
+                        </div>
+                      </>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-4 text-sm font-semibold text-[#2b3150]">
                     <label className="inline-flex items-center gap-2">
@@ -3198,9 +3968,59 @@ export function AdminPostEditor({
                 </div>
               </SidebarSection>
 
+              {isEpisodeMode ? (
+                <SidebarSection title="Source & Feed" open={openPanels.sourceFeed} onToggle={() => togglePanel('sourceFeed')}>
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        disabled={Boolean(episodeRssAction)}
+                        onClick={() => void runEpisodeRssAction('source')}
+                      >
+                        {episodeRssAction === 'source' ? 'Syncing source…' : 'Sync Source from RSS'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        disabled={Boolean(episodeRssAction)}
+                        onClick={() => {
+                          setEpisodeResetError('');
+                          setEpisodeResetConfirmOpen(true);
+                        }}
+                      >
+                        Full Reset from RSS
+                      </button>
+                    </div>
+                    <div>
+                      <label className="label text-sm">Source title</label>
+                      <input className="input rounded-xl border-[#dfe3ef] bg-[#f6f7fb]" value={episodeInitial?.source?.title || ''} readOnly />
+                    </div>
+                    <div>
+                      <label className="label text-sm">Source slug</label>
+                      <input className="input rounded-xl border-[#dfe3ef] bg-[#f6f7fb]" value={episodeInitial?.source?.slug || ''} readOnly />
+                    </div>
+                    <div>
+                      <label className="label text-sm">Published at</label>
+                      <input className="input rounded-xl border-[#dfe3ef] bg-[#f6f7fb]" value={publishAt} readOnly />
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                      <div>
+                        <label className="label text-sm">Last synced</label>
+                        <input className="input rounded-xl border-[#dfe3ef] bg-[#f6f7fb]" value={episodeInitial?.source?.last_synced_at || episodeInitial?.source?.lastSyncedAt || ''} readOnly />
+                      </div>
+                      <div>
+                        <label className="label text-sm">Missing from feed</label>
+                        <input className="input rounded-xl border-[#dfe3ef] bg-[#f6f7fb]" value={episodeInitial?.source?.missing_from_feed_at || episodeInitial?.source?.missingFromFeedAt || ''} readOnly />
+                      </div>
+                    </div>
+                  </div>
+                </SidebarSection>
+              ) : null}
+
               <SidebarSection title="Revisions" open={openPanels.revisions} onToggle={() => togglePanel('revisions')}>
                 <div className="space-y-2">
-                  {initialPost.revisions?.length ? initialPost.revisions.map((revision: any) => (
+                  {revisionItems?.length ? revisionItems.map((revision: any) => (
                     <div key={revision.id} className="flex items-center justify-between gap-3 rounded-xl border border-[#e0e4f1] bg-white px-3 py-2.5">
                       <div>
                         <p className="text-sm font-semibold text-[#231d46]">Revision {revision.revision_number}</p>
@@ -3211,7 +4031,12 @@ export function AdminPostEditor({
                         className="rounded-lg bg-[#f3f5fb] px-3 py-1.5 text-xs font-bold text-[#2f295d]"
                         onClick={async () => {
                           try {
-                            const response = await fetch(`/api/admin/blog/posts/${initialPost.id}/revisions/${revision.id}/restore`, { method: 'POST' });
+                            const response = await fetch(
+                              isEpisodeMode
+                                ? `/api/admin/blog/episodes/${episodeInitial?.episode?.id}/revisions/${revision.id}/restore`
+                                : `/api/admin/blog/posts/${initialPost.id}/revisions/${revision.id}/restore`,
+                              { method: 'POST' }
+                            );
                             if (!response.ok) {
                               const data = await response.json().catch(() => ({}));
                               window.alert(data?.error || 'Failed to restore revision.');
@@ -3236,6 +4061,41 @@ export function AdminPostEditor({
           </aside>
         ) : null}
       </div>
+      {isEpisodeMode && episodeResetConfirmOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-lg border border-carnival-ink/20 bg-white p-5 text-left shadow-card">
+            <h3 className="text-left text-lg font-bold">Full reset from RSS?</h3>
+            <p className="mt-2 text-left text-sm text-carnival-ink/85">
+              Are you sure this will reset all your editorial adjustments that you&apos;ve made?
+            </p>
+            {episodeResetError ? (
+              <p className="mt-2 rounded-md bg-red-100 px-3 py-2 text-xs font-semibold text-carnival-red">{episodeResetError}</p>
+            ) : null}
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  if (episodeRssAction) return;
+                  setEpisodeResetConfirmOpen(false);
+                  setEpisodeResetError('');
+                }}
+                disabled={Boolean(episodeRssAction)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => void runEpisodeRssAction('full')}
+                disabled={Boolean(episodeRssAction)}
+              >
+                {episodeRssAction === 'full' ? 'Resetting…' : 'Yes, reset from RSS'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

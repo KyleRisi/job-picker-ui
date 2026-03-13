@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { EpisodeMediaPlayer } from '@/components/episode-media-player';
-import { EpisodeCard } from '@/components/episodes-browser';
+import { CompactEpisodeRow, EpisodeCard } from '@/components/episodes-browser';
 import { FeaturedEpisodeShowcase } from '@/components/featured-episode-showcase';
+import { TranscriptBlock } from '@/components/blog/transcript-block';
 import { getImageBlockLayout } from '@/lib/blog/image-layout';
 import { getStoragePublicUrl } from '@/lib/blog/media-url';
 import { toYouTubeEmbedUrl } from '@/lib/blog/youtube';
@@ -53,7 +54,7 @@ function toPodcastEpisodeCard(episode: PodcastEpisodeRecord): PodcastEpisode {
     slug: episode.slug,
     title: episode.title,
     seasonNumber: null,
-    episodeNumber: null,
+    episodeNumber: episode.episode_number ?? null,
     publishedAt: episode.published_at || '',
     description: episode.description_plain || '',
     descriptionHtml: episode.description_html || '',
@@ -261,7 +262,7 @@ export function BlogContentRenderer({
               heading={block.heading || 'Listen to the linked episode'}
               headingClassName="text-2xl font-black text-white"
             >
-              <EpisodeCard episode={toPodcastEpisodeCard(episode)} featured />
+              <EpisodeCard episode={toPodcastEpisodeCard(episode)} featured featuredDesktopTextLarger />
             </FeaturedEpisodeShowcase>
           );
         }
@@ -287,15 +288,12 @@ export function BlogContentRenderer({
         }
         if (block.type === 'related_episodes') {
           return linkedEpisodes.length ? (
-            <section key={block.id} className="space-y-2">
+            <section key={block.id} className="space-y-3">
               <h3 className={`text-xl font-black ${headingClass}`}>{block.heading}</h3>
-              <ul className="space-y-1.5 pl-4">
+              <ul className="space-y-4 [&_a]:!text-inherit [&_a]:!no-underline">
                 {linkedEpisodes.map((item) => (
-                  <li key={item.episode.id} className="flex items-baseline gap-1.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 translate-y-[2px]"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                    <Link href={`/episodes/${item.episode.slug}`} className="font-semibold text-white/80 no-underline hover:text-white">
-                      {item.episode.title}
-                    </Link>
+                  <li key={item.episode.id}>
+                    <CompactEpisodeRow episode={toPodcastEpisodeCard(item.episode)} />
                   </li>
                 ))}
               </ul>
@@ -335,6 +333,16 @@ export function BlogContentRenderer({
                 ))}
               </div>
             </section>
+          );
+        }
+        if (block.type === 'transcript') {
+          return (
+            <TranscriptBlock
+              key={block.id}
+              heading={block.heading || 'Episode transcript'}
+              content={block.content}
+              theme={theme}
+            />
           );
         }
         return null;

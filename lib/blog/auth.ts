@@ -29,7 +29,7 @@ export async function getBlogAdminUser() {
 
 export async function requireBlogAdminUser() {
   const user = await getBlogAdminUser();
-  if (!user) redirect('/admin?error=blog-auth');
+  if (!user) redirect('/workspace/login?error=blog-auth');
   return user;
 }
 

@@ -11,13 +11,58 @@ import type { BlogContentDocument, RichTextInlineNode } from '@/lib/blog/schema'
 import type { MediaAssetRecord, PodcastEpisodeRecord } from '@/lib/blog/data';
 import type { PodcastEpisode } from '@/lib/podcast-shared';
 
+function decodeBasicEntities(input: string) {
+  return input
+    .replace(/&nbsp;/gi, '\u00a0')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>');
+}
+
+function renderMarkdownishText(input: string) {
+  const decoded = decodeBasicEntities(input || '');
+  const boldRegex = /(\*\*[^*]+?\*\*|__[^_]+?__)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null = null;
+  let key = 0;
+
+  while ((match = boldRegex.exec(decoded)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(decoded.slice(lastIndex, match.index));
+    }
+    const raw = match[0];
+    const boldText = raw.startsWith('**') ? raw.slice(2, -2) : raw.slice(2, -2);
+    parts.push(<strong key={`md-bold-${key++}`}>{boldText}</strong>);
+    lastIndex = match.index + raw.length;
+  }
+
+  if (!parts.length) return decoded;
+  if (lastIndex < decoded.length) {
+    parts.push(decoded.slice(lastIndex));
+  }
+  return parts;
+}
+
+function normalizeInlineHref(rawHref: string) {
+  const href = `${rawHref || ''}`.trim();
+  if (!href) return '#';
+  if (href.startsWith('/') || href.startsWith('#')) return href;
+  if (/^(https?:)?\/\//i.test(href)) return href;
+  if (/^(mailto:|tel:)/i.test(href)) return href;
+  return `https://${href}`;
+}
+
 function renderInline(nodes: RichTextInlineNode[], onDark = false) {
   const inlineCodeClass = onDark ? 'rounded bg-white/15 px-1 py-0.5 text-white' : 'rounded bg-carnival-ink/10 px-1 py-0.5';
   const linkClass = onDark ? 'text-carnival-gold underline underline-offset-2' : 'text-carnival-red underline underline-offset-2';
 
   return nodes.map((node, index) => {
     if (node.type === 'hard_break') return <br key={`br-${index}`} />;
-    let content: React.ReactNode = node.text;
+    let content: React.ReactNode = renderMarkdownishText(node.text || '');
     (node.marks || []).forEach((mark) => {
       if (mark.type === 'bold') content = <strong key={`b-${index}`}>{content}</strong>;
       if (mark.type === 'italic') content = <em key={`i-${index}`}>{content}</em>;
@@ -27,8 +72,16 @@ function renderInline(nodes: RichTextInlineNode[], onDark = false) {
       if (mark.type === 'color') content = <span key={`color-${index}`} style={{ color: mark.value }}>{content}</span>;
       if (mark.type === 'font_size') content = <span key={`font-${index}`} style={{ fontSize: mark.value, lineHeight: 1.6 }}>{content}</span>;
       if (mark.type === 'link') {
+        const normalizedHref = normalizeInlineHref(mark.href || '');
+        const external = /^(https?:)?\/\//i.test(normalizedHref) || /^(mailto:|tel:)/i.test(normalizedHref);
         content = (
-          <a key={`l-${index}`} href={mark.href} target="_blank" rel="noreferrer" className={linkClass}>
+          <a
+            key={`l-${index}`}
+            href={normalizedHref}
+            target={external ? '_blank' : undefined}
+            rel={external ? 'noreferrer' : undefined}
+            className={linkClass}
+          >
             {content}
           </a>
         );
@@ -328,7 +381,7 @@ export function BlogContentRenderer({
               <div className="space-y-1.5 pl-4">
                 {block.items.map((item) => (
                   <details key={item.id} className="group">
-                    <summary className="flex cursor-pointer items-baseline gap-1.5 font-bold text-white/80 hover:text-white">
+                    <summary className={`flex cursor-pointer items-baseline gap-1.5 font-bold ${isDark ? 'text-white/80 hover:text-white' : 'text-carnival-ink/85 hover:text-carnival-ink'}`}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 translate-y-[2px] transition group-open:rotate-90"><polyline points="9 18 15 12 9 6"/></svg>
                       {item.question}
                     </summary>

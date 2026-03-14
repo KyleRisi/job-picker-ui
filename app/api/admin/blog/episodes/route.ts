@@ -25,7 +25,8 @@ export async function POST() {
   try {
     const user = await requireBlogAdminApiUser();
     if (!user) return badRequest('Unauthorized.', 401);
-    const result = await syncPodcastEpisodes();
+    // Manual "sync all" keeps current behavior: explicit full overwrite from RSS.
+    const result = await syncPodcastEpisodes({ mode: 'full' });
     return ok(result);
   } catch (error) {
     return badRequest(getErrorMessage(error, 'Failed to sync episodes.'), 500);

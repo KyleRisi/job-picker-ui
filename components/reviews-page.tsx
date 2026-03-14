@@ -1,14 +1,13 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useRef } from 'react';
+import { CompactPagination } from '@/components/compact-pagination';
+import { pageHref } from '@/lib/pagination';
 import type { PublicReview } from '@/lib/reviews';
 
 /* ─── Types ─── */
 type Review = PublicReview;
-
-/* ─── Constants ─── */
-const INITIAL_COUNT = 6;
-const LOAD_MORE_COUNT = 6;
 
 const COUNTRY_FLAGS: Record<string, string> = {
   'Australia': '🇦🇺',
@@ -117,7 +116,7 @@ function StarRatingInput({ value, onChange }: { value: number; onChange: (v: num
 
 function CompendiumIcon() {
   return (
-    <img src="/website.png" alt="The Compendium" className="h-5 w-5 rounded" />
+    <Image src="/website.png" alt="The Compendium" width={20} height={20} className="h-5 w-5 rounded" />
   );
 }
 
@@ -145,7 +144,7 @@ function ReviewCard({ review }: { review: Review }) {
         <span className="inline-flex items-center gap-2">
           <span>{new Date(review.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
           {review.platform === 'apple' ? (
-            <img src="/ApplePodcast.png" alt="Apple Podcasts" className="h-5 w-5" />
+            <Image src="/ApplePodcast.png" alt="Apple Podcasts" width={20} height={20} className="h-5 w-5" />
           ) : (
             <CompendiumIcon />
           )}
@@ -349,50 +348,69 @@ function SubmitReviewForm({ onSubmitted }: { onSubmitted: (review: Review) => vo
 }
 
 /* ─── Main Page Component ─── */
-export function ReviewsPage({ initialReviews }: { initialReviews: Review[] }) {
+export function ReviewsPage({
+  initialReviews,
+  pagination
+}: {
+  initialReviews: Review[];
+  pagination: { page: number; totalPages: number; total: number; pageSize: number };
+}) {
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
-  const [visible, setVisible] = useState(INITIAL_COUNT);
-  const displayed = reviews.slice(0, visible);
-  const hasMore = visible < reviews.length;
+  const [totalReviews, setTotalReviews] = useState<number>(pagination.total);
+  const hrefForPage = (page: number) => pageHref('/reviews', page);
 
   function handleNewReview(review: Review) {
-    setReviews((prev) => [review, ...prev]);
+    setTotalReviews((prev) => prev + 1);
+    if (pagination.page === 1) {
+      setReviews((prev) => [review, ...prev].slice(0, pagination.pageSize));
+    }
   }
 
   return (
     <>
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-black text-carnival-ink md:text-4xl">Listener Reviews</h1>
-          <span className="rounded-full bg-carnival-red px-3 py-0.5 text-sm font-black text-white">
-            {reviews.length}
-          </span>
+      <section className="full-bleed relative -mt-8 overflow-hidden bg-carnival-ink pb-16 pt-16 md:pb-20 md:pt-20">
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-carnival-red/30 blur-[120px]" />
+          <div className="absolute -bottom-24 right-0 h-80 w-80 rounded-full bg-carnival-gold/20 blur-[100px]" />
         </div>
-        <p className="mt-2 text-carnival-ink/70">
-          What listeners around the world are saying about The Compendium Podcast.
-        </p>
-      </div>
+        <div className="relative mx-auto max-w-6xl px-4">
+          <div className="max-w-3xl">
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-carnival-gold">The Compendium Podcast</p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <h1 className="text-4xl font-black tracking-tight text-white sm:text-5xl">Listener Reviews</h1>
+              <span className="rounded-full border border-white/25 bg-carnival-red px-3 py-0.5 text-sm font-black text-white">
+                {totalReviews}
+              </span>
+            </div>
+            <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/85 sm:text-lg">
+              What listeners around the world are saying about The Compendium Podcast.
+            </p>
+          </div>
+        </div>
+      </section>
 
       {/* Review Grid */}
-      <div className="grid gap-6 md:grid-cols-3">
-        {displayed.map((review) => (
+      <div className="grid gap-6 pt-6 md:grid-cols-3 md:pt-8">
+        {reviews.map((review) => (
           <ReviewCard key={review.id} review={review} />
         ))}
       </div>
 
-      {/* More Button */}
-      {hasMore && (
-        <div className="mt-8 text-center">
-          <button
-            type="button"
-            onClick={() => setVisible((v) => Math.min(v + LOAD_MORE_COUNT, reviews.length))}
-            className="inline-flex items-center gap-2 rounded-full bg-carnival-red px-8 py-3 text-sm font-black uppercase tracking-wide text-white shadow-lg transition hover:brightness-110"
-          >
-            More Reviews
-          </button>
+      {pagination.totalPages > 1 ? (
+        <CompactPagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          hrefForPage={hrefForPage}
+          ariaLabel="Reviews pagination"
+          className="pt-8"
+        />
+      ) : null}
+
+      {reviews.length === 0 ? (
+        <div className="mt-8 rounded-2xl border border-carnival-ink/10 bg-white p-8 text-center text-carnival-ink/70">
+          No reviews found on this page.
         </div>
-      )}
+      ) : null}
 
       {/* Submit Form — dark section */}
       <section

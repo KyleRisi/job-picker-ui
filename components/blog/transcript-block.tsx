@@ -25,6 +25,7 @@ export function TranscriptBlock({
   const isDark = theme === 'dark';
   const [searchQuery, setSearchQuery] = useState('');
   const [activeMatchIndex, setActiveMatchIndex] = useState(0);
+  const [isOpen, setIsOpen] = useState(true);
   const matchRefs = useRef<Array<HTMLElement | null>>([]);
   const transcriptText = useMemo(() => transcriptNodesToText(content || []), [content]);
   const lowerQuery = searchQuery.trim().toLowerCase();
@@ -73,7 +74,30 @@ export function TranscriptBlock({
 
   return (
     <section className={`rounded-2xl border p-5 ${isDark ? 'border-white/20 bg-white/10' : 'border-carnival-ink/15 bg-white'}`}>
-      <h3 className={`text-xl font-black ${isDark ? 'text-white' : 'text-carnival-ink'}`}>{heading || 'Episode transcript'}</h3>
+      <button
+        type="button"
+        className={`flex w-full items-center justify-between gap-3 text-left ${isDark ? 'text-white' : 'text-carnival-ink'}`}
+        onClick={() => setIsOpen((current) => !current)}
+        aria-expanded={isOpen}
+      >
+        <h3 className="text-xl font-black">{heading || 'Episode transcript'}</h3>
+        <svg
+          viewBox="0 0 20 20"
+          aria-hidden="true"
+          className={`h-5 w-5 transition-transform ${isOpen ? 'rotate-180' : 'rotate-0'}`}
+        >
+          <path
+            d="M4.5 7.5L10 13l5.5-5.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+      {isOpen ? (
+        <>
       <div className="mt-4">
         <label className={`mb-2 block text-xs font-bold uppercase tracking-[0.2em] ${isDark ? 'text-white/70' : 'text-slate-500'}`}>Search transcript</label>
         <input
@@ -162,6 +186,8 @@ export function TranscriptBlock({
               ))}
         </p>
       </div>
+        </>
+      ) : null}
     </section>
   );
 }

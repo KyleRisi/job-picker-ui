@@ -11,6 +11,7 @@ type TeamMember = {
   imageSrc: string;
   imageAlt: string;
   imageClassName?: string;
+  href?: string;
 };
 
 export const metadata: Metadata = {
@@ -41,8 +42,12 @@ function pickDailyTitle(titles: string[]): string {
 }
 
 function MemberCard({ member }: { member: TeamMember }) {
-  return (
-    <article className="rounded-2xl border border-white/15 bg-white/10 p-5 text-center shadow-card backdrop-blur-sm">
+  const cardClassName = member.href
+    ? 'rounded-2xl border border-white/15 bg-white/10 p-5 text-center shadow-card backdrop-blur-sm transition-colors duration-200 hover:bg-white/15'
+    : 'rounded-2xl border border-white/15 bg-white/10 p-5 text-center shadow-card backdrop-blur-sm';
+
+  const cardContent = (
+    <>
       <div className="mx-auto h-32 w-32 overflow-hidden rounded-full border-4 border-carnival-gold/45 bg-carnival-cream/20 shadow-lg">
         <Image
           src={member.imageSrc}
@@ -56,6 +61,18 @@ function MemberCard({ member }: { member: TeamMember }) {
       <p className="mt-1 text-sm font-semibold uppercase tracking-wide text-carnival-gold/90">
         {member.title}
       </p>
+    </>
+  );
+
+  return (
+    <article className={cardClassName}>
+      {member.href ? (
+        <Link href={member.href} className="block" aria-label={`Open ${member.name} author page`}>
+          {cardContent}
+        </Link>
+      ) : (
+        cardContent
+      )}
     </article>
   );
 }
@@ -85,14 +102,16 @@ export default async function MeetTheTeamPage() {
       title: 'Ringmaster',
       imageSrc: '/Kyle-meet-the-team.svg',
       imageAlt: 'Kyle',
-      imageClassName: 'scale-150'
+      imageClassName: 'scale-150',
+      href: '/author/kyle-risi'
     },
     {
       name: 'Adam Cox',
       title: adamTitle,
       imageSrc: '/Adam-meet-the-team.svg',
       imageAlt: 'Adam',
-      imageClassName: 'scale-150'
+      imageClassName: 'scale-150',
+      href: '/author/adam-cox'
     },
     {
       name: 'Kieth',

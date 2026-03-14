@@ -19,7 +19,10 @@ type ColumnKey =
   | 'audioUrl'
   | 'sourceUrl'
   | 'description'
-  | 'descriptionHtml';
+  | 'descriptionHtml'
+  | 'actions';
+
+type EditableColumnKey = Exclude<ColumnKey, 'actions'>;
 
 type ColumnDefinition = {
   key: ColumnKey;
@@ -29,12 +32,15 @@ type ColumnDefinition = {
   cellClassName?: string;
   render: (episode: PodcastEpisode) => ReactNode;
 };
+type EditableColumnDefinition = Omit<ColumnDefinition, 'key'> & { key: EditableColumnKey };
 
 const PAGE_SIZE = 25;
 const WORKSPACE_EPISODES_COLUMNS_KEY = 'workspace_episodes_visible_columns';
 const MIN_COLUMN_WIDTH = 80;
 const MAX_COLUMN_WIDTH = 1200;
-const DEFAULT_VISIBLE_COLUMNS: ColumnKey[] = [
+const FIXED_COLUMN: ColumnKey = 'actions';
+const ACTIONS_COLUMN_WIDTH = 132;
+const DEFAULT_VISIBLE_COLUMNS: EditableColumnKey[] = [
   'artworkUrl',
   'episodeNumber',
   'title',
@@ -179,28 +185,53 @@ const ALL_COLUMNS: ColumnDefinition[] = [
     headClassName: 'whitespace-nowrap',
     cellClassName: 'text-slate-700',
     render: (episode) => <span title={episode.descriptionHtml}>{compactValue(episode.descriptionHtml, 120)}</span>
+  },
+  {
+    key: 'actions',
+    label: 'Actions',
+    width: ACTIONS_COLUMN_WIDTH,
+    headClassName: 'whitespace-nowrap',
+    cellClassName: 'whitespace-nowrap text-slate-700',
+    render: (episode) => (
+      <button
+        type="button"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          window.open(`/episodes/${episode.slug}`, '_blank', 'noopener,noreferrer');
+        }}
+        onMouseDown={(event) => event.stopPropagation()}
+        className="inline-flex h-7 items-center justify-center rounded-md border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+      >
+        View
+      </button>
+    )
   }
 ];
 
 const COLUMN_BY_KEY = new Map(ALL_COLUMNS.map((column) => [column.key, column]));
+const EDITABLE_COLUMNS: EditableColumnDefinition[] = ALL_COLUMNS.filter(
+  (column): column is EditableColumnDefinition => column.key !== FIXED_COLUMN
+);
+const EDITABLE_COLUMN_BY_KEY = new Map(EDITABLE_COLUMNS.map((column) => [column.key, column]));
 const DEFAULT_COLUMN_WIDTHS: Record<ColumnKey, number> = ALL_COLUMNS.reduce((acc, column) => {
   acc[column.key] = column.width;
   return acc;
 }, {} as Record<ColumnKey, number>);
 
-function toPersistedColumns(value: unknown): ColumnKey[] {
+function toPersistedColumns(value: unknown): EditableColumnKey[] {
   if (!Array.isArray(value)) return [];
 
-  const validKeys = new Set(ALL_COLUMNS.map((column) => column.key));
+  const validKeys = new Set(EDITABLE_COLUMNS.map((column) => column.key));
   const normalized = value
-    .map((item) => `${item}` as ColumnKey)
-    .filter((item): item is ColumnKey => validKeys.has(item));
+    .map((item) => `${item}` as EditableColumnKey)
+    .filter((item): item is EditableColumnKey => validKeys.has(item));
 
   if (!normalized.length) return [];
 
   // Remove duplicates while keeping first-seen order.
-  const seen = new Set<ColumnKey>();
-  const deduped: ColumnKey[] = [];
+  const seen = new Set<EditableColumnKey>();
+  const deduped: EditableColumnKey[] = [];
   normalized.forEach((key) => {
     if (seen.has(key)) return;
     seen.add(key);
@@ -238,7 +269,7 @@ function toColumnWidths(value?: Partial<Record<ColumnKey, number>>): Record<Colu
   };
 }
 
-function persistTableConfig(columns: ColumnKey[], widths: Record<ColumnKey, number>) {
+function persistTableConfig(columns: EditableColumnKey[], widths: Record<ColumnKey, number>) {
   try {
     window.localStorage.setItem(
       WORKSPACE_EPISODES_COLUMNS_KEY,
@@ -258,13 +289,13 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
   const [yearFilter, setYearFilter] = useState('all');
   const [sortMode, setSortMode] = useState<SortMode>('newest');
   const [page, setPage] = useState(1);
-  const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
+  const [visibleColumns, setVisibleColumns] = useState<EditableColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
   const [columnWidths, setColumnWidths] = useState<Record<ColumnKey, number>>(DEFAULT_COLUMN_WIDTHS);
   const [columnEditorOpen, setColumnEditorOpen] = useState(false);
   const [columnSearch, setColumnSearch] = useState('');
-  const [draftColumns, setDraftColumns] = useState<ColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
-  const [draggingColumn, setDraggingColumn] = useState<ColumnKey | null>(null);
-  const [dragOverState, setDragOverState] = useState<{ key: ColumnKey; position: 'before' | 'after' } | null>(null);
+  const [draftColumns, setDraftColumns] = useState<EditableColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
+  const [draggingColumn, setDraggingColumn] = useState<EditableColumnKey | null>(null);
+  const [dragOverState, setDragOverState] = useState<{ key: EditableColumnKey; position: 'before' | 'after' } | null>(null);
   const [resizing, setResizing] = useState<{ key: ColumnKey; startX: number; startWidth: number } | null>(null);
   const [configRestored, setConfigRestored] = useState(false);
   const widthsRef = useRef(columnWidths);
@@ -422,23 +453,37 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
       })
       .filter((column): column is ColumnDefinition => Boolean(column));
   }, [visibleColumns, columnWidths]);
+  const fixedColumnDefinition = useMemo(() => {
+    const column = COLUMN_BY_KEY.get(FIXED_COLUMN);
+    if (!column) return null;
+    return {
+      ...column,
+      width: sanitizeColumnWidth(columnWidths[column.key], column.width)
+    } as ColumnDefinition;
+  }, [columnWidths]);
+  const renderedColumnDefinitions = useMemo(
+    () => fixedColumnDefinition ? [...visibleColumnDefinitions, fixedColumnDefinition] : visibleColumnDefinitions,
+    [fixedColumnDefinition, visibleColumnDefinitions]
+  );
 
   const selectedDraftColumns = useMemo(() => {
-    return draftColumns.map((columnKey) => COLUMN_BY_KEY.get(columnKey)).filter((column): column is ColumnDefinition => Boolean(column));
+    return draftColumns
+      .map((columnKey) => EDITABLE_COLUMN_BY_KEY.get(columnKey))
+      .filter((column): column is EditableColumnDefinition => Boolean(column));
   }, [draftColumns]);
 
   const searchableColumns = useMemo(() => {
     const normalized = columnSearch.trim().toLowerCase();
-    if (!normalized) return ALL_COLUMNS;
-    return ALL_COLUMNS.filter((column) => column.label.toLowerCase().includes(normalized));
+    if (!normalized) return EDITABLE_COLUMNS;
+    return EDITABLE_COLUMNS.filter((column) => column.label.toLowerCase().includes(normalized));
   }, [columnSearch]);
 
   const tableMinWidth = useMemo(() => {
-    const sum = visibleColumnDefinitions.reduce((acc, column) => acc + column.width, 0);
+    const sum = renderedColumnDefinitions.reduce((acc, column) => acc + column.width, 0);
     return Math.max(980, sum);
-  }, [visibleColumnDefinitions]);
+  }, [renderedColumnDefinitions]);
 
-  function toggleDraftColumn(columnKey: ColumnKey) {
+  function toggleDraftColumn(columnKey: EditableColumnKey) {
     setDraftColumns((current) => {
       if (current.includes(columnKey)) {
         return current.filter((key) => key !== columnKey);
@@ -463,7 +508,7 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
     setColumnEditorOpen(false);
   }
 
-  function moveDraftColumn(fromKey: ColumnKey, toKey: ColumnKey, position: 'before' | 'after') {
+  function moveDraftColumn(fromKey: EditableColumnKey, toKey: EditableColumnKey, position: 'before' | 'after') {
     if (fromKey === toKey) return;
 
     setDraftColumns((current) => {
@@ -598,19 +643,21 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
       <div className="overflow-x-auto rounded-md border border-slate-300 bg-white">
         <table className="w-max text-left text-sm" style={{ minWidth: `${tableMinWidth}px` }}>
           <colgroup>
-            {visibleColumnDefinitions.map((column) => (
+            {renderedColumnDefinitions.map((column) => (
               <col key={column.key} style={{ width: `${column.width}px` }} />
             ))}
           </colgroup>
 
           <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
             <tr>
-              {visibleColumnDefinitions.map((column) => (
-                <th
-                  key={column.key}
-                  className={`relative border-l border-slate-300 px-3 py-2 font-semibold ${column.headClassName || ''}`}
-                  style={{ borderLeftWidth: '0.5px' }}
-                >
+              {renderedColumnDefinitions.map((column) => {
+                const isFixed = column.key === FIXED_COLUMN;
+                return (
+                  <th
+                    key={column.key}
+                    className={`relative border-l border-slate-300 py-2 font-semibold ${column.headClassName || ''} ${isFixed ? 'sticky right-0 z-20 bg-slate-100 px-2 text-left shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.25)]' : 'px-3'}`}
+                    style={{ borderLeftWidth: '0.5px' }}
+                  >
                   <span className="pr-2">{column.label}</span>
                   <button
                     type="button"
@@ -621,8 +668,9 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
                   >
                     <span className="mx-auto block h-full w-px bg-slate-300/0 transition-colors hover:bg-slate-400" />
                   </button>
-                </th>
-              ))}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
 
@@ -644,18 +692,24 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
                     }
                   }}
                 >
-                  {visibleColumnDefinitions.map((column) => (
-                    <td key={`${episode.id}:${column.key}`} className={`align-middle px-3 py-2 ${column.cellClassName || 'text-slate-700'}`}>
-                      {column.render(episode)}
-                    </td>
-                  ))}
+                  {renderedColumnDefinitions.map((column) => {
+                    const isFixed = column.key === FIXED_COLUMN;
+                    return (
+                      <td
+                        key={`${episode.id}:${column.key}`}
+                        className={`align-middle py-2 ${column.cellClassName || 'text-slate-700'} ${isFixed ? 'sticky right-0 z-10 bg-white px-2 shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.2)] group-hover:bg-sky-50' : 'px-3'}`}
+                      >
+                        {column.render(episode)}
+                      </td>
+                    );
+                  })}
                 </tr>
               );
             })}
 
             {!pagedEpisodes.length ? (
               <tr>
-                <td colSpan={visibleColumnDefinitions.length} className="px-3 py-8 text-center text-sm text-slate-600">
+                <td colSpan={renderedColumnDefinitions.length} className="px-3 py-8 text-center text-sm text-slate-600">
                   No episodes match your filters.
                 </td>
               </tr>
@@ -725,6 +779,9 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
                     className="h-9 w-full rounded-md border border-slate-300 px-3 text-sm"
                   />
                 </div>
+                <p className="px-3 pt-2 text-xs text-slate-500">
+                  Actions is fixed and always visible.
+                </p>
                 <div className="max-h-[340px] space-y-1 overflow-y-auto p-3">
                   {searchableColumns.map((column) => (
                     <label key={column.key} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">

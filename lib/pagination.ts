@@ -25,14 +25,17 @@ export function buildMobileCompactPagination(currentPage: number, totalPages: nu
   const page = normalizedPage(currentPage);
   const total = Math.max(1, normalizedPage(totalPages));
 
-  if (total <= 5) {
+  if (total <= 3) {
     return { pages: Array.from({ length: total }, (_, index) => index + 1) };
   }
 
-  const set = new Set<number>([1, total, page - 1, page, page + 1]);
-  const pages = Array.from(set)
-    .filter((item) => item >= 1 && item <= total)
-    .sort((a, b) => a - b);
+  if (page <= 1) {
+    return { pages: [1, 2, 3] };
+  }
 
-  return { pages };
+  if (page >= total) {
+    return { pages: [total - 2, total - 1, total] };
+  }
+
+  return { pages: [page - 1, page, page + 1] };
 }

@@ -14,7 +14,7 @@ export type MerchProduct = {
 const merchProducts: MerchProduct[] = [
   {
     slug: 'crotch-dangler',
-    name: 'The Official Compendium Keychain',
+    name: 'Official Compendium Keychain (Crotch Dangler)',
     shortName: 'Crotch Dangler',
     priceLabel: '£10.00',
     badge: 'First Drop',

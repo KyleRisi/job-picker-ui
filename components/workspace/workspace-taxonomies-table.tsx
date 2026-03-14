@@ -56,8 +56,13 @@ type TaxonomyApiItem = {
 const PAGE_SIZE = 50;
 const TAXONOMY_COLUMN_WIDTHS_STORAGE_KEY = 'workspace_taxonomies_column_widths';
 const TAXONOMY_VISIBLE_COLUMNS_STORAGE_KEY = 'workspace_taxonomies_visible_columns';
+const TAXONOMY_ACTIONS_WIDTH_CUSTOMIZED_STORAGE_KEY = 'workspace_taxonomies_actions_width_customized';
 const MIN_COLUMN_WIDTH = 120;
 const MAX_COLUMN_WIDTH = 1200;
+const ACTIONS_COLUMN_MIN_WIDTH = 132;
+const ACTIONS_COLUMN_DEFAULT_WIDTH = 132;
+const LEGACY_ACTIONS_COLUMN_DEFAULT_WIDTH = 180;
+const LEGACY_ACTIONS_COLUMN_FALLBACK_WIDTH = 128;
 
 const DEFAULT_COLUMN_WIDTHS: Record<ColumnKey, number> = {
   id: 260,
@@ -73,7 +78,7 @@ const DEFAULT_COLUMN_WIDTHS: Record<ColumnKey, number> = {
   status: 220,
   created_at: 180,
   updated_at: 180,
-  actions: 180
+  actions: ACTIONS_COLUMN_DEFAULT_WIDTH
 };
 
 const ALL_COLUMNS: Array<{ key: ColumnKey; label: string }> = [
@@ -153,6 +158,15 @@ function formatShortDate(value: string | null | undefined) {
   return parsed.toLocaleDateString('en-GB');
 }
 
+function getColumnMinWidth(column: ColumnKey) {
+  return column === FIXED_COLUMN ? ACTIONS_COLUMN_MIN_WIDTH : MIN_COLUMN_WIDTH;
+}
+
+function clampColumnWidth(column: ColumnKey, value: number, fallback: number) {
+  if (!Number.isFinite(value)) return fallback;
+  return Math.max(getColumnMinWidth(column), Math.min(MAX_COLUMN_WIDTH, Math.round(value)));
+}
+
 export function WorkspaceTaxonomiesTable({ rows }: { rows: WorkspaceTaxonomyRow[] }) {
   const [tableRows, setTableRows] = useState(rows);
   const [query, setQuery] = useState('');
@@ -209,17 +223,32 @@ export function WorkspaceTaxonomiesTable({ rows }: { rows: WorkspaceTaxonomyRow[
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(TAXONOMY_COLUMN_WIDTHS_STORAGE_KEY);
+      const actionsWidthCustomized = window.localStorage.getItem(TAXONOMY_ACTIONS_WIDTH_CUSTOMIZED_STORAGE_KEY) === '1';
       if (stored) {
         const parsed = JSON.parse(stored) as Partial<Record<ColumnKey, number>>;
         setColumnWidths((current) => ({
           ...current,
           ...Object.fromEntries(
             (Object.keys(DEFAULT_COLUMN_WIDTHS) as ColumnKey[]).map((key) => {
-              const raw = Number(parsed[key] ?? current[key]);
-              const bounded = Number.isFinite(raw)
-                ? Math.max(MIN_COLUMN_WIDTH, Math.min(MAX_COLUMN_WIDTH, Math.round(raw)))
-                : current[key];
-              return [key, bounded];
+              const persisted = parsed[key];
+              const raw =
+                key === 'actions'
+                  ? (
+                    actionsWidthCustomized
+                      ? Number(persisted ?? current[key])
+                      : ACTIONS_COLUMN_DEFAULT_WIDTH
+                  )
+                  : Number(persisted ?? current[key]);
+              const bounded = clampColumnWidth(key, raw, current[key]);
+              const migrated =
+                key === 'actions'
+                  && (
+                    Number(persisted) === LEGACY_ACTIONS_COLUMN_DEFAULT_WIDTH
+                    || Number(persisted) === LEGACY_ACTIONS_COLUMN_FALLBACK_WIDTH
+                  )
+                  ? ACTIONS_COLUMN_DEFAULT_WIDTH
+                  : bounded;
+              return [key, migrated];
             })
           )
         }));
@@ -255,7 +284,11 @@ export function WorkspaceTaxonomiesTable({ rows }: { rows: WorkspaceTaxonomyRow[
 
     function onMouseMove(event: MouseEvent) {
       const delta = event.clientX - activeResize.startX;
-      const nextWidth = Math.max(MIN_COLUMN_WIDTH, Math.min(MAX_COLUMN_WIDTH, Math.round(activeResize.startWidth + delta)));
+      const nextWidth = clampColumnWidth(
+        activeResize.key,
+        activeResize.startWidth + delta,
+        activeResize.startWidth
+      );
       setColumnWidths((current) => ({
         ...current,
         [activeResize.key]: nextWidth
@@ -337,6 +370,13 @@ export function WorkspaceTaxonomiesTable({ rows }: { rows: WorkspaceTaxonomyRow[
   function startColumnResize(column: ColumnKey, event: ReactMouseEvent<HTMLButtonElement>) {
     event.preventDefault();
     event.stopPropagation();
+    if (column === FIXED_COLUMN) {
+      try {
+        window.localStorage.setItem(TAXONOMY_ACTIONS_WIDTH_CUSTOMIZED_STORAGE_KEY, '1');
+      } catch {
+        // Ignore storage write failures in restricted contexts.
+      }
+    }
     setResizing({
       key: column,
       startX: event.clientX,
@@ -409,7 +449,7 @@ export function WorkspaceTaxonomiesTable({ rows }: { rows: WorkspaceTaxonomyRow[
 
     if (column === 'actions') {
       return (
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex w-max items-center justify-start gap-2">
           <button
             type="button"
             onClick={() => startEditing(row)}
@@ -558,9 +598,9 @@ export function WorkspaceTaxonomiesTable({ rows }: { rows: WorkspaceTaxonomyRow[
                 return (
                   <th
                     key={column}
-                    className={`relative border-l border-slate-300 px-3 py-2 font-semibold ${isFixed ? 'sticky right-0 z-20 bg-slate-100 shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.25)]' : ''}`}
+                    className={`relative border-l border-slate-300 py-2 font-semibold ${isFixed ? 'sticky right-0 z-20 bg-slate-100 px-2 text-left shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.25)]' : 'px-3'}`}
                   >
-                    <span className="pr-2">{label}</span>
+                    <span className={`pr-2 ${isFixed ? 'whitespace-nowrap' : ''}`}>{label}</span>
                     <button
                       type="button"
                       onMouseDown={(event) => startColumnResize(column, event)}
@@ -580,7 +620,7 @@ export function WorkspaceTaxonomiesTable({ rows }: { rows: WorkspaceTaxonomyRow[
                 {renderedColumns.map((column) => (
                   <td
                     key={`${row.id}:${column}`}
-                    className={`px-3 py-2 text-slate-700 ${column === FIXED_COLUMN ? 'sticky right-0 z-10 bg-white shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.2)]' : ''}`}
+                    className={`py-2 text-slate-700 ${column === FIXED_COLUMN ? 'sticky right-0 z-10 bg-white px-2 shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.2)]' : 'px-3'}`}
                   >
                     {renderCell(row, column)}
                   </td>

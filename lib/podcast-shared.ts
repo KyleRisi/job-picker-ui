@@ -59,6 +59,7 @@ export type EpisodeSourceSnapshot = {
 
 export type EpisodeEditorialSnapshot = {
   id: string | null;
+  authorId: string | null;
   webTitle: string | null;
   webSlug: string | null;
   excerpt: string | null;

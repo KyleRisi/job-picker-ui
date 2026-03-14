@@ -9,8 +9,9 @@ import { usePodcastPlayback } from '@/components/podcast-playback-provider';
 import { LiveSearchInput } from '@/components/live-search-input';
 import { FeaturedEpisodeShowcase } from '@/components/featured-episode-showcase';
 import { ViewModeToggle, VIEW_MODE_STORAGE_KEY, type ViewMode } from '@/components/view-mode-toggle';
+import { CompactPagination } from '@/components/compact-pagination';
 import { trackMixpanel } from '@/lib/mixpanel-browser';
-import { buildMobileCompactPagination, pageHref } from '@/lib/pagination';
+import { pageHref } from '@/lib/pagination';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
 
 function toExcerpt(value: string, maxLength: number): string {
@@ -681,11 +682,8 @@ export function EpisodesBrowser({
   const nextPageHref = pagination && pagination.page < pagination.totalPages
     ? pageHref(basePath, pagination.page + 1, preservedSearchParams, listHash)
     : null;
-  const previousPageHref = pagination && pagination.page > 1
-    ? pageHref(basePath, pagination.page - 1, preservedSearchParams, listHash)
-    : null;
   const hasMore = !isSearching && (pagination ? Boolean(nextPageHref) : visibleCount < allStandardEpisodes.length);
-  const mobileCompactPagination = pagination ? buildMobileCompactPagination(pagination.page, pagination.totalPages) : null;
+  const hrefForPage = (page: number) => pageHref(basePath, page, preservedSearchParams, listHash);
 
   const searchPanel = (
     <LiveSearchInput
@@ -789,55 +787,13 @@ export function EpisodesBrowser({
             {middleSlot}
 
             {!isSearching && pagination && pagination.totalPages > 1 ? (
-              <nav className="pt-4" aria-label="Episodes pagination">
-                <div className="mx-auto flex w-fit max-w-full items-center justify-center gap-2 overflow-x-auto whitespace-nowrap px-1">
-                  {previousPageHref ? (
-                    <Link
-                      href={previousPageHref}
-                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-carnival-ink text-white transition hover:brightness-110"
-                      rel="prev"
-                      aria-label="Previous page"
-                    >
-                      <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                        <path d="M12.5 4.5L7 10l5.5 5.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </Link>
-                  ) : null}
-
-                  {mobileCompactPagination?.pages.map((item) => (
-                    item === pagination.page ? (
-                      <span
-                        key={`mobile-page-${item}`}
-                        className="inline-flex h-10 min-w-10 shrink-0 items-center justify-center rounded-md bg-carnival-red px-3 text-sm font-black text-white"
-                        aria-current="page"
-                      >
-                        {item}
-                      </span>
-                    ) : (
-                      <Link
-                        key={`mobile-page-${item}`}
-                        href={pageHref(basePath, item, preservedSearchParams, listHash)}
-                        className="inline-flex h-10 min-w-10 shrink-0 items-center justify-center rounded-md bg-carnival-ink px-3 text-sm font-semibold text-white transition hover:brightness-110"
-                      >
-                        {item}
-                      </Link>
-                    )
-                  ))}
-
-                  {nextPageHref ? (
-                  <Link
-                    href={nextPageHref}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-carnival-ink text-white transition hover:brightness-110"
-                    rel="next"
-                    aria-label="Next page"
-                  >
-                    <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                      <path d="M7.5 4.5L13 10l-5.5 5.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </Link>
-                ) : null}
-                </div>
-              </nav>
+              <CompactPagination
+                page={pagination.page}
+                totalPages={pagination.totalPages}
+                hrefForPage={hrefForPage}
+                ariaLabel="Episodes pagination"
+                className="pt-4"
+              />
             ) : null}
           </section>
         </>

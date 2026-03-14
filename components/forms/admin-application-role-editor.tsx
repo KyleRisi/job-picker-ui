@@ -18,6 +18,7 @@ type RoleEditorProps = {
   salaryBenefitOptions: string[];
   onSaved?: () => void;
   closeOnSaveUrl?: string;
+  variant?: 'admin' | 'workspace';
 };
 
 export function AdminApplicationRoleEditor({
@@ -25,7 +26,8 @@ export function AdminApplicationRoleEditor({
   reportsToOptions,
   salaryBenefitOptions,
   onSaved,
-  closeOnSaveUrl
+  closeOnSaveUrl,
+  variant = 'admin'
 }: RoleEditorProps) {
   const router = useRouter();
   const [message, setMessage] = useState('');
@@ -42,6 +44,27 @@ export function AdminApplicationRoleEditor({
 
   const allowedManagers = reportsToOptions.map((v) => v.trim()).filter(Boolean);
   const hasValidCurrentManager = allowedManagers.includes(job.reports_to);
+  const isWorkspace = variant === 'workspace';
+
+  const sectionClassName = isWorkspace
+    ? 'rounded-md border border-slate-300 bg-white p-4 sm:p-5 space-y-4'
+    : 'card space-y-4';
+  const headingClassName = isWorkspace ? 'text-lg font-semibold text-slate-900' : 'text-xl font-bold';
+  const labelClassName = isWorkspace
+    ? 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600'
+    : 'label';
+  const inputClassName = isWorkspace
+    ? 'h-10 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-900'
+    : 'input';
+  const textareaClassName = isWorkspace
+    ? 'min-h-40 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900'
+    : 'input min-h-40';
+  const saveButtonClassName = isWorkspace
+    ? 'inline-flex h-9 items-center justify-center rounded-md bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-60'
+    : 'btn-primary';
+  const messageClassName = isWorkspace
+    ? 'rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700'
+    : 'rounded-md bg-blue-100 p-3';
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -86,17 +109,17 @@ export function AdminApplicationRoleEditor({
   }
 
   return (
-    <section className="card space-y-4">
-      <h2 className="text-xl font-bold">Role Details</h2>
+    <section className={sectionClassName}>
+      <h2 className={headingClassName}>Role Details</h2>
       <form onSubmit={onSubmit} className="grid gap-3 md:grid-cols-2">
         <div>
-          <label className="label" htmlFor="title">Job title</label>
-          <input className="input" id="title" name="title" defaultValue={job.title} required />
+          <label className={labelClassName} htmlFor="title">Job title</label>
+          <input className={inputClassName} id="title" name="title" defaultValue={job.title} required />
         </div>
         <div>
-          <label className="label" htmlFor="reports_to">Reports to</label>
+          <label className={labelClassName} htmlFor="reports_to">Reports to</label>
           <select
-            className="input"
+            className={inputClassName}
             id="reports_to"
             name="reports_to"
             defaultValue={hasValidCurrentManager ? job.reports_to : ''}
@@ -112,9 +135,9 @@ export function AdminApplicationRoleEditor({
           ) : null}
         </div>
         <div>
-          <label className="label" htmlFor="salaryPreset">Salary + benefits</label>
+          <label className={labelClassName} htmlFor="salaryPreset">Salary + benefits</label>
           <select
-            className="input"
+            className={inputClassName}
             id="salaryPreset"
             value={salaryPreset}
             onChange={(e) => setSalaryPreset(e.currentTarget.value)}
@@ -128,9 +151,9 @@ export function AdminApplicationRoleEditor({
         </div>
         {salaryPreset === '__custom__' ? (
           <div>
-            <label className="label" htmlFor="salaryCustom">Custom salary + benefits</label>
+            <label className={labelClassName} htmlFor="salaryCustom">Custom salary + benefits</label>
             <input
-              className="input"
+              className={inputClassName}
               id="salaryCustom"
               value={salaryCustom}
               onChange={(e) => setSalaryCustom(e.currentTarget.value)}
@@ -140,14 +163,16 @@ export function AdminApplicationRoleEditor({
           </div>
         ) : null}
         <div className="md:col-span-2">
-          <label className="label" htmlFor="description">Description</label>
-          <textarea className="input min-h-40" id="description" name="description" defaultValue={job.description} required />
+          <label className={labelClassName} htmlFor="description">Description</label>
+          <textarea className={textareaClassName} id="description" name="description" defaultValue={job.description} required />
         </div>
         <div className="md:col-span-2">
-          <button className="btn-primary" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save role details'}</button>
+          <button className={saveButtonClassName} type="submit" disabled={saving}>
+            {saving ? 'Saving...' : 'Save role details'}
+          </button>
         </div>
       </form>
-      {message ? <p className="rounded-md bg-blue-100 p-3">{message}</p> : null}
+      {message ? <p className={messageClassName}>{message}</p> : null}
     </section>
   );
 }

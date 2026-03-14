@@ -82,14 +82,19 @@ export async function getSettings() {
   return out;
 }
 
-export async function getJobsForPublic() {
+export async function getJobsForPublic(options?: { includeFilledApplicationId?: boolean }) {
+  const includeFilledApplicationId = Boolean(options?.includeFilledApplicationId);
   const supabase = createSupabaseAdminClient();
   const { data: jobs, error } = await supabase.from('jobs').select('*').order('job_ref', { ascending: false });
   if (error) throw error;
 
   const { data: assignments } = await supabase
     .from('assignments')
-    .select('job_id,first_name,full_name,created_at')
+    .select(
+      includeFilledApplicationId
+        ? 'job_id,first_name,full_name,created_at,assignment_ref,email,q1,q2,q3,day_to_day,incidents,kpi_assessment,consent_read_on_show'
+        : 'job_id,first_name,full_name,created_at'
+    )
     .eq('active', true);
 
   const { data: broadcastRows } = await supabase
@@ -97,19 +102,86 @@ export async function getJobsForPublic() {
     .select('job_id,broadcasted_on_show,broadcasted_at')
     .eq('broadcasted_on_show', true);
 
+  const assignmentList = ((assignments || []) as unknown) as Array<{
+    job_id: string;
+    first_name?: string | null;
+    full_name?: string | null;
+    created_at?: string | null;
+    assignment_ref?: string | null;
+    email?: string | null;
+    q1?: string | null;
+    q2?: string | null;
+    q3?: string | null;
+    day_to_day?: string | null;
+    incidents?: string | null;
+    kpi_assessment?: string | null;
+    consent_read_on_show?: boolean | null;
+  }>;
+
   const filledShortMap = new Map(
-    (assignments || []).map((a) => [
+    assignmentList.map((a) => [
       a.job_id,
       sanitizeReplacementChars(toFirstAndLastInitial(a.full_name || '', a.first_name || ''))
     ])
   );
   const filledFullMap = new Map(
-    (assignments || []).map((a) => [a.job_id, sanitizeReplacementChars(`${a.full_name || ''}`.trim())])
+    assignmentList.map((a) => [a.job_id, sanitizeReplacementChars(`${a.full_name || ''}`.trim())])
   );
-  const filledAtMap = new Map((assignments || []).map((a) => [a.job_id, `${a.created_at || ''}`]));
+  const filledAtMap = new Map(assignmentList.map((a) => [a.job_id, `${a.created_at || ''}`]));
+  const consentReadOnShowMap = new Map(
+    assignmentList.map((a) => [a.job_id, Boolean(a.consent_read_on_show)])
+  );
   const broadcastMap = new Map(
     (broadcastRows || []).map((b) => [b.job_id, `${b.broadcasted_at || ''}`])
   );
+  let filledApplicationIdByJobId = new Map<string, string>();
+
+  if (includeFilledApplicationId && assignmentList.length) {
+    const assignmentRows = assignmentList.filter(
+      (row): row is typeof row & { assignment_ref: string } => Boolean(row.assignment_ref)
+    );
+    const refs = assignmentRows.map((row) => row.assignment_ref).filter(Boolean);
+
+    if (refs.length) {
+      let { data: archives } = await supabase
+        .from('applications_archive')
+        .select('id,assignment_ref')
+        .in('assignment_ref', refs);
+
+      const existingRefs = new Set((archives || []).map((row) => row.assignment_ref));
+      const missingRows = assignmentRows.filter((row) => !existingRefs.has(row.assignment_ref));
+
+      if (missingRows.length) {
+        await supabase.from('applications_archive').insert(
+          missingRows.map((row) => ({
+            job_id: row.job_id,
+            assignment_ref: row.assignment_ref,
+            full_name: row.full_name || '-',
+            email: row.email || 'unknown@example.invalid',
+            q1: row.q1 || '-',
+            q2: row.q2 || '-',
+            q3: row.q3 || '-',
+            day_to_day: row.day_to_day || '',
+            incidents: row.incidents || '',
+            kpi_assessment: row.kpi_assessment || '',
+            consent_read_on_show: Boolean(row.consent_read_on_show)
+          }))
+        );
+        const refreshed = await supabase
+          .from('applications_archive')
+          .select('id,assignment_ref')
+          .in('assignment_ref', refs);
+        archives = refreshed.data || [];
+      }
+
+      const appIdByRef = new Map((archives || []).map((row) => [row.assignment_ref, row.id]));
+      filledApplicationIdByJobId = new Map(
+        assignmentRows
+          .map((row) => [row.job_id, appIdByRef.get(row.assignment_ref) || ''])
+          .filter((pair): pair is [string, string] => Boolean(pair[0] && pair[1]))
+      );
+    }
+  }
 
   return (jobs || []).map((job) => {
     const hasActiveAssignment = filledShortMap.has(job.id);
@@ -124,6 +196,8 @@ export async function getJobsForPublic() {
       filledBy: filledShortMap.get(job.id) || null,
       filledByFull: filledFullMap.get(job.id) || null,
       filledAt: filledAtMap.get(job.id) || null,
+      consentReadOnShow: includeFilledApplicationId ? Boolean(consentReadOnShowMap.get(job.id)) : null,
+      filledApplicationId: includeFilledApplicationId ? filledApplicationIdByJobId.get(job.id) || null : null,
       broadcastedOnShow: broadcastMap.has(job.id),
       broadcastedAt: broadcastMap.get(job.id) || null
     };

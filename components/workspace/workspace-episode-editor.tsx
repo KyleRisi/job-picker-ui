@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 import { WorkspaceEditorShell } from './workspace-editor-shell';
 
@@ -69,7 +70,14 @@ export function WorkspaceEpisodeEditor({ episode }: { episode: EpisodeStub }) {
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-700">Artwork</label>
               <div className="overflow-hidden rounded-md border border-slate-200">
-                <img src={episode.artworkUrl} alt="" className="h-auto w-full object-cover" />
+                <Image
+                  src={episode.artworkUrl}
+                  alt=""
+                  width={1200}
+                  height={1200}
+                  className="h-auto w-full object-cover"
+                  unoptimized
+                />
               </div>
             </div>
           )}

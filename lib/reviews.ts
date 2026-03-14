@@ -72,6 +72,58 @@ export async function getVisibleReviews(limit?: number): Promise<PublicReview[]>
   return (data as ReviewRow[]).map(toPublicReview);
 }
 
+export async function getVisibleReviewsPage(
+  page = 1,
+  pageSize = 12
+): Promise<{
+  reviews: PublicReview[];
+  pagination: { page: number; totalPages: number; total: number; pageSize: number };
+}> {
+  const normalizedPageSize = Number.isFinite(pageSize) && pageSize > 0 ? Math.floor(pageSize) : 12;
+  const requestedPage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+  const total = await getVisibleReviewsCount();
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const safePage = Math.min(requestedPage, totalPages);
+  const from = (safePage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize - 1;
+
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('id,title,body,rating,author,country,source,status,received_at')
+    .eq('status', 'visible')
+    .order('received_at', { ascending: false })
+    .range(from, to);
+
+  if (error || !data) {
+    const fallbackRows = getFallbackPublicReviews();
+    const fallbackTotal = fallbackRows.length;
+    const fallbackTotalPages = Math.max(1, Math.ceil(fallbackTotal / normalizedPageSize));
+    const fallbackSafePage = Math.min(requestedPage, fallbackTotalPages);
+    const fallbackStart = (fallbackSafePage - 1) * normalizedPageSize;
+    const fallbackReviews = fallbackRows.slice(fallbackStart, fallbackStart + normalizedPageSize);
+    return {
+      reviews: fallbackReviews,
+      pagination: {
+        page: fallbackSafePage,
+        totalPages: fallbackTotalPages,
+        total: fallbackTotal,
+        pageSize: normalizedPageSize
+      }
+    };
+  }
+
+  return {
+    reviews: (data as ReviewRow[]).map(toPublicReview),
+    pagination: {
+      page: safePage,
+      totalPages,
+      total,
+      pageSize: normalizedPageSize
+    }
+  };
+}
+
 export async function getVisibleReviewsCount(): Promise<number> {
   const supabase = createSupabaseAdminClient();
   const { count, error } = await supabase

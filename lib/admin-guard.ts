@@ -8,6 +8,5 @@ export function isAdminBypassed(): boolean {
 
 export function ensureAdminPageAuth() {
   if (isAdminBypassed()) return;
-  if (!isAdminSessionActive()) redirect('/admin');
+  if (!isAdminSessionActive()) redirect('/workspace/login');
 }
-

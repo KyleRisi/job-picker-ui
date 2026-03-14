@@ -1,12 +1,10 @@
-"use client";
+'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { EpisodeCard } from '@/components/episodes-browser';
 import type { PodcastEpisode } from '@/lib/podcast-shared';
 
 const DESKTOP_INITIAL_VISIBLE_COUNT = 6;
-const DESKTOP_LOAD_MORE_COUNT = 6;
 
 export function EpisodeDiscoveryRail({
   title,
@@ -17,11 +15,9 @@ export function EpisodeDiscoveryRail({
   href: string;
   episodes: PodcastEpisode[];
 }) {
-  const [desktopVisibleCount, setDesktopVisibleCount] = useState(DESKTOP_INITIAL_VISIBLE_COUNT);
   if (!episodes.length) return null;
 
-  const desktopEpisodes = episodes.slice(0, desktopVisibleCount);
-  const hasMoreDesktopEpisodes = desktopVisibleCount < episodes.length;
+  const desktopEpisodes = episodes.slice(0, DESKTOP_INITIAL_VISIBLE_COUNT);
 
   return (
     <section className="space-y-4" aria-label={title}>
@@ -57,15 +53,14 @@ export function EpisodeDiscoveryRail({
           ))}
         </div>
 
-        {hasMoreDesktopEpisodes ? (
+        {episodes.length > DESKTOP_INITIAL_VISIBLE_COUNT ? (
           <div className="flex justify-center pt-2">
-            <button
-              type="button"
-              onClick={() => setDesktopVisibleCount((current) => Math.min(current + DESKTOP_LOAD_MORE_COUNT, episodes.length))}
+            <Link
+              href={href}
               className="inline-flex items-center justify-center rounded-full bg-carnival-red px-5 py-2.5 text-sm font-black uppercase tracking-wide text-white transition hover:brightness-110"
             >
-              Load More
-            </button>
+              See All
+            </Link>
           </div>
         ) : null}
       </div>

@@ -14,7 +14,10 @@ type ColumnKey =
   | 'country'
   | 'source'
   | 'status'
-  | 'receivedAt';
+  | 'receivedAt'
+  | 'actions';
+
+type EditableColumnKey = Exclude<ColumnKey, 'actions'>;
 
 type ColumnDefinition = {
   key: ColumnKey;
@@ -24,12 +27,15 @@ type ColumnDefinition = {
   cellClassName?: string;
   render: (review: AdminReview) => ReactNode;
 };
+type EditableColumnDefinition = Omit<ColumnDefinition, 'key'> & { key: EditableColumnKey };
 
 const PAGE_SIZE = 25;
 const WORKSPACE_REVIEWS_COLUMNS_KEY = 'workspace_reviews_visible_columns';
 const MIN_COLUMN_WIDTH = 80;
 const MAX_COLUMN_WIDTH = 1200;
-const DEFAULT_VISIBLE_COLUMNS: ColumnKey[] = [
+const FIXED_COLUMN: ColumnKey = 'actions';
+const ACTIONS_COLUMN_WIDTH = 132;
+const DEFAULT_VISIBLE_COLUMNS: EditableColumnKey[] = [
   'title',
   'author',
   'rating',
@@ -93,6 +99,118 @@ function SourceBadge({ source }: { source: string }) {
     <span className={`inline-flex rounded-full px-2 py-1 text-[11px] font-bold uppercase tracking-wide ${tones[source] || tones.manual}`}>
       {source}
     </span>
+  );
+}
+
+function ReviewDetailModal({
+  review,
+  onClose
+}: {
+  review: AdminReview;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onClose}>
+      <article
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Review by ${review.author || 'Anonymous'}`}
+        className="flex w-full max-w-2xl max-h-[90vh] flex-col overflow-hidden rounded-md border border-slate-300 bg-white shadow-xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Review</p>
+              <h2 className="text-xl font-semibold text-slate-900">{review.title || '(No title)'}</h2>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+              aria-label="Close review"
+            >
+              <svg aria-hidden="true" viewBox="0 0 12 12" className="h-3.5 w-3.5 stroke-current" fill="none" strokeWidth="1.8">
+                <path d="M2 2l8 8M10 2 2 10" />
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        <section className="grid gap-3 border-b border-slate-200 px-5 py-4 text-sm sm:grid-cols-2">
+          <div><span className="font-semibold text-slate-700">Author:</span> {review.author || 'Anonymous'}</div>
+          <div><span className="font-semibold text-slate-700">Received:</span> {formatDate(review.received_at)}</div>
+          <div><span className="font-semibold text-slate-700">Rating:</span> {review.rating}★</div>
+          <div><span className="font-semibold text-slate-700">Source:</span> <span className="uppercase">{review.source}</span></div>
+          <div><span className="font-semibold text-slate-700">Country:</span> {review.country || 'N/A'}</div>
+          <div><span className="font-semibold text-slate-700">Status:</span> <span className="uppercase">{review.status}</span></div>
+        </section>
+
+        <section className="flex-1 px-5 py-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Body</p>
+          <div className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap rounded-md border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-800">
+            {review.body || '(No review body)'}
+          </div>
+        </section>
+      </article>
+    </div>
+  );
+}
+
+function ReviewVisibilityConfirmModal({
+  review,
+  nextStatus,
+  submitting,
+  onCancel,
+  onConfirm
+}: {
+  review: AdminReview;
+  nextStatus: 'visible' | 'hidden';
+  submitting: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const isHiding = nextStatus === 'hidden';
+  const message = isHiding
+    ? 'You are about to hide this review and it will no longer appear on the website.'
+    : 'You are about to unhide this review and it will appear on the website.';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onClick={onCancel}>
+      <article
+        role="dialog"
+        aria-modal="true"
+        aria-label={isHiding ? 'Confirm hide review' : 'Confirm unhide review'}
+        className="w-full max-w-md rounded-md border border-slate-300 bg-white p-5 shadow-xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2 className="text-base font-semibold text-slate-900">
+          {isHiding ? 'Hide review?' : 'Unhide review?'}
+        </h2>
+        <p className="mt-2 text-sm text-slate-700">{message}</p>
+        <p className="mt-2 text-xs text-slate-500">
+          Review: <span className="font-semibold text-slate-700">{review.title || '(No title)'}</span>
+        </p>
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={submitting}
+            className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={submitting}
+            className="inline-flex h-9 items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            {submitting ? 'Saving...' : isHiding ? 'Hide review' : 'Unhide review'}
+          </button>
+        </div>
+      </article>
+    </div>
   );
 }
 
@@ -166,6 +284,14 @@ const ALL_COLUMNS: ColumnDefinition[] = [
     render: (review) => review.country || '-'
   },
   {
+    key: 'actions',
+    label: 'Actions',
+    width: ACTIONS_COLUMN_WIDTH,
+    headClassName: 'whitespace-nowrap',
+    cellClassName: 'whitespace-nowrap text-slate-700',
+    render: () => null
+  },
+  {
     key: 'id',
     label: 'ID',
     width: 260,
@@ -176,23 +302,27 @@ const ALL_COLUMNS: ColumnDefinition[] = [
 ];
 
 const COLUMN_BY_KEY = new Map(ALL_COLUMNS.map((column) => [column.key, column]));
+const EDITABLE_COLUMNS: EditableColumnDefinition[] = ALL_COLUMNS.filter(
+  (column): column is EditableColumnDefinition => column.key !== FIXED_COLUMN
+);
+const EDITABLE_COLUMN_BY_KEY = new Map(EDITABLE_COLUMNS.map((column) => [column.key, column]));
 const DEFAULT_COLUMN_WIDTHS: Record<ColumnKey, number> = ALL_COLUMNS.reduce((acc, column) => {
   acc[column.key] = column.width;
   return acc;
 }, {} as Record<ColumnKey, number>);
 
-function toPersistedColumns(value: unknown): ColumnKey[] {
+function toPersistedColumns(value: unknown): EditableColumnKey[] {
   if (!Array.isArray(value)) return [];
 
-  const validKeys = new Set(ALL_COLUMNS.map((column) => column.key));
+  const validKeys = new Set(EDITABLE_COLUMNS.map((column) => column.key));
   const normalized = value
-    .map((item) => `${item}` as ColumnKey)
-    .filter((item): item is ColumnKey => validKeys.has(item));
+    .map((item) => `${item}` as EditableColumnKey)
+    .filter((item): item is EditableColumnKey => validKeys.has(item));
 
   if (!normalized.length) return [];
 
-  const seen = new Set<ColumnKey>();
-  const deduped: ColumnKey[] = [];
+  const seen = new Set<EditableColumnKey>();
+  const deduped: EditableColumnKey[] = [];
   normalized.forEach((key) => {
     if (seen.has(key)) return;
     seen.add(key);
@@ -230,7 +360,7 @@ function toColumnWidths(value?: Partial<Record<ColumnKey, number>>): Record<Colu
   };
 }
 
-function persistTableConfig(columns: ColumnKey[], widths: Record<ColumnKey, number>) {
+function persistTableConfig(columns: EditableColumnKey[], widths: Record<ColumnKey, number>) {
   try {
     window.localStorage.setItem(
       WORKSPACE_REVIEWS_COLUMNS_KEY,
@@ -245,19 +375,25 @@ function persistTableConfig(columns: ColumnKey[], widths: Record<ColumnKey, numb
 }
 
 export function WorkspaceReviewsTable({ reviews }: { reviews: AdminReview[] }) {
+  const [rows, setRows] = useState(reviews);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [ratingFilter, setRatingFilter] = useState<'all' | '5' | '4' | '3' | '2' | '1'>('all');
   const [sortMode, setSortMode] = useState<SortMode>('newest');
   const [page, setPage] = useState(1);
-  const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
+  const [visibleColumns, setVisibleColumns] = useState<EditableColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
   const [columnWidths, setColumnWidths] = useState<Record<ColumnKey, number>>(DEFAULT_COLUMN_WIDTHS);
   const [columnEditorOpen, setColumnEditorOpen] = useState(false);
   const [columnSearch, setColumnSearch] = useState('');
-  const [draftColumns, setDraftColumns] = useState<ColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
-  const [draggingColumn, setDraggingColumn] = useState<ColumnKey | null>(null);
-  const [dragOverState, setDragOverState] = useState<{ key: ColumnKey; position: 'before' | 'after' } | null>(null);
+  const [draftColumns, setDraftColumns] = useState<EditableColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
+  const [draggingColumn, setDraggingColumn] = useState<EditableColumnKey | null>(null);
+  const [dragOverState, setDragOverState] = useState<{ key: EditableColumnKey; position: 'before' | 'after' } | null>(null);
   const [resizing, setResizing] = useState<{ key: ColumnKey; startX: number; startWidth: number } | null>(null);
   const [configRestored, setConfigRestored] = useState(false);
+  const [updatingReviewId, setUpdatingReviewId] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState('');
+  const [activeReview, setActiveReview] = useState<AdminReview | null>(null);
+  const [visibilityConfirm, setVisibilityConfirm] = useState<{ review: AdminReview; nextStatus: 'visible' | 'hidden' } | null>(null);
   const widthsRef = useRef(columnWidths);
   const columnsRef = useRef(visibleColumns);
 
@@ -338,11 +474,24 @@ export function WorkspaceReviewsTable({ reviews }: { reviews: AdminReview[] }) {
     };
   }, [resizing]);
 
+  useEffect(() => {
+    if (!activeReview && !visibilityConfirm) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setActiveReview(null);
+        setVisibilityConfirm(null);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [activeReview, visibilityConfirm]);
+
   const filteredReviews = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    const filtered = reviews.filter((review) => {
+    const filtered = rows.filter((review) => {
       if (statusFilter !== 'all' && review.status !== statusFilter) return false;
+      if (ratingFilter !== 'all' && review.rating !== Number(ratingFilter)) return false;
 
       if (!normalizedQuery) return true;
 
@@ -366,11 +515,11 @@ export function WorkspaceReviewsTable({ reviews }: { reviews: AdminReview[] }) {
     });
 
     return sorted;
-  }, [reviews, query, sortMode, statusFilter]);
+  }, [rows, query, sortMode, statusFilter, ratingFilter]);
 
   useEffect(() => {
     setPage(1);
-  }, [query, statusFilter, sortMode]);
+  }, [query, statusFilter, ratingFilter, sortMode]);
 
   const totalPages = Math.max(1, Math.ceil(filteredReviews.length / PAGE_SIZE));
 
@@ -386,7 +535,7 @@ export function WorkspaceReviewsTable({ reviews }: { reviews: AdminReview[] }) {
   }, [filteredReviews, page]);
 
   const visibleColumnDefinitions = useMemo(() => {
-    return visibleColumns
+    const columns = visibleColumns
       .map((columnKey) => {
         const column = COLUMN_BY_KEY.get(columnKey);
         if (!column) return null;
@@ -396,16 +545,26 @@ export function WorkspaceReviewsTable({ reviews }: { reviews: AdminReview[] }) {
         };
       })
       .filter((column): column is ColumnDefinition => Boolean(column));
+    const fixed = COLUMN_BY_KEY.get(FIXED_COLUMN);
+    if (fixed) {
+      columns.push({
+        ...fixed,
+        width: sanitizeColumnWidth(columnWidths[fixed.key], fixed.width)
+      });
+    }
+    return columns;
   }, [visibleColumns, columnWidths]);
 
   const selectedDraftColumns = useMemo(() => {
-    return draftColumns.map((columnKey) => COLUMN_BY_KEY.get(columnKey)).filter((column): column is ColumnDefinition => Boolean(column));
+    return draftColumns
+      .map((columnKey) => EDITABLE_COLUMN_BY_KEY.get(columnKey))
+      .filter((column): column is EditableColumnDefinition => Boolean(column));
   }, [draftColumns]);
 
   const searchableColumns = useMemo(() => {
     const normalized = columnSearch.trim().toLowerCase();
-    if (!normalized) return ALL_COLUMNS;
-    return ALL_COLUMNS.filter((column) => column.label.toLowerCase().includes(normalized));
+    if (!normalized) return EDITABLE_COLUMNS;
+    return EDITABLE_COLUMNS.filter((column) => column.label.toLowerCase().includes(normalized));
   }, [columnSearch]);
 
   const tableMinWidth = useMemo(() => {
@@ -413,7 +572,7 @@ export function WorkspaceReviewsTable({ reviews }: { reviews: AdminReview[] }) {
     return Math.max(980, sum);
   }, [visibleColumnDefinitions]);
 
-  function toggleDraftColumn(columnKey: ColumnKey) {
+  function toggleDraftColumn(columnKey: EditableColumnKey) {
     setDraftColumns((current) => {
       if (current.includes(columnKey)) {
         return current.filter((key) => key !== columnKey);
@@ -438,7 +597,7 @@ export function WorkspaceReviewsTable({ reviews }: { reviews: AdminReview[] }) {
     setColumnEditorOpen(false);
   }
 
-  function moveDraftColumn(fromKey: ColumnKey, toKey: ColumnKey, position: 'before' | 'after') {
+  function moveDraftColumn(fromKey: EditableColumnKey, toKey: EditableColumnKey, position: 'before' | 'after') {
     if (fromKey === toKey) return;
 
     setDraftColumns((current) => {
@@ -464,6 +623,29 @@ export function WorkspaceReviewsTable({ reviews }: { reviews: AdminReview[] }) {
       startX: event.clientX,
       startWidth: baseWidth
     });
+  }
+
+  async function updateReviewStatus(reviewId: string, nextStatus: 'visible' | 'hidden') {
+    if (updatingReviewId) return;
+    setUpdatingReviewId(reviewId);
+    setUpdateError('');
+    try {
+      const response = await fetch(`/api/admin/reviews/${reviewId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setUpdateError(data?.error || 'Failed to update review visibility.');
+        return;
+      }
+      setRows((current) =>
+        current.map((review) => (review.id === reviewId ? { ...review, status: nextStatus } : review))
+      );
+    } finally {
+      setUpdatingReviewId(null);
+    }
   }
 
   if (!reviews.length) {
@@ -536,6 +718,31 @@ export function WorkspaceReviewsTable({ reviews }: { reviews: AdminReview[] }) {
           </label>
 
           <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+            <span>Rating</span>
+            <span className="relative inline-block">
+              <select
+                value={ratingFilter}
+                onChange={(event) => setRatingFilter(event.target.value as 'all' | '5' | '4' | '3' | '2' | '1')}
+                className="h-8 w-auto min-w-[8rem] appearance-none rounded-md border border-slate-300 px-2 py-1 pr-7 text-xs"
+              >
+                <option value="all">All ratings</option>
+                <option value="5">5 stars</option>
+                <option value="4">4 stars</option>
+                <option value="3">3 stars</option>
+                <option value="2">2 stars</option>
+                <option value="1">1 star</option>
+              </select>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 10 6"
+                className="pointer-events-none absolute right-2 top-1/2 h-[0.5rem] w-[0.5rem] -translate-y-1/2 fill-slate-600"
+              >
+                <path d="M5 6L0 0h10L5 6z" />
+              </svg>
+            </span>
+          </label>
+
+          <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
             <span>Sort</span>
             <span className="relative inline-block">
               <select
@@ -577,24 +784,27 @@ export function WorkspaceReviewsTable({ reviews }: { reviews: AdminReview[] }) {
 
           <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
             <tr>
-              {visibleColumnDefinitions.map((column) => (
-                <th
-                  key={column.key}
-                  className={`relative border-l border-slate-300 px-3 py-2 font-semibold ${column.headClassName || ''}`}
-                  style={{ borderLeftWidth: '0.5px' }}
-                >
-                  <span className="pr-2">{column.label}</span>
-                  <button
-                    type="button"
-                    onMouseDown={(event) => startColumnResize(column.key, event)}
-                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize select-none"
-                    aria-label={`Resize ${column.label} column`}
-                    title={`Resize ${column.label}`}
+              {visibleColumnDefinitions.map((column) => {
+                const isFixed = column.key === FIXED_COLUMN;
+                return (
+                  <th
+                    key={column.key}
+                    className={`relative border-l border-slate-300 py-2 font-semibold ${column.headClassName || ''} ${isFixed ? 'sticky right-0 z-20 bg-slate-100 px-2 text-left shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.25)]' : 'px-3'}`}
+                    style={{ borderLeftWidth: '0.5px' }}
                   >
-                    <span className="mx-auto block h-full w-px bg-slate-300/0 transition-colors hover:bg-slate-400" />
-                  </button>
-                </th>
-              ))}
+                    <span className="pr-2">{column.label}</span>
+                    <button
+                      type="button"
+                      onMouseDown={(event) => startColumnResize(column.key, event)}
+                      className="absolute right-0 top-0 h-full w-2 cursor-col-resize select-none"
+                      aria-label={`Resize ${column.label} column`}
+                      title={`Resize ${column.label}`}
+                    >
+                      <span className="mx-auto block h-full w-px bg-slate-300/0 transition-colors hover:bg-slate-400" />
+                    </button>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
 
@@ -604,11 +814,48 @@ export function WorkspaceReviewsTable({ reviews }: { reviews: AdminReview[] }) {
                 key={review.id}
                 className="group border-t border-slate-200 align-middle transition-colors hover:bg-sky-50"
               >
-                {visibleColumnDefinitions.map((column) => (
-                  <td key={`${review.id}:${column.key}`} className={`align-middle px-3 py-2 ${column.cellClassName || 'text-slate-700'}`}>
-                    {column.render(review)}
-                  </td>
-                ))}
+                {visibleColumnDefinitions.map((column) => {
+                  const isFixed = column.key === FIXED_COLUMN;
+                  return (
+                    <td
+                      key={`${review.id}:${column.key}`}
+                      className={`align-middle py-2 ${column.cellClassName || 'text-slate-700'} ${isFixed ? 'sticky right-0 z-10 bg-white px-2 shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.2)] group-hover:bg-sky-50' : 'px-3'}`}
+                    >
+                      {column.key === FIXED_COLUMN ? (
+                        <div
+                          className="flex items-center gap-1"
+                          onClick={(event) => event.stopPropagation()}
+                          onMouseDown={(event) => event.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setActiveReview(review)}
+                            className="inline-flex h-7 items-center justify-center rounded-md border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                          >
+                            View
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setVisibilityConfirm({
+                              review,
+                              nextStatus: review.status === 'visible' ? 'hidden' : 'visible'
+                            })}
+                            disabled={updatingReviewId === review.id}
+                            className="inline-flex h-7 items-center justify-center rounded-md border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {updatingReviewId === review.id
+                              ? 'Saving...'
+                              : review.status === 'visible'
+                                ? 'Hide'
+                                : 'Unhide'}
+                          </button>
+                        </div>
+                      ) : (
+                        column.render(review)
+                      )}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
 
@@ -622,6 +869,29 @@ export function WorkspaceReviewsTable({ reviews }: { reviews: AdminReview[] }) {
           </tbody>
         </table>
       </div>
+
+      {updateError ? (
+        <p className="rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          {updateError}
+        </p>
+      ) : null}
+
+      {activeReview ? (
+        <ReviewDetailModal review={activeReview} onClose={() => setActiveReview(null)} />
+      ) : null}
+
+      {visibilityConfirm ? (
+        <ReviewVisibilityConfirmModal
+          review={visibilityConfirm.review}
+          nextStatus={visibilityConfirm.nextStatus}
+          submitting={updatingReviewId === visibilityConfirm.review.id}
+          onCancel={() => setVisibilityConfirm(null)}
+          onConfirm={() => {
+            void updateReviewStatus(visibilityConfirm.review.id, visibilityConfirm.nextStatus);
+            setVisibilityConfirm(null);
+          }}
+        />
+      ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
         <p>

@@ -6,8 +6,9 @@ import { BlogContentRenderer } from '@/components/blog/blog-content-renderer';
 import { BlogPostCard } from '@/components/blog/blog-post-card';
 import { CompactEpisodeRow } from '@/components/episodes-browser';
 import { EpisodeMediaPlayer } from '@/components/episode-media-player';
+import { JoinPatreonCta } from '@/components/join-patreon-cta';
 import { collectReferencedImageIds } from '@/lib/blog/content';
-import { getMediaAssetMapByIds } from '@/lib/blog/data';
+import { getMediaAssetMapByIds, listBlogAuthors } from '@/lib/blog/data';
 import { breadcrumbsToJsonLd } from '@/lib/breadcrumbs';
 import {
   buildEpisodeBreadcrumbs,
@@ -51,7 +52,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     title: {
       absolute: `${episode.seoTitle} | The Compendium Podcast`
     },
-    description: episode.metaDescription,
+    description: episode.metaDescription || undefined,
     alternates: {
       canonical: episode.canonicalUrl
     },
@@ -61,7 +62,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     },
     openGraph: {
       title: episode.editorial?.socialTitle || episode.seoTitle,
-      description: episode.editorial?.socialDescription || episode.metaDescription,
+      description: episode.editorial?.socialDescription || episode.metaDescription || undefined,
       url: episode.canonicalUrl,
       images: episode.heroImageUrl
         ? [
@@ -77,7 +78,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     twitter: {
       card: 'summary_large_image',
       title: episode.editorial?.socialTitle || episode.seoTitle,
-      description: episode.editorial?.socialDescription || episode.metaDescription,
+      description: episode.editorial?.socialDescription || episode.metaDescription || undefined,
       images: episode.editorial?.socialImageUrl ? [episode.editorial.socialImageUrl] : episode.heroImageUrl ? [episode.heroImageUrl] : undefined
     }
   };
@@ -120,7 +121,13 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
   };
 
   const structuredBody = Array.isArray(episode.bodyJson) ? episode.bodyJson : null;
-  const assetMap = structuredBody ? await getMediaAssetMapByIds(collectReferencedImageIds(structuredBody)) : new Map();
+  const [assetMap, authors] = await Promise.all([
+    structuredBody ? getMediaAssetMapByIds(collectReferencedImageIds(structuredBody)) : Promise.resolve(new Map()),
+    listBlogAuthors()
+  ]);
+  const episodeAuthor = episode.editorial?.authorId
+    ? (authors.find((author) => author.id === episode.editorial?.authorId) || null)
+    : null;
   const linkedEpisodesForRenderer = [
     {
       is_primary: true,
@@ -151,7 +158,7 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
   ];
 
   return (
-    <section className="space-y-6">
+    <section className="-mb-8 space-y-0">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(episodeJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
@@ -161,14 +168,14 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
           <div className="absolute -bottom-24 right-0 h-80 w-80 rounded-full bg-carnival-gold/20 blur-[100px]" />
         </div>
         <div className="relative mx-auto max-w-6xl px-4 py-10 md:py-14">
-          <div className="grid gap-5 md:grid-cols-[340px_1fr] md:items-stretch">
-          <div className="relative aspect-square overflow-hidden rounded-lg border border-white/15 bg-black/25">
+          <div className="grid items-start gap-5 lg:grid-cols-[360px_1fr]">
+          <div className="relative mx-auto h-[280px] w-[280px] self-start overflow-hidden rounded-lg border border-white/15 bg-black/25 sm:h-[320px] sm:w-[320px] lg:mx-0 lg:h-[360px] lg:w-[360px] lg:max-w-none">
             {episode.heroImageUrl ? (
               <Image
                 src={episode.heroImageUrl}
                 alt={`Artwork for ${episode.title}`}
                 fill
-                sizes="(max-width: 768px) calc(100vw - 2.5rem), 340px"
+                sizes="(max-width: 639px) 280px, (max-width: 1023px) 320px, 360px"
                 className="object-cover"
                 unoptimized
                 priority
@@ -193,6 +200,18 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
             </div>
 
             <h1 className="mt-3 text-[1.8rem] font-black leading-tight text-white sm:text-[2.2rem]">{episode.title}</h1>
+            {episodeAuthor?.name ? (
+              <p className="mt-2 text-sm font-semibold text-white/85">
+                by{' '}
+                {episodeAuthor.slug ? (
+                  <Link href={`/author/${episodeAuthor.slug}`} className="text-white transition hover:text-carnival-gold">
+                    {episodeAuthor.name}
+                  </Link>
+                ) : (
+                  episodeAuthor.name
+                )}
+              </p>
+            ) : null}
 
             <div className="mt-4">
               <EpisodeMediaPlayer
@@ -256,7 +275,7 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
         </div>
       </section>
 
-      <article className="rounded-xl border-2 border-carnival-ink/15 bg-white p-5 shadow-card sm:p-6">
+      <article className="-mx-4 bg-white px-5 py-5 sm:mx-0 sm:px-6 sm:py-6">
         <h2 className="text-xl font-black text-carnival-ink">{episode.bodySource === 'editorial' ? 'Episode Story' : 'Episode Notes'}</h2>
         {structuredBody && structuredBody.length ? (
           <div className="mt-4">
@@ -273,53 +292,65 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
           <div className="mt-4 text-base leading-relaxed text-carnival-ink/90">No episode description available.</div>
         )}
       </article>
+      <div className="space-y-6 pt-6">
+        {episode.relatedEpisodes.length ? (
+          <section>
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-black text-carnival-ink">Related Episodes</h2>
+            </div>
+            <div className="mt-4 space-y-3">
+              {episode.relatedEpisodes.map((item) => (
+                <CompactEpisodeRow key={`${item.relationshipType}-${item.episode.id}`} episode={item.episode} />
+              ))}
+            </div>
+            <div className="mt-6 flex justify-center">
+              <Link
+                href="/episodes"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-carnival-red px-6 text-sm font-semibold text-white transition hover:brightness-110"
+              >
+                Browse all episodes
+              </Link>
+            </div>
+          </section>
+        ) : null}
 
-      {episode.relatedEpisodes.length ? (
-        <section>
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-xl font-black text-carnival-ink">Related Episodes</h2>
-            <Link href="/episodes" className="text-sm font-semibold text-carnival-red underline underline-offset-2">Browse all episodes</Link>
-          </div>
-          <div className="mt-4 space-y-3">
-            {episode.relatedEpisodes.map((item) => (
-              <CompactEpisodeRow key={`${item.relationshipType}-${item.episode.id}`} episode={item.episode} />
-            ))}
-          </div>
-        </section>
-      ) : null}
+        {episode.relatedPosts.length ? (
+          <section>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-xl font-black text-carnival-ink">Related Reading</h2>
+              <Link href="/blog" className="text-sm font-semibold text-carnival-red underline underline-offset-2">Browse the blog</Link>
+            </div>
+            <div className="mt-4 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {episode.relatedPosts.map((post) => (
+                <BlogPostCard
+                  key={post.id}
+                  post={{
+                    id: post.id,
+                    slug: post.slug,
+                    title: post.title,
+                    excerpt: post.excerpt,
+                    excerpt_auto: null,
+                    published_at: post.publishedAt,
+                    reading_time_minutes: post.readingTimeMinutes,
+                    featured_image: post.featuredImage
+                      ? {
+                          storage_path: post.featuredImage.storagePath,
+                          alt_text_default: post.featuredImage.altText
+                        }
+                      : null,
+                    taxonomies: { categories: [] },
+                    author: post.author
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </div>
 
-      {episode.relatedPosts.length ? (
-        <section>
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-xl font-black text-carnival-ink">Related Reading</h2>
-            <Link href="/blog" className="text-sm font-semibold text-carnival-red underline underline-offset-2">Browse the blog</Link>
-          </div>
-          <div className="mt-4 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {episode.relatedPosts.map((post) => (
-              <BlogPostCard
-                key={post.id}
-                post={{
-                  id: post.id,
-                  slug: post.slug,
-                  title: post.title,
-                  excerpt: post.excerpt,
-                  excerpt_auto: null,
-                  published_at: post.publishedAt,
-                  reading_time_minutes: post.readingTimeMinutes,
-                  featured_image: post.featuredImage
-                    ? {
-                        storage_path: post.featuredImage.storagePath,
-                        alt_text_default: post.featuredImage.altText
-                      }
-                    : null,
-                  taxonomies: { categories: [] },
-                  author: post.author
-                }}
-              />
-            ))}
-          </div>
-        </section>
-      ) : null}
+      <div className="pt-8">
+        <JoinPatreonCta />
+      </div>
     </section>
   );
 }

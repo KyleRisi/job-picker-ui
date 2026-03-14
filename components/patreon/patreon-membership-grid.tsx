@@ -6,6 +6,14 @@ import type { PatreonTier } from '@/lib/patreon-content';
 type BillingMode = 'monthly' | 'annual';
 type SupportedCurrency = 'USD' | 'GBP' | 'EUR' | 'CAD' | 'AUD' | 'NZD';
 type FxRates = Partial<Record<SupportedCurrency, number>>;
+const LOCALE_BY_CURRENCY: Record<SupportedCurrency, string> = {
+  USD: 'en-US',
+  GBP: 'en-GB',
+  EUR: 'de-DE',
+  CAD: 'en-CA',
+  AUD: 'en-AU',
+  NZD: 'en-NZ'
+};
 
 type Props = {
   sectionId: string;
@@ -69,10 +77,14 @@ function parseStoredRates(raw: string): FxRates | null {
 }
 
 function formatLocalizedPrice(usdAmount: number, currency: SupportedCurrency, rates: FxRates, mode: BillingMode): string | null {
-  const rate = currency === 'USD' ? 1 : rates[currency];
+  if (currency === 'USD') {
+    // Keep USD on canonical labels to avoid server/client locale hydration mismatches.
+    return null;
+  }
+  const rate = rates[currency];
   if (!rate) return null;
   const localized = usdAmount * rate;
-  const formatted = new Intl.NumberFormat(undefined, {
+  const formatted = new Intl.NumberFormat(LOCALE_BY_CURRENCY[currency], {
     style: 'currency',
     currency,
     minimumFractionDigits: localized % 1 === 0 ? 0 : 2,
@@ -167,13 +179,14 @@ export function PatreonMembershipGrid({ sectionId, heading, tiers, visitorCountr
         ) : null}
       </div>
 
-      <div
-        className="flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2 lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0"
-        aria-label="Membership tiers"
-      >
+      <div className="-mx-4 px-0 lg:mx-0 lg:px-0">
+        <div
+          className="flex snap-x snap-mandatory gap-5 overflow-x-auto pl-4 pr-0 pb-2 [scroll-padding-left:1rem] [scroll-padding-right:0] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-3 lg:overflow-visible lg:px-0 lg:pb-0"
+          aria-label="Membership tiers"
+        >
         {visibleTiers.map((tier) => {
           const tierEvent = tierSpecificEvent(tier.internalKey);
-          const treatAsSoldOut = tier.soldOut && tier.internalKey !== 'little_freak';
+          const treatAsSoldOut = Boolean(tier.soldOut);
           const usdAmount = billingMode === 'annual' ? tier.annualPriceUsd : tier.monthlyPriceUsd;
           const localizedPrice = formatLocalizedPrice(usdAmount, currency, rates, billingMode);
           const priceLabel = localizedPrice || (billingMode === 'annual' ? tier.annualPriceLabel || tier.monthlyPriceLabel : tier.monthlyPriceLabel);
@@ -266,6 +279,7 @@ export function PatreonMembershipGrid({ sectionId, heading, tiers, visitorCountr
             </div>
           );
         })}
+        </div>
       </div>
     </section>
   );

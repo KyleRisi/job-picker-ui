@@ -237,7 +237,7 @@ const ALL_COLUMNS: ColumnDefinition[] = [
         onClick={(event) => event.stopPropagation()}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <a href={`/admin/blog/${post.id}`}>Open</a>
+        <a href={`/workspace/dashboard/blogs/${post.id}`}>Open</a>
       </span>
     )
   }

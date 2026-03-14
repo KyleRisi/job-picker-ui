@@ -1,12 +1,22 @@
 'use client';
 
+import Link from 'next/link';
 import { type MouseEvent as ReactMouseEvent, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { Job } from '@/lib/types';
 
-type JobWithHolder = Job & { filledBy?: string | null; filledByFull?: string | null; filledAt?: string | null; broadcastedOnShow?: boolean; broadcastedAt?: string | null };
+type JobWithHolder = Job & {
+  filledBy?: string | null;
+  filledByFull?: string | null;
+  filledAt?: string | null;
+  consentReadOnShow?: boolean | null;
+  filledApplicationId?: string | null;
+  broadcastedOnShow?: boolean;
+  broadcastedAt?: string | null;
+};
 
 type SortMode = 'newest' | 'oldest' | 'title';
+type HeaderSortableColumnKey = 'status' | 'filledAt' | 'broadcastedOnShow';
+type StatusFilter = 'all' | 'AVAILABLE' | 'FILLED' | 'REHIRING';
 
 type ColumnKey =
   | 'id'
@@ -18,8 +28,12 @@ type ColumnKey =
   | 'description'
   | 'filledBy'
   | 'filledAt'
+  | 'consentReadOnShow'
   | 'broadcastedOnShow'
-  | 'rehiringReason';
+  | 'rehiringReason'
+  | 'actions';
+
+type EditableColumnKey = Exclude<ColumnKey, 'actions'>;
 
 type ColumnDefinition = {
   key: ColumnKey;
@@ -29,12 +43,13 @@ type ColumnDefinition = {
   cellClassName?: string;
   render: (job: JobWithHolder) => ReactNode;
 };
+type EditableColumnDefinition = Omit<ColumnDefinition, 'key'> & { key: EditableColumnKey };
 
 const PAGE_SIZE = 25;
 const WORKSPACE_JOBS_COLUMNS_KEY = 'workspace_jobs_visible_columns';
 const MIN_COLUMN_WIDTH = 80;
 const MAX_COLUMN_WIDTH = 1200;
-const DEFAULT_VISIBLE_COLUMNS: ColumnKey[] = [
+const DEFAULT_VISIBLE_COLUMNS: EditableColumnKey[] = [
   'jobRef',
   'title',
   'status',
@@ -42,6 +57,7 @@ const DEFAULT_VISIBLE_COLUMNS: ColumnKey[] = [
   'salaryBenefits',
   'filledBy'
 ];
+const FIXED_COLUMN: ColumnKey = 'actions';
 
 function compactValue(value: string, maxLength = 90): string {
   const normalized = `${value || ''}`.replace(/\s+/g, ' ').trim();
@@ -79,11 +95,7 @@ const ALL_COLUMNS: ColumnDefinition[] = [
     width: 360,
     headClassName: 'whitespace-nowrap',
     cellClassName: 'text-slate-700',
-    render: (job) => (
-      <p className="font-medium leading-snug text-slate-900 transition-colors group-hover:text-sky-700">
-        {job.title}
-      </p>
-    )
+    render: (job) => <p className="font-medium leading-snug text-slate-900">{job.title}</p>
   },
   {
     key: 'status',
@@ -131,6 +143,38 @@ const ALL_COLUMNS: ColumnDefinition[] = [
     }
   },
   {
+    key: 'consentReadOnShow',
+    label: 'Show Consent',
+    width: 140,
+    headClassName: 'whitespace-nowrap text-center',
+    cellClassName: 'whitespace-nowrap text-center text-slate-700',
+    render: (job) => {
+      if (job.status !== 'FILLED') return null;
+      const checked = Boolean(job.consentReadOnShow);
+      return (
+        <span
+          aria-label={checked ? 'Consent provided' : 'Consent not provided'}
+          className={`inline-flex h-4 w-4 items-center justify-center rounded border ${
+            checked ? 'border-emerald-600 bg-emerald-600' : 'border-slate-300 bg-white'
+          }`}
+        >
+          {checked ? (
+            <svg aria-hidden="true" viewBox="0 0 12 12" className="h-3 w-3 text-white">
+              <path
+                d="M2.2 6.3 4.9 9l4.9-5.2"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          ) : null}
+        </span>
+      );
+    }
+  },
+  {
     key: 'broadcastedOnShow',
     label: 'Broadcast',
     width: 130,
@@ -172,27 +216,59 @@ const ALL_COLUMNS: ColumnDefinition[] = [
     headClassName: 'whitespace-nowrap',
     cellClassName: 'whitespace-nowrap text-slate-700',
     render: (job) => <span title={job.id}>{compactValue(job.id, 36)}</span>
+  },
+  {
+    key: 'actions',
+    label: 'Actions',
+    width: 132,
+    headClassName: 'whitespace-nowrap',
+    cellClassName: 'whitespace-nowrap text-slate-700',
+    render: (job) => {
+      const isFilled = job.status === 'FILLED';
+      const detailHref = isFilled
+        ? job.filledApplicationId
+          ? `/workspace/dashboard/jobs/applications/${job.filledApplicationId}`
+          : null
+        : `/workspace/dashboard/jobs/${job.id}`;
+      if (!detailHref) return null;
+
+      return (
+        <Link
+          href={detailHref}
+          prefetch={false}
+          className="inline-flex h-7 items-center justify-center rounded-md border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+        >
+          {isFilled ? 'View' : 'Edit'}
+        </Link>
+      );
+    }
   }
 ];
 
 const COLUMN_BY_KEY = new Map(ALL_COLUMNS.map((column) => [column.key, column]));
+const EDITABLE_COLUMNS: EditableColumnDefinition[] = ALL_COLUMNS.filter(
+  (column): column is EditableColumnDefinition => column.key !== FIXED_COLUMN
+);
+const EDITABLE_COLUMN_BY_KEY = new Map(EDITABLE_COLUMNS.map((column) => [column.key, column]));
 const DEFAULT_COLUMN_WIDTHS: Record<ColumnKey, number> = ALL_COLUMNS.reduce((acc, column) => {
   acc[column.key] = column.width;
   return acc;
 }, {} as Record<ColumnKey, number>);
 
-function toPersistedColumns(value: unknown): ColumnKey[] {
+function toPersistedColumns(value: unknown): EditableColumnKey[] {
   if (!Array.isArray(value)) return [];
 
-  const validKeys = new Set(ALL_COLUMNS.map((column) => column.key));
+  const validKeys = new Set(
+    ALL_COLUMNS.map((column) => column.key).filter((key): key is EditableColumnKey => key !== FIXED_COLUMN)
+  );
   const normalized = value
-    .map((item) => `${item}` as ColumnKey)
-    .filter((item): item is ColumnKey => validKeys.has(item));
+    .map((item) => `${item}` as EditableColumnKey)
+    .filter((item): item is EditableColumnKey => validKeys.has(item));
 
   if (!normalized.length) return [];
 
-  const seen = new Set<ColumnKey>();
-  const deduped: ColumnKey[] = [];
+  const seen = new Set<EditableColumnKey>();
+  const deduped: EditableColumnKey[] = [];
   normalized.forEach((key) => {
     if (seen.has(key)) return;
     seen.add(key);
@@ -230,13 +306,55 @@ function toColumnWidths(value?: Partial<Record<ColumnKey, number>>): Record<Colu
   };
 }
 
-function persistTableConfig(columns: ColumnKey[], widths: Record<ColumnKey, number>) {
+function toPersistedSortMode(value: unknown): SortMode | null {
+  if (value !== 'newest' && value !== 'oldest' && value !== 'title') return null;
+  return value;
+}
+
+function toPersistedStatusFilter(value: unknown): StatusFilter | null {
+  if (value !== 'all' && value !== 'AVAILABLE' && value !== 'FILLED' && value !== 'REHIRING') return null;
+  return value;
+}
+
+function toPersistedQuery(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  return value;
+}
+
+function toPersistedHeaderSort(
+  value: unknown
+): { key: HeaderSortableColumnKey; dir: 'asc' | 'desc' } | null {
+  if (!value || typeof value !== 'object') return null;
+  const input = value as Record<string, unknown>;
+  const key = `${input.key || ''}`;
+  const dir = `${input.dir || ''}`;
+  const validKey = key === 'status' || key === 'filledAt' || key === 'broadcastedOnShow';
+  const validDir = dir === 'asc' || dir === 'desc';
+  if (!validKey || !validDir) return null;
+  return {
+    key: key as HeaderSortableColumnKey,
+    dir
+  };
+}
+
+function persistTableConfig(
+  columns: EditableColumnKey[],
+  widths: Record<ColumnKey, number>,
+  sortMode: SortMode,
+  headerSort: { key: HeaderSortableColumnKey; dir: 'asc' | 'desc' } | null,
+  query: string,
+  statusFilter: StatusFilter
+) {
   try {
     window.localStorage.setItem(
       WORKSPACE_JOBS_COLUMNS_KEY,
       JSON.stringify({
         columns,
-        widths
+        widths,
+        sortMode,
+        headerSort,
+        query,
+        statusFilter
       })
     );
   } catch {
@@ -245,22 +363,26 @@ function persistTableConfig(columns: ColumnKey[], widths: Record<ColumnKey, numb
 }
 
 export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
-  const router = useRouter();
   const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sortMode, setSortMode] = useState<SortMode>('newest');
+  const [headerSort, setHeaderSort] = useState<{ key: HeaderSortableColumnKey; dir: 'asc' | 'desc' } | null>(null);
   const [page, setPage] = useState(1);
-  const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
+  const [visibleColumns, setVisibleColumns] = useState<EditableColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
   const [columnWidths, setColumnWidths] = useState<Record<ColumnKey, number>>(DEFAULT_COLUMN_WIDTHS);
   const [columnEditorOpen, setColumnEditorOpen] = useState(false);
   const [columnSearch, setColumnSearch] = useState('');
-  const [draftColumns, setDraftColumns] = useState<ColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
-  const [draggingColumn, setDraggingColumn] = useState<ColumnKey | null>(null);
-  const [dragOverState, setDragOverState] = useState<{ key: ColumnKey; position: 'before' | 'after' } | null>(null);
+  const [draftColumns, setDraftColumns] = useState<EditableColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
+  const [draggingColumn, setDraggingColumn] = useState<EditableColumnKey | null>(null);
+  const [dragOverState, setDragOverState] = useState<{ key: EditableColumnKey; position: 'before' | 'after' } | null>(null);
   const [resizing, setResizing] = useState<{ key: ColumnKey; startX: number; startWidth: number } | null>(null);
   const [configRestored, setConfigRestored] = useState(false);
   const widthsRef = useRef(columnWidths);
   const columnsRef = useRef(visibleColumns);
+  const sortModeRef = useRef(sortMode);
+  const headerSortRef = useRef(headerSort);
+  const queryRef = useRef(query);
+  const statusFilterRef = useRef(statusFilter);
 
   useLayoutEffect(() => {
     try {
@@ -279,12 +401,28 @@ export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
 
       const restoredColumns = toPersistedColumns((parsed as { columns?: unknown }).columns);
       const restoredWidths = toPersistedWidths((parsed as { widths?: unknown }).widths);
+      const restoredSortMode = toPersistedSortMode((parsed as { sortMode?: unknown }).sortMode);
+      const restoredHeaderSort = toPersistedHeaderSort((parsed as { headerSort?: unknown }).headerSort);
+      const restoredQuery = toPersistedQuery((parsed as { query?: unknown }).query);
+      const restoredStatusFilter = toPersistedStatusFilter((parsed as { statusFilter?: unknown }).statusFilter);
 
       if (restoredColumns.length) {
         setVisibleColumns(restoredColumns);
         setDraftColumns(restoredColumns);
       }
       setColumnWidths(toColumnWidths(restoredWidths));
+      if (restoredSortMode) {
+        setSortMode(restoredSortMode);
+      }
+      if (restoredHeaderSort) {
+        setHeaderSort(restoredHeaderSort);
+      }
+      if (restoredQuery !== null) {
+        setQuery(restoredQuery);
+      }
+      if (restoredStatusFilter) {
+        setStatusFilter(restoredStatusFilter);
+      }
     } catch {
       // Ignore storage parse errors and keep defaults.
     } finally {
@@ -294,8 +432,8 @@ export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
 
   useEffect(() => {
     if (!configRestored) return;
-    persistTableConfig(visibleColumns, columnWidths);
-  }, [visibleColumns, columnWidths, configRestored]);
+    persistTableConfig(visibleColumns, columnWidths, sortMode, headerSort, query, statusFilter);
+  }, [visibleColumns, columnWidths, sortMode, headerSort, query, statusFilter, configRestored]);
 
   useEffect(() => {
     widthsRef.current = columnWidths;
@@ -304,6 +442,22 @@ export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
   useEffect(() => {
     columnsRef.current = visibleColumns;
   }, [visibleColumns]);
+
+  useEffect(() => {
+    sortModeRef.current = sortMode;
+  }, [sortMode]);
+
+  useEffect(() => {
+    headerSortRef.current = headerSort;
+  }, [headerSort]);
+
+  useEffect(() => {
+    queryRef.current = query;
+  }, [query]);
+
+  useEffect(() => {
+    statusFilterRef.current = statusFilter;
+  }, [statusFilter]);
 
   useEffect(() => {
     if (!resizing) return;
@@ -322,7 +476,14 @@ export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
     };
 
     const onMouseUp = () => {
-      persistTableConfig(columnsRef.current, widthsRef.current);
+      persistTableConfig(
+        columnsRef.current,
+        widthsRef.current,
+        sortModeRef.current,
+        headerSortRef.current,
+        queryRef.current,
+        statusFilterRef.current
+      );
       setResizing(null);
     };
 
@@ -356,6 +517,47 @@ export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
 
     const sorted = [...filtered];
 
+    if (headerSort) {
+      if (headerSort.key === 'status') {
+        const rank: Record<string, number> = {
+          AVAILABLE: 0,
+          REHIRING: 1,
+          FILLED: 2
+        };
+
+        sorted.sort((a, b) => {
+          const diff = (rank[a.status] ?? 99) - (rank[b.status] ?? 99);
+          if (diff !== 0) return headerSort.dir === 'asc' ? diff : -diff;
+          return a.title.localeCompare(b.title);
+        });
+        return sorted;
+      }
+
+      if (headerSort.key === 'filledAt') {
+        sorted.sort((a, b) => {
+          const aTime = a.filledAt ? new Date(a.filledAt).getTime() : Number.POSITIVE_INFINITY;
+          const bTime = b.filledAt ? new Date(b.filledAt).getTime() : Number.POSITIVE_INFINITY;
+          const aSafe = Number.isNaN(aTime) ? Number.POSITIVE_INFINITY : aTime;
+          const bSafe = Number.isNaN(bTime) ? Number.POSITIVE_INFINITY : bTime;
+          const diff = aSafe - bSafe;
+          if (diff !== 0) return headerSort.dir === 'asc' ? diff : -diff;
+          return a.title.localeCompare(b.title);
+        });
+        return sorted;
+      }
+
+      if (headerSort.key === 'broadcastedOnShow') {
+        sorted.sort((a, b) => {
+          const aVal = a.broadcastedOnShow ? 1 : 0;
+          const bVal = b.broadcastedOnShow ? 1 : 0;
+          const diff = aVal - bVal;
+          if (diff !== 0) return headerSort.dir === 'asc' ? diff : -diff;
+          return a.title.localeCompare(b.title);
+        });
+        return sorted;
+      }
+    }
+
     if (sortMode === 'title') {
       sorted.sort((a, b) => a.title.localeCompare(b.title));
       return sorted;
@@ -368,11 +570,11 @@ export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
     });
 
     return sorted;
-  }, [jobs, query, sortMode, statusFilter]);
+  }, [jobs, query, sortMode, statusFilter, headerSort]);
 
   useEffect(() => {
     setPage(1);
-  }, [query, statusFilter, sortMode]);
+  }, [query, statusFilter, sortMode, headerSort]);
 
   const totalPages = Math.max(1, Math.ceil(filteredJobs.length / PAGE_SIZE));
 
@@ -388,7 +590,8 @@ export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
   }, [filteredJobs, page]);
 
   const visibleColumnDefinitions = useMemo(() => {
-    return visibleColumns
+    const orderedKeys: ColumnKey[] = [...visibleColumns, FIXED_COLUMN];
+    return orderedKeys
       .map((columnKey) => {
         const column = COLUMN_BY_KEY.get(columnKey);
         if (!column) return null;
@@ -401,13 +604,15 @@ export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
   }, [visibleColumns, columnWidths]);
 
   const selectedDraftColumns = useMemo(() => {
-    return draftColumns.map((columnKey) => COLUMN_BY_KEY.get(columnKey)).filter((column): column is ColumnDefinition => Boolean(column));
+    return draftColumns
+      .map((columnKey) => EDITABLE_COLUMN_BY_KEY.get(columnKey))
+      .filter((column): column is EditableColumnDefinition => Boolean(column));
   }, [draftColumns]);
 
   const searchableColumns = useMemo(() => {
     const normalized = columnSearch.trim().toLowerCase();
-    if (!normalized) return ALL_COLUMNS;
-    return ALL_COLUMNS.filter((column) => column.label.toLowerCase().includes(normalized));
+    if (!normalized) return EDITABLE_COLUMNS;
+    return EDITABLE_COLUMNS.filter((column) => column.label.toLowerCase().includes(normalized));
   }, [columnSearch]);
 
   const tableMinWidth = useMemo(() => {
@@ -415,7 +620,7 @@ export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
     return Math.max(980, sum);
   }, [visibleColumnDefinitions]);
 
-  function toggleDraftColumn(columnKey: ColumnKey) {
+  function toggleDraftColumn(columnKey: EditableColumnKey) {
     setDraftColumns((current) => {
       if (current.includes(columnKey)) {
         return current.filter((key) => key !== columnKey);
@@ -436,11 +641,11 @@ export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
     if (!normalized.length) return;
 
     setVisibleColumns(normalized);
-    persistTableConfig(normalized, columnWidths);
+    persistTableConfig(normalized, columnWidths, sortMode, headerSort, query, statusFilter);
     setColumnEditorOpen(false);
   }
 
-  function moveDraftColumn(fromKey: ColumnKey, toKey: ColumnKey, position: 'before' | 'after') {
+  function moveDraftColumn(fromKey: EditableColumnKey, toKey: EditableColumnKey, position: 'before' | 'after') {
     if (fromKey === toKey) return;
 
     setDraftColumns((current) => {
@@ -465,6 +670,19 @@ export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
       key: columnKey,
       startX: event.clientX,
       startWidth: baseWidth
+    });
+  }
+
+  function onSortModeChange(nextSortMode: SortMode) {
+    setHeaderSort(null);
+    setSortMode(nextSortMode);
+  }
+
+  function cycleHeaderSort(columnKey: HeaderSortableColumnKey) {
+    setHeaderSort((current) => {
+      if (!current || current.key !== columnKey) return { key: columnKey, dir: 'asc' };
+      if (current.dir === 'asc') return { key: columnKey, dir: 'desc' };
+      return null;
     });
   }
 
@@ -520,7 +738,10 @@ export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
             <span className="relative inline-block">
               <select
                 value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
+                onChange={(event) => {
+                  const next = toPersistedStatusFilter(event.target.value);
+                  if (next) setStatusFilter(next);
+                }}
                 className="h-8 w-auto min-w-[8rem] appearance-none rounded-md border border-slate-300 px-2 py-1 pr-7 text-xs"
               >
                 <option value="all">All statuses</option>
@@ -543,7 +764,7 @@ export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
             <span className="relative inline-block">
               <select
                 value={sortMode}
-                onChange={(event) => setSortMode(event.target.value as SortMode)}
+                onChange={(event) => onSortModeChange(event.target.value as SortMode)}
                 className="h-8 w-auto min-w-[10rem] appearance-none rounded-md border border-slate-300 px-2 py-1 pr-7 text-xs"
               >
                 <option value="newest">Newest first</option>
@@ -580,50 +801,75 @@ export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
 
           <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
             <tr>
-              {visibleColumnDefinitions.map((column) => (
-                <th
-                  key={column.key}
-                  className={`relative border-l border-slate-300 px-3 py-2 font-semibold ${column.headClassName || ''}`}
-                  style={{ borderLeftWidth: '0.5px' }}
-                >
-                  <span className="pr-2">{column.label}</span>
-                  <button
-                    type="button"
-                    onMouseDown={(event) => startColumnResize(column.key, event)}
-                    className="absolute right-0 top-0 h-full w-2 cursor-col-resize select-none"
-                    aria-label={`Resize ${column.label} column`}
-                    title={`Resize ${column.label}`}
+              {visibleColumnDefinitions.map((column) => {
+                const isFixed = column.key === FIXED_COLUMN;
+                const isHeaderSortable =
+                  column.key === 'status' || column.key === 'filledAt' || column.key === 'broadcastedOnShow';
+                const isActiveHeaderSort = isHeaderSortable && headerSort?.key === column.key;
+                const sortSymbol = !isActiveHeaderSort ? '↕' : headerSort?.dir === 'asc' ? '↑' : '↓';
+                return (
+                  <th
+                    key={column.key}
+                    className={`relative border-l border-slate-300 py-2 font-semibold ${column.headClassName || ''} ${
+                      isFixed
+                        ? 'sticky right-0 z-20 bg-slate-100 px-2 text-left shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.25)]'
+                        : 'px-3'
+                    }`}
+                    style={{ borderLeftWidth: '0.5px' }}
                   >
-                    <span className="mx-auto block h-full w-px bg-slate-300/0 transition-colors hover:bg-slate-400" />
-                  </button>
-                </th>
-              ))}
+                    {isHeaderSortable ? (
+                      <button
+                        type="button"
+                        onClick={() => cycleHeaderSort(column.key as HeaderSortableColumnKey)}
+                        className={`inline-flex items-center gap-1 pr-2 text-left ${isActiveHeaderSort ? 'text-slate-900' : 'text-slate-700 hover:text-slate-900'}`}
+                        aria-label={`Sort ${column.label}`}
+                        title={`Sort ${column.label}`}
+                      >
+                        <span>{column.label}</span>
+                        <span className={`text-[11px] ${isActiveHeaderSort ? 'text-sky-700' : 'text-slate-400'}`}>
+                          {sortSymbol}
+                        </span>
+                      </button>
+                    ) : (
+                      <span className="pr-2">{column.label}</span>
+                    )}
+                    <button
+                      type="button"
+                      onMouseDown={(event) => startColumnResize(column.key, event)}
+                      className="absolute right-0 top-0 h-full w-2 cursor-col-resize select-none"
+                      aria-label={`Resize ${column.label} column`}
+                      title={`Resize ${column.label}`}
+                    >
+                      <span className="mx-auto block h-full w-px bg-slate-300/0 transition-colors hover:bg-slate-400" />
+                    </button>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
 
           <tbody>
             {pagedJobs.map((job) => {
-              const detailHref = `/jobs/${job.id}`;
-
               return (
                 <tr
                   key={job.id}
-                  className="group cursor-pointer border-t border-slate-200 align-middle transition-colors hover:bg-sky-50"
-                  tabIndex={0}
-                  onClick={() => router.push(detailHref)}
-                  onKeyDown={(event) => {
-                    if (event.target !== event.currentTarget) return;
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      router.push(detailHref);
-                    }
-                  }}
+                  className="group border-t border-slate-200 align-middle transition-colors hover:bg-sky-50"
                 >
-                  {visibleColumnDefinitions.map((column) => (
-                    <td key={`${job.id}:${column.key}`} className={`align-middle px-3 py-2 ${column.cellClassName || 'text-slate-700'}`}>
-                      {column.render(job)}
-                    </td>
-                  ))}
+                  {visibleColumnDefinitions.map((column) => {
+                    const isFixed = column.key === FIXED_COLUMN;
+                    return (
+                      <td
+                        key={`${job.id}:${column.key}`}
+                        className={`align-middle py-2 ${column.cellClassName || 'text-slate-700'} ${
+                          isFixed
+                            ? 'sticky right-0 z-10 bg-white px-2 shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.2)] group-hover:bg-sky-50'
+                            : 'px-3'
+                        }`}
+                      >
+                        {column.render(job)}
+                      </td>
+                    );
+                  })}
                 </tr>
               );
             })}
@@ -705,8 +951,8 @@ export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
                     <label key={column.key} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
                       <input
                         type="checkbox"
-                        checked={draftColumns.includes(column.key)}
-                        onChange={() => toggleDraftColumn(column.key)}
+                        checked={draftColumns.includes(column.key as EditableColumnKey)}
+                        onChange={() => toggleDraftColumn(column.key as EditableColumnKey)}
                         className="h-4 w-4"
                       />
                       <span>{column.label}</span>
@@ -719,6 +965,12 @@ export function WorkspaceJobsTable({ jobs }: { jobs: JobWithHolder[] }) {
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Selected columns ({selectedDraftColumns.length})
                 </p>
+                <div className="mb-3 flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                  <span className="font-medium text-slate-800">Actions</span>
+                  <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    Fixed
+                  </span>
+                </div>
                 <div className="max-h-[340px] space-y-2 overflow-y-auto">
                   {selectedDraftColumns.map((column) => {
                     const showLineBefore = dragOverState?.key === column.key && dragOverState.position === 'before';

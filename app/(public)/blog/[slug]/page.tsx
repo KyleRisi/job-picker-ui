@@ -7,7 +7,7 @@ import { BlogContentRenderer } from '@/components/blog/blog-content-renderer';
 import { BlogAnalyticsTracker } from '@/components/blog/blog-analytics-tracker';
 import { BlogPostCard } from '@/components/blog/blog-post-card';
 import { CompactEpisodeRow } from '@/components/episodes-browser';
-import { SupportAndListenCta } from '@/components/support-and-listen-cta';
+import { JoinPatreonCta } from '@/components/join-patreon-cta';
 import { collectReferencedImageIds, hasPrimaryListenEpisodeBlock, normalizeBlogDocument, richTextToPlainText } from '@/lib/blog/content';
 import type { BlogContentBlock } from '@/lib/blog/schema';
 import { breadcrumbsToJsonLd } from '@/lib/breadcrumbs';
@@ -337,15 +337,9 @@ export default async function BlogPostPage({ params }: { params: Params }) {
         ) : null}
       </section>
 
-      <SupportAndListenCta
-        pageType="blog"
-        pageSlug={post.slug}
-        pageUrl={canonicalUrl}
-        contentTitle={post.title}
-        placement="blog_post_bottom"
-        variant="hero"
-        className="mt-6"
-      />
+      <div className="mt-8">
+        <JoinPatreonCta />
+      </div>
     </section>
   );
 }

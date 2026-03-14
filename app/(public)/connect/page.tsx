@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import Link from 'next/link';
 import { ConnectForm } from '@/components/forms/connect-form';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/thecompendiumpodcast/';
@@ -81,11 +82,14 @@ export default function ConnectPage() {
             <section className="rounded-2xl border border-white/15 bg-white/10 p-5 shadow-card backdrop-blur-sm sm:p-6">
               <h2 className="text-2xl font-black text-white">Press Kit</h2>
               <p className="mt-2 text-sm leading-relaxed text-white/75">
-                Headline podcast figures and downloadable media assets will live here soon.
+                Access our media-ready page with show overview, key stats, host bios, and listen links.
               </p>
-              <p className="mt-3 text-sm leading-relaxed text-white/75">
-                In the meantime, use the contact form and choose <strong className="text-white">Press / media</strong> so we can send details directly.
-              </p>
+              <Link
+                href="/connect/press-kit"
+                className="mt-5 inline-flex items-center justify-center rounded-full bg-carnival-red px-6 py-3 text-sm font-black uppercase tracking-wide text-white shadow-lg transition hover:brightness-110"
+              >
+                Open Press Kit
+              </Link>
             </section>
           </aside>
         </div>

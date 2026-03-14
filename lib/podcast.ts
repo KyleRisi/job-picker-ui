@@ -105,15 +105,21 @@ function toSafeHtml(html: string): string {
   const normalized = `${html || ''}`.trim();
   if (!normalized) return '';
 
-  const hasHtmlTags = /<[^>]+>/.test(normalized);
+  // Some feed content arrives double-encoded (for example "&amp;nbsp;").
+  const decodedOnce = decodeHtmlEntities(normalized);
+  const decoded = /&(?:[a-zA-Z]+|#\d+|#x[\da-fA-F]+);/.test(decodedOnce)
+    ? decodeHtmlEntities(decodedOnce)
+    : decodedOnce;
+
+  const hasHtmlTags = /<[^>]+>/.test(decoded);
   const htmlContent = hasHtmlTags
-    ? normalized
-    : normalized
+    ? decoded
+    : decoded
         .split(/\n{2,}/)
         .map((paragraph) => `<p>${paragraph.replace(/\n/g, '<br />')}</p>`)
         .join('');
 
-  return htmlContent
+  const sanitized = htmlContent
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
     .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
@@ -123,6 +129,19 @@ function toSafeHtml(html: string): string {
     .replace(/\s(href|src)\s*=\s*(['"])\s*javascript:[^'"]*\2/gi, '')
     .replace(/<a\s/gi, '<a target="_blank" rel="noreferrer" ')
     .trim();
+
+  // Convert markdown-style emphasis that may be embedded in feed HTML text nodes.
+  return sanitized
+    .split(/(<[^>]+>)/g)
+    .map((chunk) => {
+      if (!chunk || chunk.startsWith('<')) return chunk;
+      return chunk
+        .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
+        .replace(/\*\*/g, '')
+        .replace(/__/g, '');
+    })
+    .join('');
 }
 
 function truncateText(value: string, maxLength: number | null | undefined): string {

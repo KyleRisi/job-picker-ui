@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { EpisodeDiscoveryRail } from '@/components/episode-discovery-rail';
 import { EpisodesBrowser } from '@/components/episodes-browser';
+import { JoinPatreonCta } from '@/components/join-patreon-cta';
 import { getEpisodesLandingPageData } from '@/lib/episodes';
 import { getPodcastEpisodes, type PodcastEpisode } from '@/lib/podcast';
 import { getPublicSiteUrl } from '@/lib/site-url';
@@ -16,6 +17,7 @@ type EpisodesPageProps = {
 type ViewMode = 'grid' | 'compact';
 type SortOrder = 'newest' | 'oldest';
 const EPISODES_PAGE_SIZE = 12;
+const ARCHIVED_PATREON_EPISODE_BASELINE = 19;
 
 export const revalidate = 300;
 
@@ -112,6 +114,7 @@ export default async function EpisodesPage({ searchParams }: EpisodesPageProps) 
   const page = Math.min(requestedPage, totalPages);
   const pageStart = (page - 1) * EPISODES_PAGE_SIZE;
   const pagedEpisodes = episodes.slice(pageStart, pageStart + EPISODES_PAGE_SIZE);
+  const displayedEpisodeCount = episodes.length + ARCHIVED_PATREON_EPISODE_BASELINE;
 
   return (
     <>
@@ -128,7 +131,7 @@ export default async function EpisodesPage({ searchParams }: EpisodesPageProps) 
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <h1 className="text-4xl font-black tracking-tight text-white sm:text-5xl">All Episodes</h1>
               <span className="rounded-full border border-white/25 bg-carnival-red px-3 py-0.5 text-sm font-black text-white">
-                {episodes.length}
+                {displayedEpisodeCount}
               </span>
             </div>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/85 sm:text-lg">
@@ -167,6 +170,10 @@ export default async function EpisodesPage({ searchParams }: EpisodesPageProps) 
           />
         </div>
       </section>
+
+      <div className="-mb-8 pt-8">
+        <JoinPatreonCta />
+      </div>
     </>
   );
 }

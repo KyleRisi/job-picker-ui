@@ -16,7 +16,7 @@ import {
   type RelatedBlogPostSummary,
   type ResolvedPodcastEpisode
 } from './podcast-shared';
-import { normalizeBlogDocument } from './blog/content';
+import { blogDocumentToMarkdown, normalizeBlogDocument } from './blog/content';
 
 const DEFAULT_PODCAST_RSS_FEED_URL = 'https://feeds.simplecast.com/Sci7Fqgp';
 const FEED_ACCEPT_HEADER = 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.1';
@@ -82,6 +82,7 @@ type PodcastEpisodeRow = {
 type PodcastEpisodeEditorialRow = {
   id: string;
   episode_id: string;
+  author_id: string | null;
   web_title: string | null;
   web_slug: string | null;
   excerpt: string | null;
@@ -244,15 +245,21 @@ function toSafeHtml(html: string): string {
   const normalized = `${html || ''}`.trim();
   if (!normalized) return '';
 
-  const hasHtmlTags = /<[^>]+>/.test(normalized);
+  // Some feed content arrives double-encoded (for example "&amp;nbsp;").
+  const decodedOnce = decodeHtmlEntities(normalized);
+  const decoded = /&(?:[a-zA-Z]+|#\d+|#x[\da-fA-F]+);/.test(decodedOnce)
+    ? decodeHtmlEntities(decodedOnce)
+    : decodedOnce;
+
+  const hasHtmlTags = /<[^>]+>/.test(decoded);
   const htmlContent = hasHtmlTags
-    ? normalized
-    : normalized
+    ? decoded
+    : decoded
         .split(/\n{2,}/)
         .map((paragraph) => `<p>${paragraph.replace(/\n/g, '<br />')}</p>`)
         .join('');
 
-  return htmlContent
+  const sanitized = htmlContent
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
     .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
@@ -262,6 +269,19 @@ function toSafeHtml(html: string): string {
     .replace(/\s(href|src)\s*=\s*(['"])\s*javascript:[^'"]*\2/gi, '')
     .replace(/<a\s/gi, '<a target="_blank" rel="noreferrer" ')
     .trim();
+
+  // Convert markdown-style emphasis that may be embedded in feed HTML text nodes.
+  return sanitized
+    .split(/(<[^>]+>)/g)
+    .map((chunk) => {
+      if (!chunk || chunk.startsWith('<')) return chunk;
+      return chunk
+        .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
+        .replace(/\*\*/g, '')
+        .replace(/__/g, '');
+    })
+    .join('');
 }
 
 function truncateText(value: string, maxLength: number | null | undefined): string {
@@ -459,6 +479,7 @@ function mapEditorial(row: PodcastEpisodeEditorialRow | null | undefined): Episo
   if (!row) return null;
   return {
     id: row.id,
+    authorId: row.author_id,
     webTitle: row.web_title,
     webSlug: row.web_slug,
     excerpt: row.excerpt,
@@ -510,19 +531,22 @@ function looksLikeSourceHtml(value: string) {
 function pickPreferredEpisodeSourceHtml(row: PodcastEpisodeRow) {
   const descriptionHtml = `${row.description_html || ''}`.trim();
   const showNotes = `${row.show_notes || ''}`.trim();
+  const descriptionPlain = `${row.description_plain || ''}`.trim();
 
   if (descriptionHtml && looksLikeSourceHtml(descriptionHtml)) return descriptionHtml;
   if (showNotes && looksLikeSourceHtml(showNotes)) return showNotes;
-  return descriptionHtml || showNotes || '';
+  return descriptionHtml || showNotes || descriptionPlain || '';
 }
 
 function resolveBody(row: PodcastEpisodeRow, editorial: PodcastEpisodeEditorialRow | null | undefined) {
   const bodyJson = Array.isArray(editorial?.body_json) ? normalizeBlogDocument(editorial?.body_json) : null;
-  if (bodyJson && bodyJson.length > 0) {
+  const bodyJsonMarkdown = bodyJson ? (blogDocumentToMarkdown(bodyJson) || '').trim() : '';
+  if (bodyJson && bodyJson.length > 0 && bodyJsonMarkdown) {
+    const effectiveBodyMarkdown = editorial?.body_markdown || bodyJsonMarkdown;
     return {
       bodyJson,
-      bodyMarkdown: editorial?.body_markdown || null,
-      bodyHtml: editorial?.body_markdown ? toSafeHtml(marked.parse(editorial.body_markdown) as string) : '',
+      bodyMarkdown: effectiveBodyMarkdown,
+      bodyHtml: toSafeHtml(marked.parse(effectiveBodyMarkdown) as string),
       bodySource: 'editorial' as const
     };
   }
@@ -906,7 +930,7 @@ async function resolveEpisodesFromRows(
         showNotesHtml: toSafeHtml(row.show_notes || ''),
         heroImageUrl: editorial?.hero_image_url || row.artwork_url,
         seoTitle: editorial?.seo_title || title,
-        metaDescription: editorial?.meta_description || toMetaDescription(excerpt),
+        metaDescription: editorial?.meta_description || '',
         canonicalUrl: editorial?.canonical_url_override || `/episodes/${slug}`,
         noindex: editorial?.noindex || false,
         nofollow: editorial?.nofollow || false,
@@ -1151,9 +1175,7 @@ async function getEpisodesLandingPageDataUncached() {
   ]);
 
   const featuredEpisode = resolvedEpisodes[0] || null;
-  const recentEpisodes = featuredEpisode
-    ? resolvedEpisodes.filter((episode) => episode.id !== featuredEpisode.id).slice(0, 8)
-    : resolvedEpisodes.slice(0, 8);
+  const recentEpisodes = resolvedEpisodes.slice(0, 8);
 
   const rails: EpisodeLandingRail[] = [];
 
@@ -1161,7 +1183,7 @@ async function getEpisodesLandingPageDataUncached() {
     rails.push({
       key: 'recent',
       title: 'Recent Episodes',
-      href: '/episodes?view=compact&sort=newest#catalogue',
+      href: '#catalogue',
       episodes: recentEpisodes
     });
   }

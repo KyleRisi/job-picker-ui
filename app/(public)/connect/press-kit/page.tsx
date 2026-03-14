@@ -12,6 +12,7 @@ const PATREON_URL = 'https://www.patreon.com/cw/TheCompendiumPodcast';
 const INSTAGRAM_URL = 'https://www.instagram.com/thecompendiumpodcast/';
 const YOUTUBE_URL = 'https://www.youtube.com/@CompendiumPodcast';
 const YOUTUBE_MUSIC_URL = 'https://music.youtube.com/channel/UCQR5hWsxuu9wh7QvR60qmIw';
+const LISTEN_NOTES_URL = 'https://www.listennotes.com/podcasts/the-compendium-an-assembly-of-fascinating-gZiAjURuEF1/';
 const PERFORMANCE_STATS_URL = 'https://op3.dev/show/e0002afd25b3436d85a7ea832d2aa3d6';
 const BLEAV_URL = 'https://bleav.com/';
 const PRESS_PACK_URL = 'https://drive.google.com/drive/folders/1XyXfwOnzz0CU_aWT7xG5ead2k2Egn9Hm?usp=sharing';
@@ -250,9 +251,17 @@ export default async function PressKitPage() {
                 <p className="relative inline-flex rounded-full border border-white/25 bg-white/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/90">
                   Audience
                 </p>
-                <h3 className="relative mt-4 text-[2.2rem] font-black leading-none sm:text-[2.4rem]">575,000</h3>
+                <h3 className="relative mt-4 text-[1.95rem] font-black leading-none sm:text-[2.1rem]">575,000</h3>
                 <p className="relative mt-3 text-lg font-bold">Total downloads</p>
-                <p className="relative mt-1 text-sm text-white/85">As of 21 October 2025</p>
+                <a
+                  href={PERFORMANCE_STATS_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="relative mt-4 inline-flex rounded-full border border-white/35 bg-white/15 px-4 py-2 text-xs font-black uppercase tracking-wide text-white transition hover:bg-white/25"
+                >
+                  Stats
+                </a>
+                <p className="relative mt-2 text-[11px] text-white/75">*As of 14 March 2026</p>
               </article>
 
               <article className="relative overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br from-[#be241b] via-[#9d1a14] to-[#6f0f0d] p-6 text-center text-white shadow-[0_18px_42px_rgba(0,0,0,0.28)]">
@@ -261,9 +270,16 @@ export default async function PressKitPage() {
                 <p className="relative inline-flex rounded-full border border-white/25 bg-white/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/90">
                   Ranking
                 </p>
-                <h3 className="relative mt-4 text-[2.2rem] font-black leading-none sm:text-[2.4rem]">Top 1.5%</h3>
+                <h3 className="relative mt-4 text-[1.95rem] font-black leading-none sm:text-[2.1rem]">Top 1.5%</h3>
                 <p className="relative mt-3 text-lg font-bold">Global podcast ranking</p>
-                <p className="relative mt-1 text-sm text-white/85">Source: Listen Notes</p>
+                <a
+                  href={LISTEN_NOTES_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="relative mt-4 inline-flex rounded-full border border-white/35 bg-white/15 px-4 py-2 text-xs font-black uppercase tracking-wide text-white transition hover:bg-white/25"
+                >
+                  Listen Notes
+                </a>
               </article>
 
               <article className="relative overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br from-[#b82219] via-[#951812] to-[#690e0c] p-6 text-center text-white shadow-[0_18px_42px_rgba(0,0,0,0.28)]">
@@ -272,8 +288,8 @@ export default async function PressKitPage() {
                 <p className="relative inline-flex rounded-full border border-white/25 bg-white/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white/90">
                   Partnership
                 </p>
-                <h3 className="relative mt-4 text-[2.2rem] font-black leading-none sm:text-[2.4rem]">Signed to Bleav</h3>
-                <p className="relative mt-3 text-lg font-bold">LA-based podcast network partner</p>
+                <h3 className="relative mt-4 text-[1.95rem] font-black leading-none sm:text-[2.1rem]">Bleav</h3>
+                <p className="relative mt-3 text-lg font-bold">Signed to LA-based Podcast Network</p>
                 <a
                   href={BLEAV_URL}
                   target="_blank"
@@ -369,10 +385,9 @@ export default async function PressKitPage() {
               totalCount={reviewCount}
               heading="Audience Reception"
               ariaLabel="Audience reception"
-              ctaLabel="Load More Reviews"
+              ctaLabel="Read More Reviews"
               sectionClassName="py-0"
               headingClassName="text-3xl font-black text-white md:text-4xl"
-              ctaMode="load_more"
               loadMoreCount={3}
             />
           </section>

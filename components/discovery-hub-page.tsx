@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BlogPostTeaserCard } from '@/components/blog/blog-post-teaser-card';
+import { BlogPostCard } from '@/components/blog/blog-post-card';
+import { CompactPagination } from '@/components/compact-pagination';
 import { CompactEpisodeRow, EpisodeCard } from '@/components/episodes-browser';
+import { JoinPatreonCta } from '@/components/join-patreon-cta';
 import { ViewModeToggle, VIEW_MODE_STORAGE_KEY, type ViewMode } from '@/components/view-mode-toggle';
+import { pageHref } from '@/lib/pagination';
 import type { DiscoveryHubPage as DiscoveryHubPageData } from '@/lib/podcast-shared';
 
 const LABELS: Record<string, string> = {
@@ -45,19 +48,49 @@ export function DiscoveryHubPage({
     }
   }, [viewMode]);
 
+  const basePath = hub.term.path || `/${routeKey}/${hub.term.slug}`;
+  const hrefForPage = (page: number) => pageHref(basePath, page);
+
   return (
     <>
-      <section className="full-bleed relative -mt-8 overflow-hidden bg-[var(--brand-cream)] pb-16 pt-16 text-carnival-ink md:pb-20 md:pt-20">
+      <section className="full-bleed relative -mt-8 overflow-hidden bg-carnival-ink pb-16 pt-16 text-white md:pb-20 md:pt-20">
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div className="absolute -left-32 -top-24 h-96 w-96 rounded-full bg-carnival-red/30 blur-[120px]" />
+          <div className="absolute -bottom-24 right-0 h-80 w-80 rounded-full bg-carnival-gold/20 blur-[100px]" />
+        </div>
         <div className="relative mx-auto max-w-6xl px-4">
           <div className="max-w-3xl">
-            <p className="text-xs font-black uppercase tracking-[0.25em] text-carnival-red">{LABELS[routeKey] || 'Discover'}</p>
-            <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">{hub.term.name}</h1>
-            {hub.term.description ? <p className="mt-4 max-w-2xl text-base leading-relaxed text-carnival-ink/80 sm:text-lg">{hub.term.description}</p> : null}
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-carnival-gold">{LABELS[routeKey] || 'Discover'}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <h1 className="text-[36px] font-black leading-tight tracking-tight text-white sm:text-[48px]">{hub.term.name}</h1>
+              <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-carnival-red px-3 text-sm font-black text-white">
+                {hub.pagination.total}
+              </span>
+            </div>
+            {hub.term.description ? <p className="mt-3 max-w-2xl text-[16px] leading-relaxed text-white/90 md:text-[18px]">{hub.term.description}</p> : null}
+            {hub.relatedTerms.length ? (
+              <div className="mt-8">
+                <h2 className="text-[14px] font-black uppercase tracking-[0.2em] text-white/75">Related Terms</h2>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {hub.relatedTerms.map((term) => (
+                    term.path ? (
+                      <Link
+                        key={term.id}
+                        href={term.path}
+                        className="inline-flex items-center rounded-full border border-white/25 bg-white/10 px-3 py-1 text-sm font-semibold text-white hover:bg-white/15"
+                      >
+                        {term.name}
+                      </Link>
+                    ) : null
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
 
-      <section className="relative z-10 isolate">
+      <section className="relative z-10 isolate pt-6 md:pt-8">
         <div className="relative z-10 space-y-6">
           {hub.featuredEpisodes.length ? (
             <section className="rounded-3xl border-2 border-carnival-ink/15 bg-white p-6 shadow-card">
@@ -74,27 +107,6 @@ export function DiscoveryHubPage({
           ) : null}
 
           <section className="-mt-1 space-y-3" aria-label="Latest episodes">
-            {hub.relatedTerms.length ? (
-              <div className="relative z-20 space-y-2">
-                <h2 className="-mt-1 text-lg font-black text-carnival-ink">Related terms</h2>
-                <div className="-mx-4 overflow-x-auto px-4 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <div className="flex w-max gap-2">
-                    {hub.relatedTerms.map((term) => (
-                      term.path ? (
-                        <Link
-                          key={term.id}
-                          href={term.path}
-                          className="shrink-0 whitespace-nowrap rounded-full border border-carnival-ink/15 bg-white px-3 py-1 text-sm font-semibold text-carnival-ink hover:border-carnival-red hover:text-carnival-red"
-                        >
-                          {term.name}
-                        </Link>
-                      ) : null
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
             <div className="flex justify-end">
               <ViewModeToggle mode={viewMode} onChange={setViewMode} />
             </div>
@@ -115,14 +127,51 @@ export function DiscoveryHubPage({
             ) : (
               <p className="text-sm text-carnival-ink/65">No episodes have been assigned to this hub yet.</p>
             )}
+            {hub.pagination.totalPages > 1 ? (
+              <CompactPagination
+                page={hub.pagination.page}
+                totalPages={hub.pagination.totalPages}
+                hrefForPage={hrefForPage}
+                ariaLabel="Taxonomy pagination"
+                className="pt-4"
+              />
+            ) : null}
           </section>
 
           {hub.relatedPosts.length ? (
-            <section className="rounded-3xl border-2 border-carnival-ink/15 bg-white p-6 shadow-card">
+            <section className="space-y-4">
               <h2 className="text-2xl font-black text-carnival-ink">Related blog posts</h2>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {hub.relatedPosts.map((post) => (
-                  <BlogPostTeaserCard key={post.id} post={post} />
+                  <BlogPostCard
+                    key={post.id}
+                    compact
+                    post={{
+                      id: post.id,
+                      slug: post.slug,
+                      title: post.title,
+                      excerpt: post.excerpt,
+                      excerpt_auto: post.excerpt,
+                      published_at: post.publishedAt,
+                      reading_time_minutes: post.readingTimeMinutes,
+                      featured_image: post.featuredImage
+                        ? {
+                            storage_path: post.featuredImage.storagePath,
+                            alt_text_default: post.featuredImage.altText
+                          }
+                        : null,
+                      taxonomies: {
+                        categories: [
+                          {
+                            id: hub.term.id,
+                            name: hub.term.name,
+                            slug: hub.term.slug
+                          }
+                        ]
+                      },
+                      author: post.author
+                    }}
+                  />
                 ))}
               </div>
             </section>
@@ -130,6 +179,10 @@ export function DiscoveryHubPage({
 
         </div>
       </section>
+
+      <div className="-mb-8 pt-8">
+        <JoinPatreonCta />
+      </div>
     </>
   );
 }

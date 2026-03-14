@@ -1,5 +1,6 @@
 import { unstable_noStore as noStore } from 'next/cache';
 import { WorkspaceEpisodesTable } from '@/components/workspace/workspace-episodes-table';
+import { WorkspaceEpisodesActions } from '@/components/workspace/workspace-episodes-actions';
 import { getPodcastEpisodes, type PodcastEpisode } from '@/lib/podcast';
 
 export const dynamic = 'force-dynamic';
@@ -20,9 +21,12 @@ export default async function WorkspaceEpisodesPage() {
 
   return (
     <section className="space-y-4">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold text-slate-900">Episodes</h1>
-        <p className="text-sm text-slate-600">View episodes, apply filters, and open the public episode page.</p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold text-slate-900">Episodes</h1>
+          <p className="text-sm text-slate-600">View episodes, apply filters, and open the public episode page.</p>
+        </div>
+        <WorkspaceEpisodesActions />
       </header>
 
       {feedError ? (

@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   EditorContent,
@@ -20,6 +21,8 @@ import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
 import TextStyle from '@tiptap/extension-text-style';
 import {
+  buildSeoChecklist,
+  blogDocumentToMarkdown,
   blocksToTiptapJson,
   createPrimaryListenEpisodeBlock,
   createRichText,
@@ -92,6 +95,7 @@ function toPodcastEpisodeCard(episode: WorkspaceEpisodeOption): PodcastEpisode {
 }
 
 const WORKSPACE_DRAFT_STORAGE_PREFIX = 'workspace-blog-editor-draft:';
+const WORKSPACE_EPISODE_DRAFT_STORAGE_PREFIX = 'workspace-episode-editor-draft:';
 
 function createStructuredBlock(type: BlogContentBlock['type']): BlogContentBlock {
   const id = crypto.randomUUID();
@@ -1974,6 +1978,7 @@ type BlogPost = {
   revisions: { id: string; revision_number: number; created_at: string }[];
   seo_title: string | null;
   seo_description: string | null;
+  seo_score: number | null;
   focus_keyword: string | null;
   canonical_url: string | null;
   noindex: boolean;
@@ -2023,6 +2028,71 @@ function StatusPill({ status }: { status: string }) {
     <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-bold uppercase ${styles[status] || styles.draft}`}>
       {status}
     </span>
+  );
+}
+
+function SeoScoreBadge({
+  score,
+  advice
+}: {
+  score: number | null | undefined;
+  advice: string[];
+}) {
+  const clamped = typeof score === 'number' && Number.isFinite(score)
+    ? Math.max(0, Math.min(100, Math.round(score)))
+    : null;
+
+  if (clamped == null) return null;
+
+  const toneClass =
+    clamped >= 80
+      ? 'bg-emerald-500'
+      : clamped >= 50
+        ? 'bg-amber-500'
+        : 'bg-rose-500';
+
+  return (
+    <div
+      className="group relative w-full"
+      role="img"
+      aria-label={`SEO score ${clamped}`}
+      tabIndex={0}
+    >
+      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+        SEO score
+      </div>
+      <div className="h-7 w-full overflow-hidden rounded-md border border-slate-300 bg-slate-100">
+        <div
+          className={`flex h-full items-center justify-end px-2 text-xs font-semibold text-white transition-all ${toneClass}`}
+          style={{ width: `${Math.max(8, clamped)}%` }}
+        >
+          {clamped}
+        </div>
+      </div>
+
+      <div className="pointer-events-none absolute bottom-full left-0 right-0 z-20 mb-2 hidden rounded-lg border border-slate-300 bg-white p-3 shadow-xl group-hover:block group-focus-within:block">
+        {advice.length ? (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-800">How to improve</p>
+            <p className="text-[11px] leading-4 text-slate-500">
+              Complete these checks to increase your SEO score.
+            </p>
+            <ul className="list-disc space-y-1.5 pl-4 text-[11px] leading-4 text-slate-700">
+              {advice.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">All checks passing</p>
+            <p className="text-[11px] leading-4 text-emerald-700">
+              Great work. Your current SEO setup looks strong.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -2093,6 +2163,12 @@ function toIsoDateTimeOrNull(value: unknown) {
   return parsed.toISOString();
 }
 
+function asNullableText(value: unknown) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
 function toLocalDateTimeInput(value: string | null | undefined) {
   if (!value) return '';
   const date = new Date(value);
@@ -2111,12 +2187,16 @@ export function WorkspaceBlogEditor({
   episodes,
   relatedPosts,
   authors,
-  taxonomyOptions
+  taxonomyOptions,
+  mode = 'blog',
+  episodeId
 }: {
   post: BlogPost;
   episodes: WorkspaceEpisodeOption[];
   relatedPosts: WorkspacePostOption[];
   authors: WorkspaceAuthorOption[];
+  mode?: 'blog' | 'episode';
+  episodeId?: string;
   taxonomyOptions: {
     categories: WorkspaceTermOption[];
     series: WorkspaceTermOption[];
@@ -2125,11 +2205,18 @@ export function WorkspaceBlogEditor({
     collections: WorkspaceTermOption[];
   };
 }) {
-  const backHref = '/workspace/dashboard/blogs';
-  const draftStorageKey = `${WORKSPACE_DRAFT_STORAGE_PREFIX}${post.id}`;
+  const isEpisodeMode = mode === 'episode';
+  const router = useRouter();
+  const backHref = isEpisodeMode ? '/workspace/dashboard/episodes' : '/workspace/dashboard/blogs';
+  const draftStorageKey = `${isEpisodeMode ? WORKSPACE_EPISODE_DRAFT_STORAGE_PREFIX : WORKSPACE_DRAFT_STORAGE_PREFIX}${episodeId || post.id}`;
   const postAny = post as any;
+  const episodeSourceLastSyncedAt = useMemo(
+    () => (isEpisodeMode ? `${postAny?.source?.last_synced_at || ''}`.trim() : ''),
+    [isEpisodeMode, postAny?.source?.last_synced_at]
+  );
   const [previewBusy, setPreviewBusy] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingPost, setDeletingPost] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [slugEditorOpen, setSlugEditorOpen] = useState(false);
   const [slugDraft, setSlugDraft] = useState(post.slug || '');
@@ -2143,18 +2230,40 @@ export function WorkspaceBlogEditor({
   const [heroImageMessage, setHeroImageMessage] = useState('');
   const [heroImageAltEditorOpen, setHeroImageAltEditorOpen] = useState(false);
   const [heroImageAltSaving, setHeroImageAltSaving] = useState(false);
+  const [episodeSyncModalMode, setEpisodeSyncModalMode] = useState<null | 'full' | 'metadata'>(null);
+  const [episodeSyncBusyMode, setEpisodeSyncBusyMode] = useState<null | 'full' | 'metadata'>(null);
+  const [episodeSyncFeedback, setEpisodeSyncFeedback] = useState<null | { tone: 'success' | 'error'; text: string }>(null);
   const heroImageUploadInputRef = useRef<HTMLInputElement | null>(null);
   const heroImageAltEditorRef = useRef<HTMLDivElement | null>(null);
+  const titleTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const excerptTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [status, setStatus] = useState<'draft' | 'scheduled' | 'published' | 'archived'>(
     (post.status as 'draft' | 'scheduled' | 'published' | 'archived') || 'draft'
   );
-  const [authorId, setAuthorId] = useState(postAny.author_id || post.author?.id || authors[0]?.id || '');
+  const [authorId, setAuthorId] = useState(
+    postAny.author_id || postAny?.editorial?.author_id || post.author?.id || authors[0]?.id || ''
+  );
   const [publishAt, setPublishAt] = useState(toLocalDateTimeInput(postAny.scheduled_at || post.published_at || null));
   const [isFeatured, setIsFeatured] = useState(Boolean(post.is_featured));
   const [title, setTitle] = useState(
     `${post.title || ''}`.trim().toLowerCase() === 'untitled post' ? '' : post.title || ''
   );
   const [excerpt, setExcerpt] = useState(post.excerpt || '');
+  const [seoTitle, setSeoTitle] = useState(post.seo_title || '');
+  const [seoDescription, setSeoDescription] = useState(post.seo_description || '');
+  const [socialTitle, setSocialTitle] = useState(postAny.social_title || '');
+  const [socialDescription, setSocialDescription] = useState(postAny.social_description || '');
+  const [canonicalUrl, setCanonicalUrl] = useState(post.canonical_url || '');
+  const [focusKeyword, setFocusKeyword] = useState(post.focus_keyword || '');
+  const [ogImageId, setOgImageId] = useState(postAny.og_image_id || '');
+  const [schemaType, setSchemaType] = useState(postAny.schema_type || 'BlogPosting');
+  const [noindex, setNoindex] = useState(Boolean(post.noindex));
+  const [nofollow, setNofollow] = useState(Boolean(post.nofollow));
+  const [featuredImageStoragePath, setFeaturedImageStoragePath] = useState<string>(
+    postAny?.featured_image_storage_path
+      || postAny?.editorial?.hero_image_storage_path
+      || ''
+  );
   const [linkedEpisodeIds, setLinkedEpisodeIds] = useState<string[]>(
     Array.isArray(postAny.linked_episodes)
       ? postAny.linked_episodes
@@ -2193,10 +2302,11 @@ export function WorkspaceBlogEditor({
   );
   const [hasPrimaryListenBlockInEditor, setHasPrimaryListenBlockInEditor] = useState(false);
   const activeSlug = useMemo(() => {
+    if (isEpisodeMode) return post.slug;
     if (slugManuallyEdited) return slugifyBlogText(slugDraft.trim() || 'Untitled Post');
     if (post.status !== 'draft') return post.slug;
     return slugifyBlogText(title.trim() || 'Untitled Post');
-  }, [post.slug, post.status, slugDraft, slugManuallyEdited, title]);
+  }, [isEpisodeMode, post.slug, post.status, slugDraft, slugManuallyEdited, title]);
 
   const initialContent = useMemo(() => {
     const doc = normalizeBlogDocument(post.content_json || []);
@@ -2229,6 +2339,35 @@ export function WorkspaceBlogEditor({
     },
     content: initialContent
   });
+
+  const liveSeoDocument = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => {
+      if (!currentEditor) return null;
+      return tiptapJsonToBlocks(currentEditor.getJSON() as any);
+    }
+  }) ?? null;
+
+  const liveSeoResult = useMemo(() => {
+    if (!liveSeoDocument) {
+      return {
+        score: post.seo_score,
+        warnings: [] as string[]
+      };
+    }
+    return buildSeoChecklist({
+      title: title.trim() || 'Untitled Post',
+      seoTitle: seoTitle.trim() || null,
+      seoDescription: seoDescription.trim() || null,
+      focusKeyword: focusKeyword.trim() || null,
+      canonicalUrl: canonicalUrl.trim() || null,
+      document: liveSeoDocument,
+      excerpt: excerpt.trim() || null,
+      hasAuthor: Boolean(authorId),
+      hasPrimaryCategory: Boolean(primaryCategoryId),
+      hasLinkedEpisode: linkedEpisodeIds.length > 0
+    });
+  }, [authorId, canonicalUrl, excerpt, focusKeyword, linkedEpisodeIds.length, liveSeoDocument, post.seo_score, primaryCategoryId, seoDescription, seoTitle, title]);
 
   useEffect(() => {
     if (!editor) return;
@@ -2265,9 +2404,20 @@ export function WorkspaceBlogEditor({
         content?: Record<string, unknown>;
         title?: string;
         excerpt?: string;
+        seoTitle?: string;
+        seoDescription?: string;
+        socialTitle?: string;
+        socialDescription?: string;
+        canonicalUrl?: string;
+        focusKeyword?: string;
+        ogImageId?: string;
+        schemaType?: string;
+        noindex?: boolean;
+        nofollow?: boolean;
         slugDraft?: string;
         slugManuallyEdited?: boolean;
         featuredImageId?: string | null;
+        featuredImageStoragePath?: string;
         featuredImageUrl?: string;
         featuredImageAlt?: string;
         featuredImageAltSynced?: string;
@@ -2282,7 +2432,23 @@ export function WorkspaceBlogEditor({
         topicIds?: string[];
         themeIds?: string[];
         collectionIds?: string[];
+        updatedAt?: string;
       };
+      if (isEpisodeMode) {
+        const sourceLastSyncedAtMs = episodeSourceLastSyncedAt ? Date.parse(episodeSourceLastSyncedAt) : Number.NaN;
+        const draftUpdatedAtMs = typeof parsed?.updatedAt === 'string' ? Date.parse(parsed.updatedAt) : Number.NaN;
+        const shouldDiscardStaleDraft = Number.isFinite(sourceLastSyncedAtMs) && (
+          !Number.isFinite(draftUpdatedAtMs) || draftUpdatedAtMs < sourceLastSyncedAtMs
+        );
+        if (shouldDiscardStaleDraft) {
+          try {
+            window.localStorage.removeItem(draftStorageKey);
+          } catch {
+            // Ignore storage failures.
+          }
+          return;
+        }
+      }
       const hasAnyDraftField =
         Boolean(parsed?.content) ||
         typeof parsed?.title === 'string' ||
@@ -2291,6 +2457,7 @@ export function WorkspaceBlogEditor({
         typeof parsed?.slugManuallyEdited === 'boolean' ||
         typeof parsed?.featuredImageId === 'string' ||
         parsed?.featuredImageId === null ||
+        typeof parsed?.featuredImageStoragePath === 'string' ||
         typeof parsed?.featuredImageUrl === 'string' ||
         Array.isArray(parsed?.linkedEpisodeIds) ||
         Array.isArray(parsed?.relatedPostIds) ||
@@ -2310,9 +2477,20 @@ export function WorkspaceBlogEditor({
       if (typeof parsed.slugDraft === 'string') setSlugDraft(parsed.slugDraft);
       if (typeof parsed.slugManuallyEdited === 'boolean') setSlugManuallyEdited(parsed.slugManuallyEdited);
       if (typeof parsed.featuredImageId === 'string' || parsed.featuredImageId === null) setFeaturedImageId(parsed.featuredImageId || null);
+      if (typeof parsed.featuredImageStoragePath === 'string') setFeaturedImageStoragePath(parsed.featuredImageStoragePath);
       if (typeof parsed.featuredImageUrl === 'string') setFeaturedImageUrl(parsed.featuredImageUrl);
       if (typeof parsed.featuredImageAlt === 'string') setFeaturedImageAlt(parsed.featuredImageAlt);
       if (typeof parsed.featuredImageAltSynced === 'string') setFeaturedImageAltSynced(parsed.featuredImageAltSynced);
+      if (typeof parsed.seoTitle === 'string') setSeoTitle(parsed.seoTitle);
+      if (typeof parsed.seoDescription === 'string') setSeoDescription(parsed.seoDescription);
+      if (typeof parsed.socialTitle === 'string') setSocialTitle(parsed.socialTitle);
+      if (typeof parsed.socialDescription === 'string') setSocialDescription(parsed.socialDescription);
+      if (typeof parsed.canonicalUrl === 'string') setCanonicalUrl(parsed.canonicalUrl);
+      if (typeof parsed.focusKeyword === 'string') setFocusKeyword(parsed.focusKeyword);
+      if (typeof parsed.ogImageId === 'string') setOgImageId(parsed.ogImageId);
+      if (typeof parsed.schemaType === 'string') setSchemaType(parsed.schemaType);
+      if (typeof parsed.noindex === 'boolean') setNoindex(parsed.noindex);
+      if (typeof parsed.nofollow === 'boolean') setNofollow(parsed.nofollow);
       if (parsed.status === 'draft' || parsed.status === 'scheduled' || parsed.status === 'published' || parsed.status === 'archived') setStatus(parsed.status);
       if (typeof parsed.authorId === 'string') setAuthorId(parsed.authorId);
       if (typeof parsed.publishAt === 'string') setPublishAt(parsed.publishAt);
@@ -2328,7 +2506,7 @@ export function WorkspaceBlogEditor({
     } catch {
       // Ignore malformed or unavailable local draft data.
     }
-  }, [draftStorageKey, editor]);
+  }, [draftStorageKey, editor, episodeSourceLastSyncedAt, isEpisodeMode]);
 
   useEffect(() => {
     if (!editor) return;
@@ -2342,9 +2520,20 @@ export function WorkspaceBlogEditor({
             content: editor.getJSON(),
             title,
             excerpt,
+            seoTitle,
+            seoDescription,
+            socialTitle,
+            socialDescription,
+            canonicalUrl,
+            focusKeyword,
+            ogImageId,
+            schemaType,
+            noindex,
+            nofollow,
             slugDraft,
             slugManuallyEdited,
             featuredImageId,
+            featuredImageStoragePath,
             featuredImageUrl,
             featuredImageAlt,
             featuredImageAltSynced,
@@ -2371,7 +2560,7 @@ export function WorkspaceBlogEditor({
     return () => {
       editor.off('update', handleUpdate);
     };
-  }, [authorId, collectionIds, draftStorageKey, editor, excerpt, featuredImageAlt, featuredImageAltSynced, featuredImageId, featuredImageUrl, isFeatured, linkedEpisodeIds, primaryCategoryId, publishAt, relatedPostIds, seriesIds, slugDraft, slugManuallyEdited, status, themeIds, title, topicIds]);
+  }, [authorId, canonicalUrl, collectionIds, draftStorageKey, editor, excerpt, featuredImageAlt, featuredImageAltSynced, featuredImageId, featuredImageStoragePath, featuredImageUrl, focusKeyword, isFeatured, linkedEpisodeIds, nofollow, noindex, ogImageId, primaryCategoryId, publishAt, relatedPostIds, schemaType, seoDescription, seoTitle, seriesIds, slugDraft, slugManuallyEdited, socialDescription, socialTitle, status, themeIds, title, topicIds]);
 
   useEffect(() => {
     try {
@@ -2383,9 +2572,20 @@ export function WorkspaceBlogEditor({
           ...parsed,
           title,
           excerpt,
+          seoTitle,
+          seoDescription,
+          socialTitle,
+          socialDescription,
+          canonicalUrl,
+          focusKeyword,
+          ogImageId,
+          schemaType,
+          noindex,
+          nofollow,
           slugDraft,
           slugManuallyEdited,
           featuredImageId,
+          featuredImageStoragePath,
           featuredImageUrl,
           featuredImageAlt,
           featuredImageAltSynced,
@@ -2406,11 +2606,12 @@ export function WorkspaceBlogEditor({
     } catch {
       // Ignore storage write failures (quota/private mode).
     }
-  }, [authorId, collectionIds, draftStorageKey, excerpt, featuredImageAlt, featuredImageAltSynced, featuredImageId, featuredImageUrl, isFeatured, linkedEpisodeIds, primaryCategoryId, publishAt, relatedPostIds, seriesIds, slugDraft, slugManuallyEdited, status, themeIds, title, topicIds]);
+  }, [authorId, canonicalUrl, collectionIds, draftStorageKey, excerpt, featuredImageAlt, featuredImageAltSynced, featuredImageId, featuredImageStoragePath, featuredImageUrl, focusKeyword, isFeatured, linkedEpisodeIds, nofollow, noindex, ogImageId, primaryCategoryId, publishAt, relatedPostIds, schemaType, seoDescription, seoTitle, seriesIds, slugDraft, slugManuallyEdited, socialDescription, socialTitle, status, themeIds, title, topicIds]);
 
   useEffect(() => {
     if (!featuredImageId) {
-      setFeaturedImageUrl('');
+      // Keep URL-based hero images (for example RSS artwork) even when no media asset id exists.
+      setFeaturedImageStoragePath('');
       return;
     }
     if (featuredImageUrl) return;
@@ -2423,6 +2624,7 @@ export function WorkspaceBlogEditor({
         const asset = toMediaPickerAsset(data);
         if (!active || !asset?.storage_path) return;
         setFeaturedImageUrl(getStoragePublicUrl(asset.storage_path));
+        setFeaturedImageStoragePath(asset.storage_path);
         if (!featuredImageAlt) {
           setFeaturedImageAlt(asset.alt_text_default || '');
           setFeaturedImageAltSynced(asset.alt_text_default || '');
@@ -2452,6 +2654,20 @@ export function WorkspaceBlogEditor({
     };
   }, [heroImageAltEditorOpen]);
 
+  useEffect(() => {
+    const target = titleTextareaRef.current;
+    if (!target) return;
+    target.style.height = '0px';
+    target.style.height = `${target.scrollHeight}px`;
+  }, [title]);
+
+  useEffect(() => {
+    const target = excerptTextareaRef.current;
+    if (!target) return;
+    target.style.height = '0px';
+    target.style.height = `${target.scrollHeight}px`;
+  }, [excerpt]);
+
   const publishAtIso = useMemo(() => {
     if (!publishAt) return null;
     const date = new Date(publishAt);
@@ -2464,6 +2680,11 @@ export function WorkspaceBlogEditor({
     const publishMs = new Date(publishAtIso).getTime();
     return publishMs > Date.now() ? 'scheduled' : 'published';
   }, [publishAtIso]);
+
+  const episodePublishedAtDisplay = useMemo(
+    () => toLocalDateTimeInput(post.published_at || null),
+    [post.published_at]
+  );
 
   const effectiveStatus = useMemo<'draft' | 'scheduled' | 'published' | 'archived'>(() => {
     if (status === 'archived') return 'archived';
@@ -2557,27 +2778,90 @@ export function WorkspaceBlogEditor({
       })),
       relatedPostIds,
       seo: {
-        seoTitle: post.seo_title,
-        seoDescription: post.seo_description,
-        socialTitle: postAny.social_title || null,
-        socialDescription: postAny.social_description || null,
-        canonicalUrl: post.canonical_url,
-        noindex: post.noindex,
-        nofollow: post.nofollow,
-        focusKeyword: post.focus_keyword,
-        schemaType: postAny.schema_type || 'BlogPosting',
-        ogImageId: postAny.og_image_id || null
+        seoTitle: seoTitle.trim() || null,
+        seoDescription: seoDescription.trim() || null,
+        socialTitle: socialTitle.trim() || null,
+        socialDescription: socialDescription.trim() || null,
+        canonicalUrl: canonicalUrl.trim() || null,
+        noindex,
+        nofollow,
+        focusKeyword: focusKeyword.trim() || null,
+        schemaType: schemaType || 'BlogPosting',
+        ogImageId: ogImageId.trim() || null
       },
       revisionReason: ''
     };
+  }
+
+  async function buildEpisodePayload(currentContentJson: ReturnType<typeof tiptapJsonToBlocks>) {
+    const normalizedTopicIds = Array.from(new Set(topicIds.filter(Boolean))).slice(0, 3);
+    const baseDiscovery = postAny.discovery || {};
+    const normalizedRelatedEpisodeIds = linkedEpisodeIds.filter((id) => id && id !== (episodeId || post.id));
+    const normalizedBody = normalizeBlogDocument(currentContentJson);
+    const bodyMarkdown = blogDocumentToMarkdown(normalizedBody) || null;
+
+    const isEpisodeArchived = status === 'archived';
+    const isEpisodeVisible = status === 'published' || status === 'scheduled';
+    const heroStoragePath = featuredImageStoragePath || null;
+
+    return {
+      authorId: authorId || null,
+      webTitle: title.trim() || null,
+      webSlug: activeSlug || null,
+      excerpt: excerpt.trim() || null,
+      bodyJson: normalizedBody,
+      bodyMarkdown,
+      heroImageUrl: featuredImageUrl || null,
+      heroImageStoragePath: heroStoragePath,
+      seoTitle: seoTitle.trim() || null,
+      metaDescription: seoDescription.trim() || null,
+      canonicalUrlOverride: canonicalUrl.trim() || null,
+      socialTitle: socialTitle.trim() || null,
+      socialDescription: socialDescription.trim() || null,
+      socialImageUrl: ogImageId.trim() || null,
+      noindex,
+      nofollow,
+      isFeatured,
+      isVisible: isEpisodeVisible,
+      isArchived: isEpisodeArchived,
+      editorialNotes: asNullableText(postAny?.editorial?.editorial_notes) || null,
+      discovery: {
+        primaryTopicId: primaryCategoryId || null,
+        themeIds,
+        entityIds: Array.isArray(baseDiscovery.entityIds) ? baseDiscovery.entityIds : [],
+        caseIds: Array.isArray(baseDiscovery.caseIds) ? baseDiscovery.caseIds : [],
+        eventIds: Array.isArray(baseDiscovery.eventIds) ? baseDiscovery.eventIds : [],
+        collectionIds,
+        seriesIds
+      },
+      relatedEpisodes: normalizedRelatedEpisodeIds.map((relatedEpisodeId, index) => ({
+        episodeId: relatedEpisodeId,
+        relationshipType: 'related',
+        sortOrder: index
+      })),
+      relatedPosts: relatedPostIds.map((postId, index) => ({
+        postId,
+        sortOrder: index
+      })),
+      changeSummary: null
+    };
+  }
+
+  async function buildPayload(
+    currentContentJson: ReturnType<typeof tiptapJsonToBlocks>,
+    overrides?: Partial<{ status: 'draft' | 'scheduled' | 'published' | 'archived' }>
+  ) {
+    if (isEpisodeMode) return buildEpisodePayload(currentContentJson);
+    return buildPostPayload(currentContentJson, overrides);
   }
 
   async function persist() {
     if (!editor || saving || !isDirty) return;
     setSaving(true);
     try {
-      const payload = buildPostPayload(tiptapJsonToBlocks(editor.getJSON() as any));
-      const response = await fetch(`/api/admin/blog/posts/${post.id}`, {
+      const payload = await buildPayload(tiptapJsonToBlocks(editor.getJSON() as any));
+      const endpoint = isEpisodeMode ? `/api/admin/blog/episodes/${episodeId || post.id}` : `/api/admin/blog/posts/${post.id}`;
+      const response = await fetch(endpoint, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -2599,8 +2883,9 @@ export function WorkspaceBlogEditor({
     if (!editor || saving) return;
     setSaving(true);
     try {
-      const payload = buildPostPayload(tiptapJsonToBlocks(editor.getJSON() as any), { status: 'published' });
-      const response = await fetch(`/api/admin/blog/posts/${post.id}`, {
+      const payload = await buildPayload(tiptapJsonToBlocks(editor.getJSON() as any), { status: 'published' });
+      const endpoint = isEpisodeMode ? `/api/admin/blog/episodes/${episodeId || post.id}` : `/api/admin/blog/posts/${post.id}`;
+      const response = await fetch(endpoint, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -2609,7 +2894,7 @@ export function WorkspaceBlogEditor({
         const data = await response.json().catch(() => ({}));
         throw new Error(data?.error || 'Failed to publish post.');
       }
-      setStatus(publishAtIso && new Date(publishAtIso).getTime() > Date.now() ? 'scheduled' : 'published');
+      setStatus(isEpisodeMode ? (status === 'archived' ? 'archived' : 'published') : (publishAtIso && new Date(publishAtIso).getTime() > Date.now() ? 'scheduled' : 'published'));
       setIsDirty(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to publish post.';
@@ -2619,11 +2904,45 @@ export function WorkspaceBlogEditor({
     }
   }
 
+  async function deletePost() {
+    if (isEpisodeMode || deletingPost || saving) return;
+    setDeletingPost(true);
+    try {
+      const response = await fetch(`/api/admin/blog/posts/${post.id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data?.error || 'Failed to delete post.');
+      }
+      try {
+        window.localStorage.removeItem(draftStorageKey);
+      } catch {
+        // Ignore storage failures.
+      }
+      router.push('/workspace/dashboard/blogs');
+      router.refresh();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete post.';
+      window.alert(message);
+    } finally {
+      setDeletingPost(false);
+    }
+  }
+
   async function openPreview() {
     if (!editor || previewBusy) return;
+    if (isEpisodeMode) {
+      if (isDirty) {
+        await persist();
+      }
+      const base = window.location.origin.replace(/\/+$/, '');
+      window.open(`${base}/episodes/${activeSlug}`, '_blank', 'noopener,noreferrer');
+      return;
+    }
     setPreviewBusy(true);
     try {
-      const payload = buildPostPayload(tiptapJsonToBlocks(editor.getJSON() as any));
+      const payload = await buildPayload(tiptapJsonToBlocks(editor.getJSON() as any));
 
       const autosaveResponse = await fetch(`/api/admin/blog/posts/${post.id}/autosave`, {
         method: 'POST',
@@ -2642,6 +2961,48 @@ export function WorkspaceBlogEditor({
       window.alert(message);
     } finally {
       setPreviewBusy(false);
+    }
+  }
+
+  async function confirmEpisodeSync() {
+    if (!isEpisodeMode || !episodeSyncModalMode || episodeSyncBusyMode) return;
+    const syncMode = episodeSyncModalMode;
+    setEpisodeSyncBusyMode(syncMode);
+    setEpisodeSyncFeedback(null);
+    try {
+      const endpoint = syncMode === 'full'
+        ? `/api/admin/blog/episodes/${episodeId || post.id}/reset-from-rss`
+        : `/api/admin/blog/episodes/${episodeId || post.id}/sync`;
+      const response = await fetch(endpoint, { method: 'POST' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.error || 'Episode sync failed.');
+      }
+
+      if (syncMode === 'full') {
+        try {
+          window.localStorage.removeItem(draftStorageKey);
+        } catch {
+          // Ignore storage failures.
+        }
+      }
+
+      setEpisodeSyncFeedback({
+        tone: 'success',
+        text: syncMode === 'full'
+          ? 'Episode re-sync complete. Reloading...'
+          : 'Episode metadata sync complete. Reloading...'
+      });
+      setEpisodeSyncModalMode(null);
+      router.refresh();
+      window.setTimeout(() => {
+        window.location.reload();
+      }, 450);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Episode sync failed.';
+      setEpisodeSyncFeedback({ tone: 'error', text: message });
+    } finally {
+      setEpisodeSyncBusyMode(null);
     }
   }
 
@@ -2670,6 +3031,7 @@ export function WorkspaceBlogEditor({
       }
       setFeaturedImageId(asset.id);
       setFeaturedImageUrl(getStoragePublicUrl(asset.storage_path));
+      setFeaturedImageStoragePath(asset.storage_path);
       setFeaturedImageAlt(asset.alt_text_default || '');
       setFeaturedImageAltSynced(asset.alt_text_default || '');
       setHeroImageMessage('');
@@ -2684,6 +3046,7 @@ export function WorkspaceBlogEditor({
   function handleHeroImageLibrarySelect(asset: MediaPickerAsset) {
     setFeaturedImageId(asset.id);
     setFeaturedImageUrl(getStoragePublicUrl(asset.storage_path));
+    setFeaturedImageStoragePath(asset.storage_path);
     setFeaturedImageAlt(asset.alt_text_default || '');
     setFeaturedImageAltSynced(asset.alt_text_default || '');
     setHeroImagePickerOpen(false);
@@ -2742,23 +3105,25 @@ export function WorkspaceBlogEditor({
       <SidebarSection title="URL">
         <div className="space-y-2">
           <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
-            {slugEditorOpen ? (
+            {slugEditorOpen && !isEpisodeMode ? (
               <div className="flex items-center gap-1">
-                <span>/blog/</span>
+                <span>{isEpisodeMode ? '/episodes/' : '/blog/'}</span>
                 <input
                   className="min-w-0 flex-1 border-0 bg-transparent p-0 font-semibold text-slate-900 outline-none"
                   value={slugDraft}
                   onChange={(event) => setSlugDraft(event.currentTarget.value)}
-                  placeholder="post-slug"
+                  placeholder={isEpisodeMode ? 'episode-slug' : 'post-slug'}
                 />
               </div>
             ) : (
               <p className="break-all">
-                /blog/<span className="font-semibold text-slate-900">{activeSlug}</span>
+                {isEpisodeMode ? '/episodes/' : '/blog/'}<span className="font-semibold text-slate-900">{activeSlug}</span>
               </p>
             )}
           </div>
-          {!slugEditorOpen ? (
+          {isEpisodeMode ? (
+            <p className="text-xs text-slate-500">Episode URL slugs are locked and can’t be edited here.</p>
+          ) : !slugEditorOpen ? (
             <button
               type="button"
               className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
@@ -2799,41 +3164,45 @@ export function WorkspaceBlogEditor({
         </div>
       </SidebarSection>
 
-      <SidebarSection title="Post Settings">
+      <SidebarSection title={isEpisodeMode ? 'Episode Settings' : 'Post Settings'}>
         <div className="space-y-3">
+          {isEpisodeMode ? (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">Date</label>
+              <input
+                className="w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-600"
+                type="datetime-local"
+                value={episodePublishedAtDisplay}
+                readOnly
+                disabled
+              />
+              <p className="mt-1 text-xs text-slate-500">Pulled from RSS feed.</p>
+            </div>
+          ) : null}
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-700">Status</label>
             <div className="flex items-center gap-2">
               <StatusPill status={effectiveStatus} />
             </div>
           </div>
-          <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <input
-              type="checkbox"
-              checked={isFeatured}
-              onChange={(event) => {
-                setIsFeatured(event.currentTarget.checked);
-                setIsDirty(true);
-              }}
-            />
-            Featured post
-          </label>
           <div className="space-y-3">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700">Author</label>
-              <select
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-                value={authorId}
-                onChange={(event) => {
-                  setAuthorId(event.currentTarget.value);
-                  setIsDirty(true);
-                }}
-              >
-                {authors.map((author) => (
-                  <option key={author.id} value={author.id}>{author.name}</option>
-                ))}
-              </select>
-            </div>
+            {!isEpisodeMode ? (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-700">Author</label>
+                <select
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                  value={authorId}
+                  onChange={(event) => {
+                    setAuthorId(event.currentTarget.value);
+                    setIsDirty(true);
+                  }}
+                >
+                  {authors.map((author) => (
+                    <option key={author.id} value={author.id}>{author.name}</option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-700">Status</label>
               <select
@@ -2852,28 +3221,71 @@ export function WorkspaceBlogEditor({
                 <p className="mt-1 text-xs text-slate-500">With this date, status will publish as scheduled.</p>
               ) : null}
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-700">Date</label>
+            <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
               <input
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-                type="datetime-local"
-                value={publishAt}
+                type="checkbox"
+                checked={isFeatured}
                 onChange={(event) => {
-                  setPublishAt(event.currentTarget.value);
-                  if (status === 'archived') setStatus('published');
+                  setIsFeatured(event.currentTarget.checked);
                   setIsDirty(true);
                 }}
               />
-            </div>
+              {isEpisodeMode ? 'Featured episode' : 'Featured post'}
+            </label>
+            {isEpisodeMode ? (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-700">Author</label>
+                <select
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                  value={authorId}
+                  onChange={(event) => {
+                    setAuthorId(event.currentTarget.value);
+                    setIsDirty(true);
+                  }}
+                >
+                  <option value="">No author</option>
+                  {authors.map((author) => (
+                    <option key={author.id} value={author.id}>{author.name}</option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+            {!isEpisodeMode ? (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-700">Date</label>
+                <input
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                  type="datetime-local"
+                  value={publishAt}
+                  onChange={(event) => {
+                    setPublishAt(event.currentTarget.value);
+                    if (status === 'archived') setStatus('published');
+                    setIsDirty(true);
+                  }}
+                />
+              </div>
+            ) : null}
           </div>
-          <button
-            type="button"
-            className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
-            disabled={saving}
-            onClick={() => void publishPost()}
-          >
-            {saving ? 'Saving...' : effectiveStatus === 'scheduled' ? 'Schedule' : 'Publish'}
-          </button>
+          {!isEpisodeMode ? (
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                className="inline-flex h-8 items-center rounded-md bg-blue-600 px-3 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+                disabled={saving || deletingPost}
+                onClick={() => void publishPost()}
+              >
+                {saving ? 'Saving...' : effectiveStatus === 'scheduled' ? 'Schedule' : 'Publish'}
+              </button>
+              <button
+                type="button"
+                className="inline-flex h-8 items-center rounded-md bg-rose-600 px-3 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-60"
+                disabled={saving || deletingPost}
+                onClick={() => void deletePost()}
+              >
+                {deletingPost ? 'Deleting...' : 'Delete Post'}
+              </button>
+            </div>
+          ) : null}
         </div>
       </SidebarSection>
 
@@ -2957,22 +3369,26 @@ export function WorkspaceBlogEditor({
 
       <SidebarSection title="Episodes & Related" defaultOpen={false}>
         <div className="space-y-4">
-          <div className="space-y-2 rounded-xl border border-[#dfe3ef] bg-white p-2.5">
-            <button
-              type="button"
-              className="rounded-md border border-[#dfe3ef] bg-[#f7f9ff] px-3 py-1.5 text-xs font-semibold text-[#2f295d] disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={insertPrimaryListenEpisodeAtCursor}
-              disabled={!linkedEpisodeIds.length || hasPrimaryListenBlockInEditor}
-            >
-              Insert primary episode card
-            </button>
-            <p className="text-xs text-[#6f7598]">
-              Linked episodes do not render a primary card unless you insert one.
-            </p>
-          </div>
+          {!isEpisodeMode ? (
+            <div className="space-y-2 rounded-xl border border-[#dfe3ef] bg-white p-2.5">
+              <button
+                type="button"
+                className="rounded-md border border-[#dfe3ef] bg-[#f7f9ff] px-3 py-1.5 text-xs font-semibold text-[#2f295d] disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={insertPrimaryListenEpisodeAtCursor}
+                disabled={!linkedEpisodeIds.length || hasPrimaryListenBlockInEditor}
+              >
+                Insert primary episode card
+              </button>
+              <p className="text-xs text-[#6f7598]">
+                Linked episodes do not render a primary card unless you insert one.
+              </p>
+            </div>
+          ) : null}
 
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-[0.14em] text-[#72789b]">Linked episode IDs</label>
+            <label className="text-xs font-bold uppercase tracking-[0.14em] text-[#72789b]">
+              {isEpisodeMode ? 'Related episode IDs' : 'Linked episode IDs'}
+            </label>
             <select
               className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
               value=""
@@ -2991,7 +3407,9 @@ export function WorkspaceBlogEditor({
               ))}
             </select>
 
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#72789b]">Selected episodes (save order)</p>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#72789b]">
+              {isEpisodeMode ? 'Selected related episodes (save order)' : 'Selected episodes (save order)'}
+            </p>
             {linkedEpisodeIds.length ? (
               <div className="space-y-2">
                 {linkedEpisodeIds.map((episodeId, index) => {
@@ -3125,27 +3543,113 @@ export function WorkspaceBlogEditor({
       <SidebarSection title="SEO" defaultOpen={false}>
         <div className="space-y-3">
           <div>
+            <SeoScoreBadge score={liveSeoResult.score} advice={liveSeoResult.warnings} />
+          </div>
+          <div>
             <label className="mb-1 block text-xs font-medium text-slate-700">SEO Title</label>
-            <p className="text-sm text-slate-600">{post.seo_title || '—'}</p>
+            <input
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              value={seoTitle}
+              onChange={(event) => {
+                setSeoTitle(event.currentTarget.value);
+                setIsDirty(true);
+              }}
+              placeholder="SEO title"
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-700">SEO Description</label>
-            <p className="text-sm text-slate-600">{post.seo_description || '—'}</p>
+            <textarea
+              className="min-h-[72px] w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              value={seoDescription}
+              onChange={(event) => {
+                setSeoDescription(event.currentTarget.value);
+                setIsDirty(true);
+              }}
+              placeholder="SEO meta description"
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-700">Focus Keyword</label>
-            <p className="text-sm text-slate-600">{post.focus_keyword || '—'}</p>
+            <input
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              value={focusKeyword}
+              onChange={(event) => {
+                setFocusKeyword(event.currentTarget.value);
+                setIsDirty(true);
+              }}
+              placeholder="Focus keyword"
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-700">Canonical URL</label>
-            <p className="text-sm text-slate-600 break-all">{post.canonical_url || '—'}</p>
+            <input
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              value={canonicalUrl}
+              onChange={(event) => {
+                setCanonicalUrl(event.currentTarget.value);
+                setIsDirty(true);
+              }}
+              placeholder={isEpisodeMode ? '/episodes/your-slug' : '/blog/your-slug'}
+            />
           </div>
-          <div className="flex items-center gap-4 text-xs text-slate-500">
-            <span>Noindex: {post.noindex ? 'Yes' : 'No'}</span>
-            <span>Nofollow: {post.nofollow ? 'Yes' : 'No'}</span>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="inline-flex items-center gap-2 text-xs text-slate-700">
+              <input
+                type="checkbox"
+                checked={noindex}
+                onChange={(event) => {
+                  setNoindex(event.currentTarget.checked);
+                  setIsDirty(true);
+                }}
+              />
+              Noindex
+            </label>
+            <label className="inline-flex items-center gap-2 text-xs text-slate-700">
+              <input
+                type="checkbox"
+                checked={nofollow}
+                onChange={(event) => {
+                  setNofollow(event.currentTarget.checked);
+                  setIsDirty(true);
+                }}
+              />
+              Nofollow
+            </label>
           </div>
         </div>
       </SidebarSection>
+
+      {isEpisodeMode ? (
+        <SidebarSection title="Sync Episode" defaultOpen={false}>
+          <div className="space-y-3">
+            <p className="text-xs text-slate-600">
+              Run RSS sync actions for this episode. These actions can overwrite source values.
+            </p>
+            <button
+              type="button"
+              className="w-full rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => setEpisodeSyncModalMode('full')}
+              disabled={Boolean(episodeSyncBusyMode)}
+            >
+              Full Re-sync from RSS
+            </button>
+            <button
+              type="button"
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => setEpisodeSyncModalMode('metadata')}
+              disabled={Boolean(episodeSyncBusyMode)}
+            >
+              Sync Metadata Only
+            </button>
+            {episodeSyncFeedback ? (
+              <p className={`text-xs ${episodeSyncFeedback.tone === 'error' ? 'text-rose-700' : 'text-emerald-700'}`}>
+                {episodeSyncFeedback.text}
+              </p>
+            ) : null}
+          </div>
+        </SidebarSection>
+      ) : null}
 
       <SidebarSection title="Revisions" defaultOpen={false}>
         {post.revisions.length > 0 ? (
@@ -3164,8 +3668,15 @@ export function WorkspaceBlogEditor({
     </div>
   );
 
+  const heroImageFrameClasses = isEpisodeMode
+    ? 'mx-auto relative aspect-square w-full max-w-[420px] overflow-hidden rounded-2xl border border-slate-200 bg-slate-50'
+    : 'relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50';
+
+  const heroImageClasses = isEpisodeMode ? 'h-full w-full object-cover' : 'h-auto w-full object-cover';
+
   return (
-    <WorkspaceEditorShell
+    <>
+      <WorkspaceEditorShell
       backHref={backHref}
       backLabel="back"
       sidebar={sidebar}
@@ -3219,8 +3730,15 @@ export function WorkspaceBlogEditor({
         />
         {featuredImageUrl ? (
           <div className="mb-6">
-            <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50" ref={heroImageAltEditorRef}>
-              <Image src={featuredImageUrl} alt={featuredImageAlt || 'Hero image'} width={1720} height={860} className="h-auto w-full object-cover" />
+            <div className={heroImageFrameClasses} ref={heroImageAltEditorRef}>
+              <Image
+                src={featuredImageUrl}
+                alt={featuredImageAlt || 'Hero image'}
+                width={1720}
+                height={1720}
+                className={heroImageClasses}
+                unoptimized={isEpisodeMode}
+              />
               <button
                 type="button"
                 className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
@@ -3229,6 +3747,7 @@ export function WorkspaceBlogEditor({
                 onClick={() => {
                   setFeaturedImageId(null);
                   setFeaturedImageUrl('');
+                  setFeaturedImageStoragePath('');
                   setFeaturedImageAlt('');
                   setFeaturedImageAltSynced('');
                   setHeroImageAltEditorOpen(false);
@@ -3279,25 +3798,33 @@ export function WorkspaceBlogEditor({
             </div>
           </div>
         ) : (
-          <div className="mb-6 space-y-2">
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#cfd5e7] bg-white px-4 py-5 text-sm font-semibold text-[#6f7598] transition hover:border-[#bfc7de] hover:text-[#4f5bd5] disabled:opacity-50"
-              onClick={() => heroImageUploadInputRef.current?.click()}
-              disabled={heroImageUploading}
+          <div className="mb-6">
+            <div
+              className={
+                isEpisodeMode
+                  ? 'mx-auto flex aspect-square w-full max-w-[420px] flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[#cfd5e7] bg-white px-4 py-5'
+                  : 'space-y-2'
+              }
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              {heroImageUploading ? 'Uploading...' : 'Upload an image'}
-            </button>
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#cfd5e7] bg-white px-4 py-5 text-sm font-semibold text-[#6f7598] transition hover:border-[#bfc7de] hover:text-[#4f5bd5] disabled:opacity-50"
-              onClick={() => setHeroImagePickerOpen(true)}
-              disabled={heroImageUploading}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-              Pick from Media Library
-            </button>
+              <button
+                type="button"
+                className={`flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#cfd5e7] bg-white px-4 py-5 text-sm font-semibold text-[#6f7598] transition hover:border-[#bfc7de] hover:text-[#4f5bd5] disabled:opacity-50 ${isEpisodeMode ? 'w-full max-w-[280px]' : 'w-full'}`}
+                onClick={() => heroImageUploadInputRef.current?.click()}
+                disabled={heroImageUploading}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                {heroImageUploading ? 'Uploading...' : 'Upload an image'}
+              </button>
+              <button
+                type="button"
+                className={`flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#cfd5e7] bg-white px-4 py-5 text-sm font-semibold text-[#6f7598] transition hover:border-[#bfc7de] hover:text-[#4f5bd5] disabled:opacity-50 ${isEpisodeMode ? 'w-full max-w-[280px]' : 'w-full'}`}
+                onClick={() => setHeroImagePickerOpen(true)}
+                disabled={heroImageUploading}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                Pick from Media Library
+              </button>
+            </div>
             {heroImageMessage ? (
               <p className={`text-xs ${/fail|error|unable/i.test(heroImageMessage) ? 'text-[#9a2b2b]' : 'text-[#3e7a50]'}`}>
                 {heroImageMessage}
@@ -3311,23 +3838,37 @@ export function WorkspaceBlogEditor({
           onSelect={handleHeroImageLibrarySelect}
         />
 
-        <input
-          className={`w-full border-0 bg-transparent px-0 text-[2.15rem] font-black tracking-tight outline-none placeholder:text-[#a6acbe] md:text-[2.4rem] ${
+        <textarea
+          ref={titleTextareaRef}
+          className={`w-full resize-none overflow-hidden border-0 bg-transparent px-0 text-[2.15rem] font-black tracking-tight leading-tight outline-none placeholder:text-[#a6acbe] md:text-[2.4rem] ${
             title.trim() ? 'text-[#231d46]' : 'text-[#9ca3b7]'
           }`}
-          placeholder="Untitled Post"
+          placeholder={isEpisodeMode ? 'Untitled Episode' : 'Untitled Post'}
           value={title}
+          rows={1}
+          onInput={(event) => {
+            const target = event.currentTarget;
+            target.style.height = '0px';
+            target.style.height = `${target.scrollHeight}px`;
+          }}
           onChange={(event) => {
             setTitle(event.currentTarget.value);
             setIsDirty(true);
           }}
         />
 
-        <div className="relative mt-4 flex flex-wrap items-start gap-3 text-[12px] text-[#6a7094]">
+        <div className="relative mt-4 mb-6 flex flex-wrap items-start gap-3 text-[12px] text-[#6a7094]">
           <textarea
+            ref={excerptTextareaRef}
             className="min-h-[3rem] min-w-[180px] flex-1 resize-none border-0 bg-transparent px-0 py-0 text-[13px] leading-6 text-[#656d8f] outline-none placeholder:text-[#9ea7c0]"
-            placeholder="Post excerpt"
+            placeholder={isEpisodeMode ? 'Episode excerpt' : 'Post excerpt'}
             value={excerpt}
+            rows={1}
+            onInput={(event) => {
+              const target = event.currentTarget;
+              target.style.height = '0px';
+              target.style.height = `${target.scrollHeight}px`;
+            }}
             onChange={(event) => {
               setExcerpt(event.currentTarget.value);
               setIsDirty(true);
@@ -3337,6 +3878,61 @@ export function WorkspaceBlogEditor({
 
         <EditorContent editor={editor} />
       </div>
-    </WorkspaceEditorShell>
+      </WorkspaceEditorShell>
+      {isEpisodeMode && episodeSyncModalMode ? (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/45 px-4">
+          <div className="w-full max-w-xl rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-slate-900">
+                {episodeSyncModalMode === 'full' ? 'Re-sync Episode from RSS' : 'Sync Episode Metadata'}
+              </h3>
+              <p className="text-sm text-slate-700">
+                {episodeSyncModalMode === 'full'
+                  ? 'This will replace source episode data from RSS and clear editorial overrides so the page falls back to RSS/source values.'
+                  : 'This will update source metadata only and keep editorial content untouched.'}
+              </p>
+              <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">What changes</p>
+                {episodeSyncModalMode === 'full' ? (
+                  <p className="mt-1 text-sm text-slate-700">
+                    Editorial title, excerpt, body, SEO, hero, and social overrides are cleared. Source episode values are refreshed from RSS.
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm text-slate-700">
+                    Only <code>published_at</code>, <code>audio_url</code>, <code>artwork_url</code>, and <code>last_synced_at</code> are updated from RSS.
+                  </p>
+                )}
+              </div>
+              <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">What does not change</p>
+                <p className="mt-1 text-sm text-emerald-800">
+                  Taxonomy and author assignments are preserved.
+                </p>
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  onClick={() => setEpisodeSyncModalMode(null)}
+                  disabled={Boolean(episodeSyncBusyMode)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-md px-3 py-2 text-sm font-semibold text-white disabled:opacity-60 ${
+                    episodeSyncModalMode === 'full' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                  onClick={() => void confirmEpisodeSync()}
+                  disabled={Boolean(episodeSyncBusyMode)}
+                >
+                  {episodeSyncBusyMode ? 'Syncing...' : 'Confirm Sync'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }

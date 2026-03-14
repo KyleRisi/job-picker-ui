@@ -40,6 +40,35 @@ export type MediaAssetRecord = {
   updated_at: string;
 };
 
+export type MediaAssetUsageReference = {
+  id: string;
+  title: string;
+  slug: string;
+};
+
+export type MediaAssetUsageSummary = {
+  assetId: string;
+  storagePath: string;
+  canDelete: boolean;
+  totalUsage: number;
+  counts: {
+    featuredPosts: number;
+    ogPosts: number;
+    authorProfiles: number;
+    contentBlocks: number;
+    episodeHeroImages: number;
+  };
+  references: {
+    featuredPosts: MediaAssetUsageReference[];
+    ogPosts: MediaAssetUsageReference[];
+    authorProfiles: MediaAssetUsageReference[];
+    contentBlocks: MediaAssetUsageReference[];
+    episodeHeroImages: MediaAssetUsageReference[];
+  };
+};
+
+export type MediaUsageFilter = 'all' | 'used' | 'unused';
+
 export type BlogAuthorRecord = {
   id: string;
   name: string;
@@ -162,6 +191,101 @@ function isMissingIsActiveColumnError(error: unknown) {
   const code = `${(error as { code?: string })?.code || ''}`;
   const message = `${(error as { message?: string })?.message || ''}`.toLowerCase();
   return code === '42703' || (message.includes('is_active') && message.includes('does not exist'));
+}
+
+function isMissingEpisodeEditorialError(error: unknown) {
+  const code = `${(error as { code?: string })?.code || ''}`;
+  const message = `${(error as { message?: string })?.message || ''}`.toLowerCase();
+  return code === '42P01' || code === '42703' || (message.includes('podcast_episode_editorial') && message.includes('does not exist'));
+}
+
+function countAssetIdReferences(value: unknown, assetId: string): number {
+  if (!value) return 0;
+  if (Array.isArray(value)) {
+    return value.reduce<number>((sum, item) => sum + countAssetIdReferences(item, assetId), 0);
+  }
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const selfReference = record.assetId === assetId ? 1 : 0;
+    return Object.values(record).reduce<number>((sum, item) => sum + countAssetIdReferences(item, assetId), selfReference);
+  }
+  return 0;
+}
+
+function countAssetIdReferencesForSet(value: unknown, targetIds: Set<string>, counts: Map<string, number>) {
+  if (!value) return;
+  if (Array.isArray(value)) {
+    value.forEach((item) => countAssetIdReferencesForSet(item, targetIds, counts));
+    return;
+  }
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const assetId = typeof record.assetId === 'string' ? record.assetId : '';
+    if (assetId && targetIds.has(assetId)) {
+      counts.set(assetId, (counts.get(assetId) || 0) + 1);
+    }
+    Object.values(record).forEach((item) => countAssetIdReferencesForSet(item, targetIds, counts));
+  }
+}
+
+async function buildMediaUsageCountsByAssetId(
+  supabase: SupabaseClient,
+  assets: Pick<MediaAssetRecord, 'id' | 'storage_path'>[]
+) {
+  const counts = new Map<string, number>();
+  const targetAssetIds = new Set(assets.map((asset) => asset.id));
+  const assetIdByStoragePath = new Map<string, string>();
+  for (const asset of assets) {
+    counts.set(asset.id, 0);
+    assetIdByStoragePath.set(asset.storage_path, asset.id);
+  }
+
+  const { data: postRows, error: postError } = await supabase
+    .from('blog_posts')
+    .select('featured_image_id,og_image_id,content_json')
+    .is('deleted_at', null);
+  if (postError) throw postError;
+  for (const row of ((postRows || []) as Array<{ featured_image_id: string | null; og_image_id: string | null; content_json: unknown }>)) {
+    if (row.featured_image_id && targetAssetIds.has(row.featured_image_id)) {
+      counts.set(row.featured_image_id, (counts.get(row.featured_image_id) || 0) + 1);
+    }
+    if (row.og_image_id && targetAssetIds.has(row.og_image_id)) {
+      counts.set(row.og_image_id, (counts.get(row.og_image_id) || 0) + 1);
+    }
+    countAssetIdReferencesForSet(row.content_json, targetAssetIds, counts);
+  }
+
+  const { data: authorRows, error: authorError } = await supabase
+    .from('blog_authors')
+    .select('image_asset_id');
+  if (authorError) throw authorError;
+  for (const row of ((authorRows || []) as Array<{ image_asset_id: string | null }>)) {
+    if (row.image_asset_id && targetAssetIds.has(row.image_asset_id)) {
+      counts.set(row.image_asset_id, (counts.get(row.image_asset_id) || 0) + 1);
+    }
+  }
+
+  try {
+    const storagePaths = assets.map((asset) => asset.storage_path).filter(Boolean);
+    if (storagePaths.length) {
+      const { data: editorialRows, error: editorialError } = await supabase
+        .from('podcast_episode_editorial')
+        .select('hero_image_storage_path')
+        .in('hero_image_storage_path', storagePaths);
+      if (editorialError) throw editorialError;
+      for (const row of ((editorialRows || []) as Array<{ hero_image_storage_path: string | null }>)) {
+        const path = row.hero_image_storage_path || '';
+        const mappedAssetId = assetIdByStoragePath.get(path);
+        if (mappedAssetId) {
+          counts.set(mappedAssetId, (counts.get(mappedAssetId) || 0) + 1);
+        }
+      }
+    }
+  } catch (error) {
+    if (!isMissingEpisodeEditorialError(error)) throw error;
+  }
+
+  return counts;
 }
 
 function getSessionHash(input: string) {
@@ -1134,7 +1258,7 @@ export async function deleteBlogAuthor(id: string) {
   if (error) throw error;
 }
 
-export async function listMediaAssets(query = '') {
+export async function listMediaAssets(query = '', usageFilter: MediaUsageFilter = 'all') {
   const supabase = getSupabase();
   let request = supabase.from('media_assets').select('*').order('created_at', { ascending: false }).limit(120);
   const orFilter = buildOrIlikeFilter(['storage_path', 'alt_text_default', 'caption_default'], query);
@@ -1143,7 +1267,19 @@ export async function listMediaAssets(query = '') {
   }
   const { data, error } = await request;
   if (error) throw error;
-  return data as MediaAssetRecord[];
+  const assets = (data || []) as MediaAssetRecord[];
+  if (usageFilter === 'all' || !assets.length) {
+    return assets;
+  }
+
+  const usageCounts = await buildMediaUsageCountsByAssetId(supabase, assets.map((asset) => ({
+    id: asset.id,
+    storage_path: asset.storage_path
+  })));
+  return assets.filter((asset) => {
+    const count = usageCounts.get(asset.id) || 0;
+    return usageFilter === 'used' ? count > 0 : count === 0;
+  });
 }
 
 export async function getMediaAssetById(id: string) {
@@ -1165,6 +1301,106 @@ export async function updateMediaAsset(id: string, input: Partial<MediaAssetReco
   const { data, error } = await supabase.from('media_assets').update(payload).eq('id', id).select('*').single();
   if (error) throw error;
   return data as MediaAssetRecord;
+}
+
+export async function getMediaAssetUsage(id: string): Promise<MediaAssetUsageSummary | null> {
+  const supabase = getSupabase();
+  const asset = await getMediaAssetById(id);
+  if (!asset) return null;
+
+  const { data: postRows, error: postError } = await supabase
+    .from('blog_posts')
+    .select('id,title,slug,featured_image_id,og_image_id,content_json')
+    .is('deleted_at', null);
+  if (postError) throw postError;
+
+  const { data: authorRows, error: authorError } = await supabase
+    .from('blog_authors')
+    .select('id,name,slug,image_asset_id');
+  if (authorError) throw authorError;
+
+  const posts = (postRows || []) as Array<{
+    id: string;
+    title: string;
+    slug: string;
+    featured_image_id: string | null;
+    og_image_id: string | null;
+    content_json: unknown;
+  }>;
+  const authors = (authorRows || []) as Array<{
+    id: string;
+    name: string;
+    slug: string;
+    image_asset_id: string | null;
+  }>;
+
+  const featuredRefs = posts
+    .filter((post) => post.featured_image_id === id)
+    .map((post) => ({ id: post.id, title: post.title, slug: post.slug }));
+  const ogRefs = posts
+    .filter((post) => post.og_image_id === id)
+    .map((post) => ({ id: post.id, title: post.title, slug: post.slug }));
+  const authorRefs = authors
+    .filter((author) => author.image_asset_id === id)
+    .map((author) => ({ id: author.id, title: author.name, slug: author.slug }));
+
+  const contentBlockRefs = posts
+    .filter((post) => countAssetIdReferences(post.content_json, id) > 0)
+    .map((post) => ({ id: post.id, title: post.title, slug: post.slug }));
+  const contentBlockCount = posts.reduce((sum, post) => sum + countAssetIdReferences(post.content_json, id), 0);
+
+  let episodeHeroRefs: MediaAssetUsageReference[] = [];
+  try {
+    const { data: episodeEditorialRows, error: episodeEditorialError } = await supabase
+      .from('podcast_episode_editorial')
+      .select('episode_id')
+      .eq('hero_image_storage_path', asset.storage_path);
+    if (episodeEditorialError) throw episodeEditorialError;
+
+    const episodeIds = [...new Set((episodeEditorialRows || []).map((row) => row.episode_id).filter(Boolean))];
+    if (episodeIds.length) {
+      const { data: episodeRows, error: episodesError } = await supabase
+        .from('podcast_episodes')
+        .select('id,title,slug')
+        .in('id', episodeIds);
+      if (episodesError) throw episodesError;
+      episodeHeroRefs = ((episodeRows || []) as Array<{ id: string; title: string; slug: string }>)
+        .map((row) => ({ id: row.id, title: row.title, slug: row.slug }));
+    }
+  } catch (error) {
+    if (!isMissingEpisodeEditorialError(error)) throw error;
+  }
+
+  const counts = {
+    featuredPosts: featuredRefs.length,
+    ogPosts: ogRefs.length,
+    authorProfiles: authorRefs.length,
+    contentBlocks: contentBlockCount,
+    episodeHeroImages: episodeHeroRefs.length
+  };
+  const totalUsage = counts.featuredPosts + counts.ogPosts + counts.authorProfiles + counts.contentBlocks + counts.episodeHeroImages;
+
+  return {
+    assetId: id,
+    storagePath: asset.storage_path,
+    canDelete: totalUsage === 0,
+    totalUsage,
+    counts,
+    references: {
+      featuredPosts: featuredRefs.slice(0, 20),
+      ogPosts: ogRefs.slice(0, 20),
+      authorProfiles: authorRefs.slice(0, 20),
+      contentBlocks: contentBlockRefs.slice(0, 20),
+      episodeHeroImages: episodeHeroRefs.slice(0, 20)
+    }
+  };
+}
+
+export async function deleteMediaAssetById(id: string) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from('media_assets').delete().eq('id', id).select('*').maybeSingle();
+  if (error) throw error;
+  return (data as MediaAssetRecord | null) || null;
 }
 
 export async function createMediaAsset(input: {
@@ -1384,7 +1620,10 @@ export async function saveBlogPost(postId: string | null, input: unknown, option
     focusKeyword: payload.seo.focusKeyword,
     canonicalUrl: payload.seo.canonicalUrl,
     document,
-    excerpt: payload.excerpt
+    excerpt: payload.excerpt,
+    hasAuthor: Boolean(payload.authorId),
+    hasPrimaryCategory: Boolean(payload.discovery.primaryTopicId),
+    hasLinkedEpisode: payload.linkedEpisodes.length > 0
   });
 
   const searchPlaintext = serializeSearchPlaintext({

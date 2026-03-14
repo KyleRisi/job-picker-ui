@@ -28,7 +28,10 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
   return {
     title: `${hub.term.seoTitle || hub.term.name} | Topics | The Compendium Podcast`,
-    description: hub.term.metaDescription || hub.term.description || `Explore episodes in ${hub.term.name}.`
+    description: hub.term.metaDescription || hub.term.description || `Explore episodes in ${hub.term.name}.`,
+    alternates: {
+      canonical: `/topics/${params.slug}`
+    }
   };
 }
 

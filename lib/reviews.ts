@@ -119,3 +119,16 @@ export async function createWebsiteReview(input: {
 
   return toPublicReview(data as ReviewRow);
 }
+
+export type AdminReview = ReviewRow;
+
+export async function getAllReviewsAdmin(): Promise<AdminReview[]> {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('id,title,body,rating,author,country,source,status,received_at')
+    .order('received_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as AdminReview[];
+}

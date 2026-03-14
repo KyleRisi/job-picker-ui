@@ -23,6 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const headerRef = useRef<HTMLElement | null>(null);
   const immersiveEditor = isImmersiveEditorRoute(pathname);
+  const workspaceRoute = Boolean(pathname?.startsWith('/workspace'));
 
   useEffect(() => {
     const updateHeaderHeight = () => {
@@ -48,7 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [pathname]);
 
-  if (immersiveEditor) {
+  if (immersiveEditor || workspaceRoute) {
     return <main>{children}</main>;
   }
 

@@ -4,7 +4,7 @@ import { listBlogTaxonomies } from '@/lib/blog/data';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminBlogTaxonomiesPage() {
-  const taxonomies = await listBlogTaxonomies();
+  const taxonomies = await listBlogTaxonomies({ includeArchived: true });
   return (
     <AdminTaxonomiesManager
       initialData={{

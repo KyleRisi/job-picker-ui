@@ -92,6 +92,11 @@ export async function getJobsForPublic() {
     .select('job_id,first_name,full_name,created_at')
     .eq('active', true);
 
+  const { data: broadcastRows } = await supabase
+    .from('applications_archive')
+    .select('job_id,broadcasted_on_show,broadcasted_at')
+    .eq('broadcasted_on_show', true);
+
   const filledShortMap = new Map(
     (assignments || []).map((a) => [
       a.job_id,
@@ -102,6 +107,9 @@ export async function getJobsForPublic() {
     (assignments || []).map((a) => [a.job_id, sanitizeReplacementChars(`${a.full_name || ''}`.trim())])
   );
   const filledAtMap = new Map((assignments || []).map((a) => [a.job_id, `${a.created_at || ''}`]));
+  const broadcastMap = new Map(
+    (broadcastRows || []).map((b) => [b.job_id, `${b.broadcasted_at || ''}`])
+  );
 
   return (jobs || []).map((job) => {
     const hasActiveAssignment = filledShortMap.has(job.id);
@@ -115,7 +123,9 @@ export async function getJobsForPublic() {
       status,
       filledBy: filledShortMap.get(job.id) || null,
       filledByFull: filledFullMap.get(job.id) || null,
-      filledAt: filledAtMap.get(job.id) || null
+      filledAt: filledAtMap.get(job.id) || null,
+      broadcastedOnShow: broadcastMap.has(job.id),
+      broadcastedAt: broadcastMap.get(job.id) || null
     };
   });
 }

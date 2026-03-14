@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const REDIRECT_STATUS_CODES = [301, 302, 307, 308] as const;
+export const REDIRECT_STATUS_CODES = [301, 302, 307, 308, 410] as const;
 export const REDIRECT_MATCH_TYPES = ['exact', 'prefix'] as const;
 
 export type RedirectStatusCode = (typeof REDIRECT_STATUS_CODES)[number];
@@ -9,7 +9,7 @@ export type RedirectMatchType = (typeof REDIRECT_MATCH_TYPES)[number];
 export type RedirectRow = {
   id: string;
   source_path: string;
-  target_url: string;
+  target_url: string | null;
   status_code: RedirectStatusCode;
   match_type: RedirectMatchType;
   is_active: boolean;
@@ -23,7 +23,8 @@ const statusCodeSchema = z.union([
   z.literal(301),
   z.literal(302),
   z.literal(307),
-  z.literal(308)
+  z.literal(308),
+  z.literal(410)
 ]);
 
 const matchTypeSchema = z.union([z.literal('exact'), z.literal('prefix')]);
@@ -70,7 +71,7 @@ export function isSafeTargetUrl(input: string): boolean {
 
 export const redirectInputSchema = z.object({
   source_path: z.string().min(1),
-  target_url: z.string().min(1),
+  target_url: z.string().optional().nullable().default(''),
   status_code: statusCodeSchema.default(301),
   match_type: matchTypeSchema.default('exact'),
   is_active: z.boolean().default(true),
@@ -81,15 +82,18 @@ export const redirectInputSchema = z.object({
 export function normalizeRedirectInput(input: z.input<typeof redirectInputSchema>) {
   const parsed = redirectInputSchema.parse(input);
   const source_path = normalizePath(parsed.source_path);
-  const target_url = parsed.target_url.trim();
+  const target_url = `${parsed.target_url || ''}`.trim();
 
-  if (!isSafeTargetUrl(target_url)) {
+  if (parsed.status_code !== 410 && !isSafeTargetUrl(target_url)) {
     throw new Error('Target URL must be an internal path or an http/https URL.');
+  }
+  if (parsed.status_code === 410 && target_url && !isSafeTargetUrl(target_url)) {
+    throw new Error('Target URL must be an internal path or an http/https URL when provided.');
   }
 
   return {
     source_path,
-    target_url,
+    target_url: target_url || null,
     status_code: parsed.status_code,
     match_type: parsed.match_type,
     is_active: parsed.is_active,
@@ -265,7 +269,7 @@ export function toRedirectCsv(rows: RedirectRow[]): string {
   const header = ['source_path', 'target_url', 'status_code', 'match_type', 'is_active', 'priority', 'notes'];
   const lines = rows.map((row) => [
     row.source_path,
-    row.target_url,
+    row.target_url || '',
     `${row.status_code}`,
     row.match_type,
     row.is_active ? 'true' : 'false',

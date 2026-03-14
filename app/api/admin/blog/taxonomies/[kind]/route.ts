@@ -14,6 +14,9 @@ import {
 export const dynamic = 'force-dynamic';
 
 type TaxonomyRouteKind = TaxonomyKind | 'blog_authors';
+type ArchiveableTaxonomyRouteKind = TaxonomyKind | 'blog_authors';
+
+const ARCHIVEABLE_KINDS: ArchiveableTaxonomyRouteKind[] = ['categories', 'tags', 'series', 'topic_clusters', 'blog_authors'];
 
 function toKind(value: string): TaxonomyRouteKind | null {
   const supported: TaxonomyRouteKind[] = ['categories', 'tags', 'series', 'topic_clusters', 'post_labels', 'blog_authors'];
@@ -36,9 +39,9 @@ export async function GET(_req: NextRequest, { params }: { params: { kind: strin
   if (!kind) return badRequest('Unsupported taxonomy.', 404);
   try {
     if (kind === 'blog_authors') {
-      return ok({ items: await listBlogAuthors() });
+      return ok({ items: await listBlogAuthors({ includeArchived: true }) });
     }
-    return ok({ items: await listTaxonomy(kind) });
+    return ok({ items: await listTaxonomy(kind, { includeArchived: true }) });
   } catch (error: any) {
     return badRequest(error?.message || 'Failed to load taxonomy items.', 500);
   }
@@ -66,6 +69,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { kind: str
   if (!user) return badRequest('Unauthorized.', 401);
   const kind = toKind(params.kind);
   if (!kind) return badRequest('Unsupported taxonomy.', 404);
+  if (ARCHIVEABLE_KINDS.includes(kind as ArchiveableTaxonomyRouteKind)) {
+    return badRequest('This taxonomy kind uses archive-only workflow. Use the archive endpoint.', 405);
+  }
   const id = req.nextUrl.searchParams.get('id') || '';
   if (!id) return badRequest('Missing id.');
   try {

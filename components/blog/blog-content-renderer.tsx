@@ -27,15 +27,10 @@ function renderInline(nodes: RichTextInlineNode[], onDark = false) {
       if (mark.type === 'color') content = <span key={`color-${index}`} style={{ color: mark.value }}>{content}</span>;
       if (mark.type === 'font_size') content = <span key={`font-${index}`} style={{ fontSize: mark.value, lineHeight: 1.6 }}>{content}</span>;
       if (mark.type === 'link') {
-        const external = /^https?:\/\//i.test(mark.href);
-        content = external ? (
-          <a key={`l-${index}`} href={mark.href} target={mark.target || '_blank'} rel={mark.rel || 'noreferrer'} className={linkClass}>
+        content = (
+          <a key={`l-${index}`} href={mark.href} target="_blank" rel="noreferrer" className={linkClass}>
             {content}
           </a>
-        ) : (
-          <Link key={`l-${index}`} href={mark.href} className={linkClass}>
-            {content}
-          </Link>
         );
       }
     });
@@ -46,6 +41,15 @@ function renderInline(nodes: RichTextInlineNode[], onDark = false) {
 function getAssetUrl(asset: MediaAssetRecord | undefined | null, src?: string) {
   if (asset) return getStoragePublicUrl(asset.storage_path);
   return src || '';
+}
+
+function normalizeCtaHref(rawHref: string) {
+  const href = `${rawHref || ''}`.trim();
+  if (!href) return '#';
+  if (href.startsWith('/') || href.startsWith('#')) return href;
+  if (/^(https?:)?\/\//i.test(href)) return href;
+  if (/^(mailto:|tel:)/i.test(href)) return href;
+  return `https://${href}`;
 }
 
 function toPodcastEpisodeCard(episode: PodcastEpisodeRecord): PodcastEpisode {
@@ -123,20 +127,20 @@ export function BlogContentRenderer({
           );
         }
         if (block.type === 'cta_button') {
-          const external = /^https?:\/\//i.test(block.href);
+          const href = normalizeCtaHref(block.href);
+          const external = /^(https?:)?\/\//i.test(href) || /^(mailto:|tel:)/i.test(href);
           const ctaClassName = 'btn-primary !text-white visited:!text-white hover:!text-white !no-underline hover:!no-underline';
           const alignClass = block.align === 'left' ? 'justify-start' : block.align === 'right' ? 'justify-end' : 'justify-center';
           return (
             <div key={block.id} className={`flex ${alignClass}`}>
-              {external ? (
-                <a href={block.href} target="_blank" rel="noreferrer" className={ctaClassName}>
-                  {block.label}
-                </a>
-              ) : (
-                <Link href={block.href || '#'} className={ctaClassName}>
-                  {block.label}
-                </Link>
-              )}
+              <a
+                href={href}
+                target={external ? '_blank' : undefined}
+                rel={external ? 'noreferrer' : undefined}
+                className={ctaClassName}
+              >
+                {block.label}
+              </a>
             </div>
           );
         }
@@ -308,9 +312,9 @@ export function BlogContentRenderer({
                 {relatedPosts.map((item) => (
                   <li key={item.id} className="flex items-baseline gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 translate-y-[2px]"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                    <Link href={`/blog/${item.slug}`} className="font-semibold text-white/80 no-underline hover:text-white">
+                    <a href={`/blog/${item.slug}`} target="_blank" rel="noreferrer" className="font-semibold text-white/80 no-underline hover:text-white">
                       {item.title}
-                    </Link>
+                    </a>
                   </li>
                 ))}
               </ul>

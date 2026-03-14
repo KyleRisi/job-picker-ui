@@ -240,6 +240,7 @@ export const seoFieldsSchema = z.object({
 
 export const discoveryAssignmentsInputSchema = z.object({
   primaryTopicId: z.string().nullable().default(null),
+  topicIds: z.array(z.string()).default([]),
   themeIds: z.array(z.string()).default([]),
   entityIds: z.array(z.string()).default([]),
   caseIds: z.array(z.string()).default([]),

@@ -138,6 +138,20 @@ function toSafeNumber(value: string): number | null {
   return parsed;
 }
 
+function formatDurationFromSeconds(value: unknown): string | null {
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds) || seconds <= 0) return null;
+  const rounded = Math.floor(seconds);
+  const hours = Math.floor(rounded / 3600);
+  const minutes = Math.floor((rounded % 3600) / 60);
+  const remaining = rounded % 60;
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${remaining.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${remaining.toString().padStart(2, '0')}`;
+}
+
 function resolveEpisodeNumber(item: Record<string, unknown>, title: string): number | null {
   const fromTag = toSafeNumber(getNodeText(item['itunes:episode']));
   if (fromTag !== null) return fromTag;
@@ -341,15 +355,15 @@ async function getPodcastEpisodesFromDatabase(
       id: episode.id,
       slug: episode.slug,
       title: episode.title,
-      seasonNumber: null,
-      episodeNumber: null,
+      seasonNumber: episode.season_number ?? null,
+      episodeNumber: episode.episode_number ?? null,
       publishedAt: episode.published_at || new Date(0).toISOString(),
       description: truncateText(episode.description_plain, options.descriptionMaxLength ?? DEFAULT_LIST_DESCRIPTION_MAX_LENGTH),
       descriptionHtml: options.includeDescriptionHtml ? toSafeHtml(episode.description_html) : '',
       audioUrl: episode.audio_url,
       artworkUrl: episode.artwork_url,
-      duration: null,
-      sourceUrl: null
+      duration: formatDurationFromSeconds(episode.duration_seconds),
+      sourceUrl: episode.source_url || null
     }));
 
     if (typeof options.limit === 'number' && Number.isFinite(options.limit) && options.limit > 0) {

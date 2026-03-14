@@ -117,7 +117,7 @@ export function JobsTabs({
               type="button"
               className="btn-secondary"
               onClick={() =>
-                setVisibleAvailableCount((current) => Math.min(current + REVEAL_STEP, available.length))
+                setVisibleAvailableCount((v) => Math.min(v + REVEAL_STEP, available.length))
               }
             >
               Load More Roles ({remainingAvailable} remaining)

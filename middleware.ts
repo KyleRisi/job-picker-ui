@@ -4,8 +4,8 @@ import { buildRedirectLocation, normalizePath, shouldSkipRedirectLookup } from '
 type ResolveItem = {
   id: string;
   source_path: string;
-  target_url: string;
-  status_code: 301 | 302 | 307 | 308;
+  target_url: string | null;
+  status_code: 301 | 302 | 307 | 308 | 410;
   match_type: 'exact' | 'prefix';
   priority: number;
 };
@@ -168,6 +168,12 @@ export async function middleware(req: NextRequest) {
 
   const match = await resolveRedirect(req, normalizedPath);
   if (!match) return withBaselineHeaders(req, NextResponse.next());
+  if (match.status_code === 410) {
+    return withBaselineHeaders(req, new NextResponse('Gone', { status: 410 }));
+  }
+  if (!match.target_url) {
+    return withBaselineHeaders(req, NextResponse.next());
+  }
 
   const destination = buildRedirectLocation({
     requestUrl: req.nextUrl,

@@ -137,8 +137,8 @@ export function ReviewsSection({
           {ctaMode === 'load_more' ? (
             <button
               type="button"
-              onClick={() => setVisible((current) => current + loadMoreCount)}
               className="inline-flex items-center gap-2 rounded-full bg-carnival-red px-8 py-3 text-sm font-black uppercase tracking-wide text-white shadow-lg transition hover:brightness-110"
+              onClick={() => setVisible((count) => Math.min(reviews.length, count + loadMoreCount))}
             >
               {ctaLabel}
             </button>

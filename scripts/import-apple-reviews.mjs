@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..');
-const sourcePath = path.join(projectRoot, 'lib/reviews-data.json');
+const sourcePath = path.join(projectRoot, 'apple-reviews.json');
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -25,8 +25,6 @@ function normalizeRow(input) {
   const title = String(input?.title || '').trim();
   const body = String(input?.body || '').trim();
   const externalId = String(input?.id || '').trim();
-  const platform = String(input?.platform || '').trim().toLowerCase();
-  const source = platform === 'apple' || platform === 'website' ? platform : 'manual';
 
   if (!externalId || !title || !body) return null;
 
@@ -36,8 +34,8 @@ function normalizeRow(input) {
     body,
     rating: clampedRating,
     author: String(input?.author || 'Anonymous').trim() || 'Anonymous',
-    country: String(input?.country || '').trim(),
-    source,
+    country: String(input?.country || '').trim().toUpperCase(),
+    source: 'apple',
     status: 'visible',
     received_at: receivedAt
   };
@@ -60,20 +58,18 @@ async function main() {
 
   const raw = await fs.readFile(sourcePath, 'utf8');
   const parsed = JSON.parse(raw);
-  const inputRows = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.reviews) ? parsed.reviews : [];
+  const inputRows = Array.isArray(parsed?.reviews) ? parsed.reviews : [];
   const rows = inputRows.map(normalizeRow).filter(Boolean);
 
   if (!rows.length) {
-    console.log(`No valid rows found in ${path.relative(projectRoot, sourcePath)}`);
+    console.log('No valid rows found in apple-reviews.json');
     return;
   }
 
   const chunkSize = 200;
   for (let i = 0; i < rows.length; i += chunkSize) {
     const chunk = rows.slice(i, i + chunkSize);
-    const { error } = await supabase
-      .from('reviews')
-      .upsert(chunk, { onConflict: 'external_id', ignoreDuplicates: true });
+    const { error } = await supabase.from('reviews').upsert(chunk, { onConflict: 'external_id' });
     if (error) {
       throw new Error(`Upsert failed at chunk ${Math.floor(i / chunkSize) + 1}: ${error.message}`);
     }
@@ -84,7 +80,7 @@ async function main() {
     throw new Error(`Imported, but failed to fetch final count: ${countResult.error.message}`);
   }
 
-  console.log(`Processed ${rows.length} reviews from ${path.relative(projectRoot, sourcePath)} (insert-only mode)`);
+  console.log(`Imported/upserted ${rows.length} Apple reviews from apple-reviews.json`);
   console.log(`Current total rows in reviews table: ${countResult.count ?? 0}`);
 }
 

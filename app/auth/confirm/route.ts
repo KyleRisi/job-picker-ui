@@ -11,8 +11,11 @@ export async function GET(req: NextRequest) {
   const tokenHash = req.nextUrl.searchParams.get('token_hash');
   const type = req.nextUrl.searchParams.get('type') as 'magiclink' | null;
   const nextParam = req.nextUrl.searchParams.get('next');
-  const isAdminFlow = req.nextUrl.searchParams.get('admin') === '1' || `${nextParam || ''}`.startsWith('/admin');
-  const next = nextParam || (isAdminFlow ? '/admin' : '/my-job/file');
+  const isAdminFlow =
+    req.nextUrl.searchParams.get('admin') === '1' ||
+    `${nextParam || ''}`.startsWith('/admin') ||
+    `${nextParam || ''}`.startsWith('/workspace');
+  const next = nextParam || (isAdminFlow ? '/workspace/dashboard' : '/my-job/file');
 
   if (tokenHash && type) {
     const successRedirect = markNoindex(NextResponse.redirect(new URL(next, req.url)));
@@ -34,6 +37,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const fallbackPath = isAdminFlow ? '/admin?error=Magic link failed or expired' : '/my-job?error=Magic link failed or expired';
+  const fallbackPath = isAdminFlow
+    ? '/workspace/login?error=Magic link failed or expired'
+    : '/my-job?error=Magic link failed or expired';
   return markNoindex(NextResponse.redirect(new URL(fallbackPath, req.url)));
 }

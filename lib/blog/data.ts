@@ -40,6 +40,35 @@ export type MediaAssetRecord = {
   updated_at: string;
 };
 
+export type MediaAssetUsageReference = {
+  id: string;
+  title: string;
+  slug: string;
+};
+
+export type MediaAssetUsageSummary = {
+  assetId: string;
+  storagePath: string;
+  canDelete: boolean;
+  totalUsage: number;
+  counts: {
+    featuredPosts: number;
+    ogPosts: number;
+    authorProfiles: number;
+    contentBlocks: number;
+    episodeHeroImages: number;
+  };
+  references: {
+    featuredPosts: MediaAssetUsageReference[];
+    ogPosts: MediaAssetUsageReference[];
+    authorProfiles: MediaAssetUsageReference[];
+    contentBlocks: MediaAssetUsageReference[];
+    episodeHeroImages: MediaAssetUsageReference[];
+  };
+};
+
+export type MediaUsageFilter = 'all' | 'used' | 'unused';
+
 export type BlogAuthorRecord = {
   id: string;
   name: string;
@@ -47,6 +76,10 @@ export type BlogAuthorRecord = {
   bio: string;
   image_url: string | null;
   image_asset_id: string | null;
+  is_active?: boolean;
+  archived_at?: string | null;
+  archive_mode?: string | null;
+  redirect_target?: string | null;
 };
 
 export type PodcastEpisodeRecord = {
@@ -54,6 +87,7 @@ export type PodcastEpisodeRecord = {
   rss_guid: string;
   title: string;
   slug: string;
+  episode_number: number | null;
   description_plain: string;
   description_html: string;
   published_at: string | null;
@@ -68,7 +102,7 @@ export type PodcastEpisodeRecord = {
   updated_at: string;
 };
 
-export type TaxonomyKind = 'categories' | 'tags' | 'series' | 'topic_clusters' | 'post_labels' | 'blog_authors';
+export type TaxonomyKind = 'categories' | 'tags' | 'series' | 'topic_clusters' | 'post_labels';
 export type TaxonomyItem = {
   id: string;
   name: string;
@@ -79,7 +113,14 @@ export type TaxonomyItem = {
   bio?: string;
   image_url?: string | null;
   image_asset_id?: string | null;
+  is_active?: boolean;
+  archived_at?: string | null;
+  archive_mode?: string | null;
+  redirect_target?: string | null;
 };
+
+type ArchiveableTaxonomyKind = TaxonomyKind | 'blog_authors';
+export type TaxonomyArchiveMode = 'redirect_301' | 'merge_redirect_301' | 'gone_410';
 
 export type BlogPostRecord = {
   id: string;
@@ -120,11 +161,21 @@ export type BlogPostRecord = {
 };
 
 type SupabaseClient = ReturnType<typeof createSupabaseAdminClient>;
+type DiscoveryAssignmentState = BlogPostWriteInput['discovery'] & {
+  termNames: string[];
+};
+type DiscoveryTermType = 'topic' | 'theme' | 'entity' | 'case' | 'event' | 'collection' | 'series';
+type DiscoveryTermRow = {
+  id: string;
+  name: string;
+  slug: string;
+  term_type: DiscoveryTermType;
+};
 
 const PATREON_URL = 'https://www.patreon.com/cw/TheCompendiumPodcast';
 const SEARCH_PAGE_SIZE = 12;
 
-const TAXONOMY_CONFIG: Record<Exclude<TaxonomyKind, 'blog_authors'>, { table: string; joinTable: string; idColumn: string }> = {
+const TAXONOMY_CONFIG: Record<TaxonomyKind, { table: string; joinTable: string; idColumn: string }> = {
   categories: { table: 'categories', joinTable: 'blog_post_categories', idColumn: 'category_id' },
   tags: { table: 'tags', joinTable: 'blog_post_tags', idColumn: 'tag_id' },
   series: { table: 'series', joinTable: 'blog_post_series', idColumn: 'series_id' },
@@ -134,6 +185,107 @@ const TAXONOMY_CONFIG: Record<Exclude<TaxonomyKind, 'blog_authors'>, { table: st
 
 function getSupabase() {
   return createSupabaseAdminClient();
+}
+
+function isMissingIsActiveColumnError(error: unknown) {
+  const code = `${(error as { code?: string })?.code || ''}`;
+  const message = `${(error as { message?: string })?.message || ''}`.toLowerCase();
+  return code === '42703' || (message.includes('is_active') && message.includes('does not exist'));
+}
+
+function isMissingEpisodeEditorialError(error: unknown) {
+  const code = `${(error as { code?: string })?.code || ''}`;
+  const message = `${(error as { message?: string })?.message || ''}`.toLowerCase();
+  return code === '42P01' || code === '42703' || (message.includes('podcast_episode_editorial') && message.includes('does not exist'));
+}
+
+function countAssetIdReferences(value: unknown, assetId: string): number {
+  if (!value) return 0;
+  if (Array.isArray(value)) {
+    return value.reduce<number>((sum, item) => sum + countAssetIdReferences(item, assetId), 0);
+  }
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const selfReference = record.assetId === assetId ? 1 : 0;
+    return Object.values(record).reduce<number>((sum, item) => sum + countAssetIdReferences(item, assetId), selfReference);
+  }
+  return 0;
+}
+
+function countAssetIdReferencesForSet(value: unknown, targetIds: Set<string>, counts: Map<string, number>) {
+  if (!value) return;
+  if (Array.isArray(value)) {
+    value.forEach((item) => countAssetIdReferencesForSet(item, targetIds, counts));
+    return;
+  }
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const assetId = typeof record.assetId === 'string' ? record.assetId : '';
+    if (assetId && targetIds.has(assetId)) {
+      counts.set(assetId, (counts.get(assetId) || 0) + 1);
+    }
+    Object.values(record).forEach((item) => countAssetIdReferencesForSet(item, targetIds, counts));
+  }
+}
+
+async function buildMediaUsageCountsByAssetId(
+  supabase: SupabaseClient,
+  assets: Pick<MediaAssetRecord, 'id' | 'storage_path'>[]
+) {
+  const counts = new Map<string, number>();
+  const targetAssetIds = new Set(assets.map((asset) => asset.id));
+  const assetIdByStoragePath = new Map<string, string>();
+  for (const asset of assets) {
+    counts.set(asset.id, 0);
+    assetIdByStoragePath.set(asset.storage_path, asset.id);
+  }
+
+  const { data: postRows, error: postError } = await supabase
+    .from('blog_posts')
+    .select('featured_image_id,og_image_id,content_json')
+    .is('deleted_at', null);
+  if (postError) throw postError;
+  for (const row of ((postRows || []) as Array<{ featured_image_id: string | null; og_image_id: string | null; content_json: unknown }>)) {
+    if (row.featured_image_id && targetAssetIds.has(row.featured_image_id)) {
+      counts.set(row.featured_image_id, (counts.get(row.featured_image_id) || 0) + 1);
+    }
+    if (row.og_image_id && targetAssetIds.has(row.og_image_id)) {
+      counts.set(row.og_image_id, (counts.get(row.og_image_id) || 0) + 1);
+    }
+    countAssetIdReferencesForSet(row.content_json, targetAssetIds, counts);
+  }
+
+  const { data: authorRows, error: authorError } = await supabase
+    .from('blog_authors')
+    .select('image_asset_id');
+  if (authorError) throw authorError;
+  for (const row of ((authorRows || []) as Array<{ image_asset_id: string | null }>)) {
+    if (row.image_asset_id && targetAssetIds.has(row.image_asset_id)) {
+      counts.set(row.image_asset_id, (counts.get(row.image_asset_id) || 0) + 1);
+    }
+  }
+
+  try {
+    const storagePaths = assets.map((asset) => asset.storage_path).filter(Boolean);
+    if (storagePaths.length) {
+      const { data: editorialRows, error: editorialError } = await supabase
+        .from('podcast_episode_editorial')
+        .select('hero_image_storage_path')
+        .in('hero_image_storage_path', storagePaths);
+      if (editorialError) throw editorialError;
+      for (const row of ((editorialRows || []) as Array<{ hero_image_storage_path: string | null }>)) {
+        const path = row.hero_image_storage_path || '';
+        const mappedAssetId = assetIdByStoragePath.get(path);
+        if (mappedAssetId) {
+          counts.set(mappedAssetId, (counts.get(mappedAssetId) || 0) + 1);
+        }
+      }
+    }
+  } catch (error) {
+    if (!isMissingEpisodeEditorialError(error)) throw error;
+  }
+
+  return counts;
 }
 
 function getSessionHash(input: string) {
@@ -242,9 +394,30 @@ async function getTaxonomyItemsByIds(
   ids: string[]
 ) {
   if (!ids.length) return new Map<string, TaxonomyItem>();
-  const { data, error } = await supabase.from(table).select('*').in('id', ids);
+  const shouldFilterActive = table === 'categories' || table === 'tags' || table === 'series' || table === 'topic_clusters';
+  if (!shouldFilterActive) {
+    const { data, error } = await supabase.from(table).select('*').in('id', ids);
+    if (error) throw error;
+    return new Map((data || []).map((item) => [item.id, item as TaxonomyItem]));
+  }
+  const activeQuery = await supabase.from(table).select('*').in('id', ids).eq('is_active', true);
+  if (activeQuery.error && isMissingIsActiveColumnError(activeQuery.error)) {
+    const fallbackQuery = await supabase.from(table).select('*').in('id', ids);
+    if (fallbackQuery.error) throw fallbackQuery.error;
+    return new Map((fallbackQuery.data || []).map((item) => [item.id, item as TaxonomyItem]));
+  }
+  if (activeQuery.error) throw activeQuery.error;
+  return new Map((activeQuery.data || []).map((item) => [item.id, item as TaxonomyItem]));
+}
+
+async function getDiscoveryTermsByIds(
+  supabase: SupabaseClient,
+  ids: string[]
+) {
+  if (!ids.length) return new Map<string, DiscoveryTermRow>();
+  const { data, error } = await supabase.from('discovery_terms').select('id, name, slug, term_type').in('id', ids);
   if (error) throw error;
-  return new Map((data || []).map((item) => [item.id, item as TaxonomyItem]));
+  return new Map((data || []).map((item) => [item.id, item as DiscoveryTermRow]));
 }
 
 async function getTaxonomyForPosts(
@@ -254,10 +427,7 @@ async function getTaxonomyForPosts(
   if (!postIds.length) {
     return {
       categories: new Map<string, TaxonomyItem[]>(),
-      tags: new Map<string, TaxonomyItem[]>(),
-      series: new Map<string, TaxonomyItem[]>(),
-      topicClusters: new Map<string, TaxonomyItem[]>(),
-      labels: new Map<string, TaxonomyItem[]>()
+      tags: new Map<string, TaxonomyItem[]>()
     };
   }
 
@@ -266,26 +436,14 @@ async function getTaxonomyForPosts(
     .select('post_id, category_id')
     .in('post_id', postIds);
   const tagsPromise = supabase.from('blog_post_tags').select('post_id, tag_id').in('post_id', postIds);
-  const seriesPromise = supabase.from('blog_post_series').select('post_id, series_id').in('post_id', postIds);
-  const topicsPromise = supabase
-    .from('blog_post_topic_clusters')
-    .select('post_id, topic_cluster_id')
-    .in('post_id', postIds);
-  const labelsPromise = supabase.from('blog_post_labels').select('post_id, label_id').in('post_id', postIds);
 
-  const [categoriesRows, tagRows, seriesRows, topicRows, labelRows] = await Promise.all([
+  const [categoriesRows, tagRows] = await Promise.all([
     categoriesPromise,
-    tagsPromise,
-    seriesPromise,
-    topicsPromise,
-    labelsPromise
+    tagsPromise
   ]);
 
   if (categoriesRows.error) throw categoriesRows.error;
   if (tagRows.error) throw tagRows.error;
-  if (seriesRows.error) throw seriesRows.error;
-  if (topicRows.error) throw topicRows.error;
-  if (labelRows.error) throw labelRows.error;
 
   const categoryItems = await getTaxonomyItemsByIds(
     supabase,
@@ -293,17 +451,6 @@ async function getTaxonomyForPosts(
     [...new Set((categoriesRows.data || []).map((item) => item.category_id))]
   );
   const tagItems = await getTaxonomyItemsByIds(supabase, 'tags', [...new Set((tagRows.data || []).map((item) => item.tag_id))]);
-  const seriesItems = await getTaxonomyItemsByIds(supabase, 'series', [...new Set((seriesRows.data || []).map((item) => item.series_id))]);
-  const topicItems = await getTaxonomyItemsByIds(
-    supabase,
-    'topic_clusters',
-    [...new Set((topicRows.data || []).map((item) => item.topic_cluster_id))]
-  );
-  const labelItems = await getTaxonomyItemsByIds(
-    supabase,
-    'post_labels',
-    [...new Set((labelRows.data || []).map((item) => item.label_id))]
-  );
 
   function group<T extends { post_id: string }>(
     rows: T[],
@@ -323,11 +470,67 @@ async function getTaxonomyForPosts(
 
   return {
     categories: group(categoriesRows.data || [], 'category_id', categoryItems),
-    tags: group(tagRows.data || [], 'tag_id', tagItems),
-    series: group(seriesRows.data || [], 'series_id', seriesItems),
-    topicClusters: group(topicRows.data || [], 'topic_cluster_id', topicItems),
-    labels: group(labelRows.data || [], 'label_id', labelItems)
+    tags: group(tagRows.data || [], 'tag_id', tagItems)
   };
+}
+
+function createEmptyDiscoveryAssignments(): DiscoveryAssignmentState {
+  return {
+    primaryTopicId: null,
+    topicIds: [],
+    themeIds: [],
+    entityIds: [],
+    caseIds: [],
+    eventIds: [],
+    collectionIds: [],
+    seriesIds: [],
+    termNames: []
+  };
+}
+
+async function getDiscoveryForPosts(
+  supabase: SupabaseClient,
+  postIds: string[]
+) {
+  if (!postIds.length) return new Map<string, DiscoveryAssignmentState>();
+  const { data, error } = await supabase
+    .from('blog_post_discovery_terms')
+    .select('blog_post_id, term_id, is_primary, sort_order, discovery_terms!inner(term_type, name)')
+    .in('blog_post_id', postIds)
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+
+  const map = new Map<string, DiscoveryAssignmentState>();
+  (data || []).forEach((row: any) => {
+    const state = map.get(row.blog_post_id) || createEmptyDiscoveryAssignments();
+    const termId = `${row.term_id}`;
+    const termName = `${row.discovery_terms?.name || ''}`.trim();
+    const termType = row.discovery_terms?.term_type as DiscoveryTermType;
+    if (termName && !state.termNames.includes(termName)) {
+      state.termNames.push(termName);
+    }
+    if (termType === 'topic') {
+      if (row.is_primary || !state.primaryTopicId) {
+        state.primaryTopicId = termId;
+      } else if (!state.topicIds.includes(termId)) {
+        state.topicIds.push(termId);
+      }
+    } else if (termType === 'theme') {
+      state.themeIds.push(termId);
+    } else if (termType === 'entity') {
+      state.entityIds.push(termId);
+    } else if (termType === 'case') {
+      state.caseIds.push(termId);
+    } else if (termType === 'event') {
+      state.eventIds.push(termId);
+    } else if (termType === 'collection') {
+      state.collectionIds.push(termId);
+    } else if (termType === 'series') {
+      state.seriesIds.push(termId);
+    }
+    map.set(row.blog_post_id, state);
+  });
+  return map;
 }
 
 async function getEpisodeLinksForPosts(supabase: SupabaseClient, postIds: string[]) {
@@ -363,9 +566,7 @@ function serializeSearchPlaintext(input: {
   contentPlain: string;
   categories: TaxonomyItem[];
   tags: TaxonomyItem[];
-  series: TaxonomyItem[];
-  topics: TaxonomyItem[];
-  labels: TaxonomyItem[];
+  discoveryTerms: string[];
   episodes: PodcastEpisodeRecord[];
 }) {
   return [
@@ -374,9 +575,7 @@ function serializeSearchPlaintext(input: {
     input.contentPlain,
     ...input.categories.map((item) => item.name),
     ...input.tags.map((item) => item.name),
-    ...input.series.map((item) => item.name),
-    ...input.topics.map((item) => item.name),
-    ...input.labels.map((item) => item.name),
+    ...input.discoveryTerms,
     ...input.episodes.map((item) => item.title)
   ]
     .filter(Boolean)
@@ -424,17 +623,7 @@ async function syncTaxonomyLinks(
 ) {
   await Promise.all(
     Object.entries(TAXONOMY_CONFIG).map(async ([kind, config]) => {
-      const ids = taxonomy[
-        kind === 'categories'
-          ? 'categoryIds'
-          : kind === 'tags'
-            ? 'tagIds'
-            : kind === 'series'
-              ? 'seriesIds'
-              : kind === 'topic_clusters'
-                ? 'topicClusterIds'
-                : 'labelIds'
-      ];
+      const ids = taxonomy[kind === 'categories' ? 'categoryIds' : 'tagIds'];
       const deleteResult = await supabase.from(config.joinTable).delete().eq('post_id', postId);
       if (deleteResult.error) throw deleteResult.error;
       if (!ids.length) return;
@@ -447,6 +636,76 @@ async function syncTaxonomyLinks(
       if (insertResult.error) throw insertResult.error;
     })
   );
+}
+
+async function syncBlogPostDiscovery(
+  supabase: SupabaseClient,
+  postId: string,
+  discovery: BlogPostWriteInput['discovery']
+) {
+  const ids = [
+    ...(discovery.primaryTopicId ? [discovery.primaryTopicId] : []),
+    ...discovery.topicIds,
+    ...discovery.themeIds,
+    ...discovery.entityIds,
+    ...discovery.caseIds,
+    ...discovery.eventIds,
+    ...discovery.collectionIds,
+    ...discovery.seriesIds
+  ];
+  const uniqueIds = [...new Set(ids)];
+  const { data: terms, error: termsError } = await supabase
+    .from('discovery_terms')
+    .select('id, term_type')
+    .in('id', uniqueIds.length ? uniqueIds : ['00000000-0000-0000-0000-000000000000']);
+  if (termsError) throw termsError;
+
+  const termTypeById = new Map((terms || []).map((row: any) => [row.id as string, row.term_type as DiscoveryTermType]));
+  if (discovery.primaryTopicId && termTypeById.get(discovery.primaryTopicId) !== 'topic') {
+    throw new Error('Primary topic must reference a topic discovery term.');
+  }
+
+  const expectedTypes: Array<[string[], DiscoveryTermType]> = [
+    [discovery.topicIds, 'topic'],
+    [discovery.themeIds, 'theme'],
+    [discovery.entityIds, 'entity'],
+    [discovery.caseIds, 'case'],
+    [discovery.eventIds, 'event'],
+    [discovery.collectionIds, 'collection'],
+    [discovery.seriesIds, 'series']
+  ];
+  expectedTypes.forEach(([list, expected]) => {
+    list.forEach((id) => {
+      if (termTypeById.get(id) !== expected) {
+        throw new Error(`Discovery term assignment mismatch for ${expected}.`);
+      }
+    });
+  });
+
+  const deleteResult = await supabase.from('blog_post_discovery_terms').delete().eq('blog_post_id', postId);
+  if (deleteResult.error) throw deleteResult.error;
+
+  const normalizedTopicIds = [...new Set(discovery.topicIds.filter((id) => id && id !== discovery.primaryTopicId))];
+
+  const rows = [
+    ...(discovery.primaryTopicId ? [{
+      blog_post_id: postId,
+      term_id: discovery.primaryTopicId,
+      is_primary: true,
+      sort_order: 0
+    }] : []),
+    ...normalizedTopicIds.map((termId, index) => ({ blog_post_id: postId, term_id: termId, is_primary: false, sort_order: index })),
+    ...discovery.themeIds.map((termId, index) => ({ blog_post_id: postId, term_id: termId, is_primary: false, sort_order: index })),
+    ...discovery.entityIds.map((termId, index) => ({ blog_post_id: postId, term_id: termId, is_primary: false, sort_order: index })),
+    ...discovery.caseIds.map((termId, index) => ({ blog_post_id: postId, term_id: termId, is_primary: false, sort_order: index })),
+    ...discovery.eventIds.map((termId, index) => ({ blog_post_id: postId, term_id: termId, is_primary: false, sort_order: index })),
+    ...discovery.collectionIds.map((termId, index) => ({ blog_post_id: postId, term_id: termId, is_primary: false, sort_order: index })),
+    ...discovery.seriesIds.map((termId, index) => ({ blog_post_id: postId, term_id: termId, is_primary: false, sort_order: index }))
+  ];
+  if (!rows.length) return;
+
+  const insertResult = await supabase.from('blog_post_discovery_terms').insert(rows);
+  if (insertResult.error) throw insertResult.error;
 }
 
 async function syncEpisodeLinks(
@@ -535,6 +794,10 @@ async function hydratePosts(baseRows: BlogPostRecord[]) {
     supabase,
     baseRows.map((row) => row.id)
   );
+  const discovery = await getDiscoveryForPosts(
+    supabase,
+    baseRows.map((row) => row.id)
+  );
   const episodeLinks = await getEpisodeLinksForPosts(
     supabase,
     baseRows.map((row) => row.id)
@@ -551,38 +814,173 @@ async function hydratePosts(baseRows: BlogPostRecord[]) {
     og_image: row.og_image_id ? mediaMap.get(row.og_image_id) || null : null,
     taxonomies: {
       categories: taxonomy.categories.get(row.id) || [],
-      tags: taxonomy.tags.get(row.id) || [],
-      series: taxonomy.series.get(row.id) || [],
-      topicClusters: taxonomy.topicClusters.get(row.id) || [],
-      labels: taxonomy.labels.get(row.id) || []
+      tags: taxonomy.tags.get(row.id) || []
     },
+    discovery: discovery.get(row.id) || createEmptyDiscoveryAssignments(),
     linked_episodes: episodeLinks.get(row.id) || []
   }));
 }
 
-export async function listBlogAuthors() {
-  const supabase = getSupabase();
-  const { data, error } = await supabase.from('blog_authors').select('*').order('name');
-  if (error) throw error;
-  return data as BlogAuthorRecord[];
+export function getArchiveableTaxonomyUrlPath(kind: ArchiveableTaxonomyKind, slug: string) {
+  if (kind === 'categories') return `/blog/category/${slug}`;
+  if (kind === 'tags') return `/blog/tag/${slug}`;
+  if (kind === 'series') return `/blog/series/${slug}`;
+  if (kind === 'topic_clusters') return `/blog/topic/${slug}`;
+  if (kind === 'blog_authors') return `/blog/author/${slug}`;
+  return `/blog`;
 }
 
-export async function listTaxonomy(kind: TaxonomyKind) {
-  const supabase = getSupabase();
-  const table = kind === 'blog_authors' ? 'blog_authors' : TAXONOMY_CONFIG[kind].table;
-  const { data, error } = await supabase.from(table).select('*').order('name');
+async function assertNoRedirectUrlOwnershipConflict(supabase: SupabaseClient, sourcePath: string, excludeRedirectId?: string) {
+  let query = supabase
+    .from('redirects')
+    .select('id,status_code,is_active')
+    .eq('source_path', sourcePath)
+    .eq('match_type', 'exact')
+    .eq('is_active', true)
+    .limit(1);
+  if (excludeRedirectId) query = query.neq('id', excludeRedirectId);
+  const { data, error } = await query;
   if (error) throw error;
-  return data as TaxonomyItem[];
+  if (data?.length) {
+    throw new Error(`This URL is already owned by an active redirect rule (${data[0].status_code}). Remove that rule before reusing this slug.`);
+  }
 }
 
-export async function listBlogTaxonomies() {
+async function resolveRedirectDestinationChain(supabase: SupabaseClient, sourcePath: string, targetUrl: string) {
+  const normalizedSource = normalizePath(sourcePath);
+  let candidate = `${targetUrl || ''}`.trim();
+  if (!candidate) throw new Error('Redirect target is required.');
+
+  const seen = new Set<string>([normalizedSource]);
+  for (let hop = 0; hop < 12; hop += 1) {
+    if (!candidate.startsWith('/')) return candidate;
+    const normalizedTarget = normalizePath(candidate);
+    if (normalizedTarget === normalizedSource) {
+      throw new Error('Redirect target cannot point back to the source URL.');
+    }
+    if (seen.has(normalizedTarget)) {
+      throw new Error('Redirect target creates a redirect loop.');
+    }
+    seen.add(normalizedTarget);
+
+    const { data, error } = await supabase
+      .from('redirects')
+      .select('target_url,status_code')
+      .eq('source_path', normalizedTarget)
+      .eq('match_type', 'exact')
+      .eq('is_active', true)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return normalizedTarget;
+    if (Number(data.status_code) === 410) {
+      throw new Error('Redirect target currently resolves to 410 Gone. Choose a live destination.');
+    }
+    const next = `${data.target_url || ''}`.trim();
+    if (!next) return normalizedTarget;
+    candidate = next;
+  }
+  throw new Error('Redirect target chain is too deep.');
+}
+
+async function assertTargetIsNotArchivedTaxonomy(supabase: SupabaseClient, targetUrl: string) {
+  if (!targetUrl.startsWith('/')) return;
+  const normalized = normalizePath(targetUrl);
+  const matchers: Array<{ kind: ArchiveableTaxonomyKind; prefix: string }> = [
+    { kind: 'categories', prefix: '/blog/category/' },
+    { kind: 'tags', prefix: '/blog/tag/' },
+    { kind: 'series', prefix: '/blog/series/' },
+    { kind: 'topic_clusters', prefix: '/blog/topic/' },
+    { kind: 'blog_authors', prefix: '/blog/author/' }
+  ];
+
+  const matched = matchers.find((item) => normalized.startsWith(item.prefix));
+  if (!matched) return;
+  const slug = normalized.slice(matched.prefix.length).trim();
+  if (!slug) return;
+  const table = matched.kind === 'blog_authors' ? 'blog_authors' : TAXONOMY_CONFIG[matched.kind].table;
+  const { data, error } = await supabase.from(table).select('is_active').eq('slug', slug).maybeSingle();
+  if (error) throw error;
+  if (data && data.is_active === false) {
+    throw new Error('Redirect target points to an archived taxonomy URL. Choose an active destination.');
+  }
+}
+
+export async function listBlogAuthors(options?: { includeArchived?: boolean }) {
+  const supabase = getSupabase();
+  if (options?.includeArchived) {
+    const { data, error } = await supabase.from('blog_authors').select('*').order('name');
+    if (error) throw error;
+    return data as BlogAuthorRecord[];
+  }
+
+  const activeQuery = await supabase.from('blog_authors').select('*').eq('is_active', true).order('name');
+  if (activeQuery.error && isMissingIsActiveColumnError(activeQuery.error)) {
+    const fallbackQuery = await supabase.from('blog_authors').select('*').order('name');
+    if (fallbackQuery.error) throw fallbackQuery.error;
+    return fallbackQuery.data as BlogAuthorRecord[];
+  }
+  if (activeQuery.error) throw activeQuery.error;
+  return activeQuery.data as BlogAuthorRecord[];
+}
+
+export async function listTaxonomy(kind: TaxonomyKind, options?: { includeArchived?: boolean }) {
+  const supabase = getSupabase();
+  const table = TAXONOMY_CONFIG[kind].table;
+  if (options?.includeArchived) {
+    const { data, error } = await supabase.from(table).select('*').order('name');
+    if (error) throw error;
+    return data as TaxonomyItem[];
+  }
+
+  const activeQuery = await supabase.from(table).select('*').eq('is_active', true).order('name');
+  if (activeQuery.error && isMissingIsActiveColumnError(activeQuery.error)) {
+    const fallbackQuery = await supabase.from(table).select('*').order('name');
+    if (fallbackQuery.error) throw fallbackQuery.error;
+    return fallbackQuery.data as TaxonomyItem[];
+  }
+  if (activeQuery.error) throw activeQuery.error;
+  return activeQuery.data as TaxonomyItem[];
+}
+
+async function listOptionalTaxonomyTable(table: string, options?: { includeArchived?: boolean }) {
+  const supabase = getSupabase();
+  const shouldFilterActive = !options?.includeArchived && table !== 'post_labels';
+  let data: unknown[] | null = null;
+  let error: unknown = null;
+  if (shouldFilterActive) {
+    const activeQuery = await supabase.from(table).select('*').eq('is_active', true).order('name');
+    data = activeQuery.data;
+    error = activeQuery.error;
+    if (activeQuery.error && isMissingIsActiveColumnError(activeQuery.error)) {
+      const fallbackQuery = await supabase.from(table).select('*').order('name');
+      data = fallbackQuery.data;
+      error = fallbackQuery.error;
+    }
+  } else {
+    const query = await supabase.from(table).select('*').order('name');
+    data = query.data;
+    error = query.error;
+  }
+  if (error) {
+    const code = `${(error as { code?: string }).code || ''}`;
+    if (code === 'PGRST205' || code === '42P01') return [] as TaxonomyItem[];
+    throw error;
+  }
+  return (data || []) as TaxonomyItem[];
+}
+
+export async function listBlogTaxonomies(options?: { includeArchived?: boolean }) {
   const [categories, tags, series, topicClusters, labels, authors] = await Promise.all([
-    listTaxonomy('categories'),
-    listTaxonomy('tags'),
-    listTaxonomy('series'),
-    listTaxonomy('topic_clusters'),
-    listTaxonomy('post_labels'),
-    listBlogAuthors()
+    listTaxonomy('categories', options),
+    listTaxonomy('tags', options),
+    listOptionalTaxonomyTable('series', options),
+    listOptionalTaxonomyTable('topic_clusters', options),
+    listOptionalTaxonomyTable('post_labels', options),
+    listBlogAuthors(options).catch((error: unknown) => {
+      const code = `${(error as { code?: string }).code || ''}`;
+      if (code === 'PGRST205' || code === '42P01') return [] as BlogAuthorRecord[];
+      throw error;
+    })
   ]);
 
   return {
@@ -598,9 +996,10 @@ export async function listBlogTaxonomies() {
 export async function upsertTaxonomy(kind: TaxonomyKind, input: unknown) {
   const supabase = getSupabase();
   const parsed = taxonomyTermWriteSchema.parse(input);
-  const table = kind === 'blog_authors' ? 'blog_authors' : TAXONOMY_CONFIG[kind].table;
+  const table = TAXONOMY_CONFIG[kind].table;
   const normalizedSlug = slugifyBlogText(parsed.slug || parsed.name);
   if (!normalizedSlug) throw new Error('Slug is required.');
+  await assertNoRedirectUrlOwnershipConflict(supabase, getArchiveableTaxonomyUrlPath(kind, normalizedSlug));
   const basePayload = {
     ...(parsed.id ? { id: parsed.id } : {}),
     name: parsed.name.trim(),
@@ -608,14 +1007,7 @@ export async function upsertTaxonomy(kind: TaxonomyKind, input: unknown) {
   };
 
   let payload: Record<string, unknown>;
-  if (kind === 'blog_authors') {
-    payload = {
-      ...basePayload,
-      bio: parsed.bio || '',
-      image_url: parsed.imageUrl || null,
-      image_asset_id: parsed.imageAssetId || null
-    };
-  } else if (kind === 'categories') {
+  if (kind === 'categories') {
     payload = {
       ...basePayload,
       description: parsed.description || '',
@@ -624,17 +1016,6 @@ export async function upsertTaxonomy(kind: TaxonomyKind, input: unknown) {
   } else if (kind === 'tags') {
     payload = {
       ...basePayload
-    };
-  } else if (kind === 'series') {
-    payload = {
-      ...basePayload,
-      description: parsed.description || ''
-    };
-  } else if (kind === 'topic_clusters') {
-    payload = {
-      ...basePayload,
-      description: parsed.description || '',
-      pillar_post_id: parsed.pillarPostId || null
     };
   } else {
     payload = {
@@ -653,12 +1034,231 @@ export async function upsertTaxonomy(kind: TaxonomyKind, input: unknown) {
 
 export async function deleteTaxonomy(kind: TaxonomyKind, id: string) {
   const supabase = getSupabase();
-  const table = kind === 'blog_authors' ? 'blog_authors' : TAXONOMY_CONFIG[kind].table;
+  const table = TAXONOMY_CONFIG[kind].table;
   const { error } = await supabase.from(table).delete().eq('id', id);
   if (error) throw error;
 }
 
-export async function listMediaAssets(query = '') {
+export async function saveBlogAuthor(input: unknown) {
+  const supabase = getSupabase();
+  const parsed = taxonomyTermWriteSchema.parse(input);
+  const normalizedSlug = slugifyBlogText(parsed.slug || parsed.name);
+  if (!normalizedSlug) throw new Error('Slug is required.');
+  await assertNoRedirectUrlOwnershipConflict(supabase, getArchiveableTaxonomyUrlPath('blog_authors', normalizedSlug));
+  const payload = {
+    ...(parsed.id ? { id: parsed.id } : {}),
+    name: parsed.name.trim(),
+    slug: normalizedSlug,
+    bio: parsed.bio || parsed.description || '',
+    image_url: parsed.imageUrl || null,
+    image_asset_id: parsed.imageAssetId || null
+  };
+  const query = parsed.id
+    ? supabase.from('blog_authors').update(payload).eq('id', parsed.id).select('*').single()
+    : supabase.from('blog_authors').insert(payload).select('*').single();
+  const { data, error } = await query;
+  if (error) throw error;
+  return data as BlogAuthorRecord;
+}
+
+export async function getTaxonomyArchiveImpact(kind: ArchiveableTaxonomyKind, id: string) {
+  const supabase = getSupabase();
+  if (kind === 'blog_authors') {
+    const { count, error } = await supabase
+      .from('blog_posts')
+      .select('id', { count: 'exact', head: true })
+      .eq('author_id', id)
+      .is('deleted_at', null);
+    if (error) throw error;
+    return { assignedContentCount: count || 0, internalReferenceCount: null };
+  }
+
+  const config = TAXONOMY_CONFIG[kind];
+  const { count, error } = await supabase
+    .from(config.joinTable)
+    .select('post_id', { count: 'exact', head: true })
+    .eq(config.idColumn, id);
+  if (error) throw error;
+  return { assignedContentCount: count || 0, internalReferenceCount: null };
+}
+
+export async function listArchiveTargets(kind: ArchiveableTaxonomyKind, currentId: string) {
+  const supabase = getSupabase();
+  const table = kind === 'blog_authors' ? 'blog_authors' : TAXONOMY_CONFIG[kind].table;
+  const { data, error } = await supabase
+    .from(table)
+    .select('id,name,slug')
+    .eq('is_active', true)
+    .neq('id', currentId)
+    .order('name');
+  if (error) throw error;
+  return (data || []) as Array<{ id: string; name: string; slug: string }>;
+}
+
+export async function archiveTaxonomy(params: {
+  kind: ArchiveableTaxonomyKind;
+  taxonomyId: string;
+  mode: TaxonomyArchiveMode;
+  redirectTarget?: string | null;
+  mergeTargetId?: string | null;
+  actorId?: string;
+  actorEmail?: string;
+  allowAuthorMerge?: boolean;
+}) {
+  const supabase = getSupabase();
+  const table = params.kind === 'blog_authors' ? 'blog_authors' : TAXONOMY_CONFIG[params.kind].table;
+  const { data: row, error: rowError } = await supabase.from(table).select('*').eq('id', params.taxonomyId).maybeSingle();
+  if (rowError) throw rowError;
+  if (!row) throw new Error('Taxonomy not found.');
+  if (row.is_active === false) throw new Error('This taxonomy is already archived.');
+
+  const sourcePath = getArchiveableTaxonomyUrlPath(params.kind, row.slug);
+  let affectedCount = 0;
+  let redirectTarget: string | null = null;
+  const mergeTargetId = params.mergeTargetId || null;
+
+  if (params.mode === 'merge_redirect_301' && params.kind === 'blog_authors' && !params.allowAuthorMerge) {
+    throw new Error('Author merge is currently disabled.');
+  }
+
+  if (params.mode === 'merge_redirect_301') {
+    if (!mergeTargetId) throw new Error('Merge target is required.');
+    if (mergeTargetId === params.taxonomyId) throw new Error('Cannot merge a taxonomy into itself.');
+    const { data: mergeTarget, error: mergeTargetError } = await supabase
+      .from(table)
+      .select('id,slug,is_active')
+      .eq('id', mergeTargetId)
+      .maybeSingle();
+    if (mergeTargetError) throw mergeTargetError;
+    if (!mergeTarget || mergeTarget.is_active === false) {
+      throw new Error('Merge target must be active.');
+    }
+    redirectTarget = getArchiveableTaxonomyUrlPath(params.kind, mergeTarget.slug);
+
+    if (params.kind === 'blog_authors') {
+      const { data: assignedRows, error: assignedRowsError } = await supabase
+        .from('blog_posts')
+        .select('id')
+        .eq('author_id', params.taxonomyId)
+        .is('deleted_at', null);
+      if (assignedRowsError) throw assignedRowsError;
+      affectedCount = (assignedRows || []).length;
+      const { error: reassignError } = await supabase
+        .from('blog_posts')
+        .update({ author_id: mergeTargetId })
+        .eq('author_id', params.taxonomyId);
+      if (reassignError) throw reassignError;
+    } else {
+      const config = TAXONOMY_CONFIG[params.kind];
+      const { data: linkedRows, error: linkedRowsError } = await supabase
+        .from(config.joinTable)
+        .select('post_id')
+        .eq(config.idColumn, params.taxonomyId);
+      if (linkedRowsError) throw linkedRowsError;
+      affectedCount = (linkedRows || []).length;
+
+      if (linkedRows?.length) {
+        const mergeRows = linkedRows.map((entry: { post_id: string }) => ({
+          post_id: entry.post_id,
+          [config.idColumn]: mergeTargetId
+        }));
+        const { error: upsertError } = await supabase
+          .from(config.joinTable)
+          .upsert(mergeRows, { onConflict: `post_id,${config.idColumn}` });
+        if (upsertError) throw upsertError;
+      }
+      const { error: cleanupError } = await supabase
+        .from(config.joinTable)
+        .delete()
+        .eq(config.idColumn, params.taxonomyId);
+      if (cleanupError) throw cleanupError;
+    }
+  } else if (params.mode === 'redirect_301') {
+    const chosen = `${params.redirectTarget || ''}`.trim();
+    if (!chosen) throw new Error('Redirect target is required.');
+    redirectTarget = await resolveRedirectDestinationChain(supabase, sourcePath, chosen);
+    await assertTargetIsNotArchivedTaxonomy(supabase, redirectTarget);
+    if (redirectTarget.startsWith('/') && normalizePath(redirectTarget) === normalizePath(sourcePath)) {
+      throw new Error('Redirect target must be different to the source URL.');
+    }
+  }
+
+  if (params.mode === 'merge_redirect_301' && redirectTarget) {
+    redirectTarget = await resolveRedirectDestinationChain(supabase, sourcePath, redirectTarget);
+    if (redirectTarget.startsWith('/') && normalizePath(redirectTarget) === normalizePath(sourcePath)) {
+      throw new Error('Redirect target must be different to the source URL.');
+    }
+  }
+
+  const archivePayload = {
+    is_active: false,
+    archived_at: new Date().toISOString(),
+    archive_mode: params.mode,
+    redirect_target: params.mode === 'gone_410' ? null : redirectTarget
+  };
+  const { error: archiveError } = await supabase.from(table).update(archivePayload).eq('id', params.taxonomyId);
+  if (archiveError) throw archiveError;
+
+  if (params.mode === 'redirect_301' || params.mode === 'merge_redirect_301') {
+    const { error: redirectError } = await supabase
+      .from('redirects')
+      .upsert({
+        source_path: sourcePath,
+        target_url: redirectTarget,
+        status_code: 301,
+        match_type: 'exact',
+        is_active: true,
+        priority: 100,
+        notes: `Taxonomy archive redirect (${params.kind})`,
+        source_type: 'taxonomy_archive',
+        source_ref: `${params.kind}:${params.taxonomyId}`
+      }, { onConflict: 'source_path,match_type' });
+    if (redirectError) throw redirectError;
+  } else {
+    const { error: goneError } = await supabase
+      .from('redirects')
+      .upsert({
+        source_path: sourcePath,
+        target_url: null,
+        status_code: 410,
+        match_type: 'exact',
+        is_active: true,
+        priority: 100,
+        notes: `Taxonomy archive 410 (${params.kind})`,
+        source_type: 'taxonomy_archive',
+        source_ref: `${params.kind}:${params.taxonomyId}`
+      }, { onConflict: 'source_path,match_type' });
+    if (goneError) throw goneError;
+  }
+
+  const impact = affectedCount || (await getTaxonomyArchiveImpact(params.kind, params.taxonomyId)).assignedContentCount;
+  await supabase.from('taxonomy_archive_events').insert({
+    actor_id: params.actorId || '',
+    actor_email: params.actorEmail || '',
+    taxonomy_kind: params.kind,
+    taxonomy_id: params.taxonomyId,
+    source_url: sourcePath,
+    archive_mode: params.mode,
+    redirect_target: redirectTarget,
+    merge_target_id: mergeTargetId,
+    affected_association_count: impact
+  });
+
+  return {
+    sourcePath,
+    mode: params.mode,
+    redirectTarget: redirectTarget || null,
+    affectedAssociationCount: impact
+  };
+}
+
+export async function deleteBlogAuthor(id: string) {
+  const supabase = getSupabase();
+  const { error } = await supabase.from('blog_authors').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function listMediaAssets(query = '', usageFilter: MediaUsageFilter = 'all') {
   const supabase = getSupabase();
   let request = supabase.from('media_assets').select('*').order('created_at', { ascending: false }).limit(120);
   const orFilter = buildOrIlikeFilter(['storage_path', 'alt_text_default', 'caption_default'], query);
@@ -667,7 +1267,19 @@ export async function listMediaAssets(query = '') {
   }
   const { data, error } = await request;
   if (error) throw error;
-  return data as MediaAssetRecord[];
+  const assets = (data || []) as MediaAssetRecord[];
+  if (usageFilter === 'all' || !assets.length) {
+    return assets;
+  }
+
+  const usageCounts = await buildMediaUsageCountsByAssetId(supabase, assets.map((asset) => ({
+    id: asset.id,
+    storage_path: asset.storage_path
+  })));
+  return assets.filter((asset) => {
+    const count = usageCounts.get(asset.id) || 0;
+    return usageFilter === 'used' ? count > 0 : count === 0;
+  });
 }
 
 export async function getMediaAssetById(id: string) {
@@ -689,6 +1301,106 @@ export async function updateMediaAsset(id: string, input: Partial<MediaAssetReco
   const { data, error } = await supabase.from('media_assets').update(payload).eq('id', id).select('*').single();
   if (error) throw error;
   return data as MediaAssetRecord;
+}
+
+export async function getMediaAssetUsage(id: string): Promise<MediaAssetUsageSummary | null> {
+  const supabase = getSupabase();
+  const asset = await getMediaAssetById(id);
+  if (!asset) return null;
+
+  const { data: postRows, error: postError } = await supabase
+    .from('blog_posts')
+    .select('id,title,slug,featured_image_id,og_image_id,content_json')
+    .is('deleted_at', null);
+  if (postError) throw postError;
+
+  const { data: authorRows, error: authorError } = await supabase
+    .from('blog_authors')
+    .select('id,name,slug,image_asset_id');
+  if (authorError) throw authorError;
+
+  const posts = (postRows || []) as Array<{
+    id: string;
+    title: string;
+    slug: string;
+    featured_image_id: string | null;
+    og_image_id: string | null;
+    content_json: unknown;
+  }>;
+  const authors = (authorRows || []) as Array<{
+    id: string;
+    name: string;
+    slug: string;
+    image_asset_id: string | null;
+  }>;
+
+  const featuredRefs = posts
+    .filter((post) => post.featured_image_id === id)
+    .map((post) => ({ id: post.id, title: post.title, slug: post.slug }));
+  const ogRefs = posts
+    .filter((post) => post.og_image_id === id)
+    .map((post) => ({ id: post.id, title: post.title, slug: post.slug }));
+  const authorRefs = authors
+    .filter((author) => author.image_asset_id === id)
+    .map((author) => ({ id: author.id, title: author.name, slug: author.slug }));
+
+  const contentBlockRefs = posts
+    .filter((post) => countAssetIdReferences(post.content_json, id) > 0)
+    .map((post) => ({ id: post.id, title: post.title, slug: post.slug }));
+  const contentBlockCount = posts.reduce((sum, post) => sum + countAssetIdReferences(post.content_json, id), 0);
+
+  let episodeHeroRefs: MediaAssetUsageReference[] = [];
+  try {
+    const { data: episodeEditorialRows, error: episodeEditorialError } = await supabase
+      .from('podcast_episode_editorial')
+      .select('episode_id')
+      .eq('hero_image_storage_path', asset.storage_path);
+    if (episodeEditorialError) throw episodeEditorialError;
+
+    const episodeIds = [...new Set((episodeEditorialRows || []).map((row) => row.episode_id).filter(Boolean))];
+    if (episodeIds.length) {
+      const { data: episodeRows, error: episodesError } = await supabase
+        .from('podcast_episodes')
+        .select('id,title,slug')
+        .in('id', episodeIds);
+      if (episodesError) throw episodesError;
+      episodeHeroRefs = ((episodeRows || []) as Array<{ id: string; title: string; slug: string }>)
+        .map((row) => ({ id: row.id, title: row.title, slug: row.slug }));
+    }
+  } catch (error) {
+    if (!isMissingEpisodeEditorialError(error)) throw error;
+  }
+
+  const counts = {
+    featuredPosts: featuredRefs.length,
+    ogPosts: ogRefs.length,
+    authorProfiles: authorRefs.length,
+    contentBlocks: contentBlockCount,
+    episodeHeroImages: episodeHeroRefs.length
+  };
+  const totalUsage = counts.featuredPosts + counts.ogPosts + counts.authorProfiles + counts.contentBlocks + counts.episodeHeroImages;
+
+  return {
+    assetId: id,
+    storagePath: asset.storage_path,
+    canDelete: totalUsage === 0,
+    totalUsage,
+    counts,
+    references: {
+      featuredPosts: featuredRefs.slice(0, 20),
+      ogPosts: ogRefs.slice(0, 20),
+      authorProfiles: authorRefs.slice(0, 20),
+      contentBlocks: contentBlockRefs.slice(0, 20),
+      episodeHeroImages: episodeHeroRefs.slice(0, 20)
+    }
+  };
+}
+
+export async function deleteMediaAssetById(id: string) {
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from('media_assets').delete().eq('id', id).select('*').maybeSingle();
+  if (error) throw error;
+  return (data as MediaAssetRecord | null) || null;
 }
 
 export async function createMediaAsset(input: {
@@ -878,9 +1590,17 @@ export async function saveBlogPost(postId: string | null, input: unknown, option
 
   const categoriesMap = await getTaxonomyItemsByIds(supabase, 'categories', payload.taxonomy.categoryIds);
   const tagsMap = await getTaxonomyItemsByIds(supabase, 'tags', payload.taxonomy.tagIds);
-  const seriesMap = await getTaxonomyItemsByIds(supabase, 'series', payload.taxonomy.seriesIds);
-  const topicsMap = await getTaxonomyItemsByIds(supabase, 'topic_clusters', payload.taxonomy.topicClusterIds);
-  const labelsMap = await getTaxonomyItemsByIds(supabase, 'post_labels', payload.taxonomy.labelIds);
+  const discoveryIds = [
+    ...(payload.discovery.primaryTopicId ? [payload.discovery.primaryTopicId] : []),
+    ...payload.discovery.topicIds,
+    ...payload.discovery.themeIds,
+    ...payload.discovery.entityIds,
+    ...payload.discovery.caseIds,
+    ...payload.discovery.eventIds,
+    ...payload.discovery.collectionIds,
+    ...payload.discovery.seriesIds
+  ];
+  const discoveryTermsMap = await getDiscoveryTermsByIds(supabase, [...new Set(discoveryIds)]);
   const episodesMap = await getEpisodesByIds(
     supabase,
     payload.linkedEpisodes.map((item) => item.episodeId)
@@ -900,7 +1620,10 @@ export async function saveBlogPost(postId: string | null, input: unknown, option
     focusKeyword: payload.seo.focusKeyword,
     canonicalUrl: payload.seo.canonicalUrl,
     document,
-    excerpt: payload.excerpt
+    excerpt: payload.excerpt,
+    hasAuthor: Boolean(payload.authorId),
+    hasPrimaryCategory: Boolean(payload.discovery.primaryTopicId),
+    hasLinkedEpisode: payload.linkedEpisodes.length > 0
   });
 
   const searchPlaintext = serializeSearchPlaintext({
@@ -909,9 +1632,9 @@ export async function saveBlogPost(postId: string | null, input: unknown, option
     contentPlain: plainText,
     categories: payload.taxonomy.categoryIds.map((id) => categoriesMap.get(id)).filter(Boolean) as TaxonomyItem[],
     tags: payload.taxonomy.tagIds.map((id) => tagsMap.get(id)).filter(Boolean) as TaxonomyItem[],
-    series: payload.taxonomy.seriesIds.map((id) => seriesMap.get(id)).filter(Boolean) as TaxonomyItem[],
-    topics: payload.taxonomy.topicClusterIds.map((id) => topicsMap.get(id)).filter(Boolean) as TaxonomyItem[],
-    labels: payload.taxonomy.labelIds.map((id) => labelsMap.get(id)).filter(Boolean) as TaxonomyItem[],
+    discoveryTerms: discoveryIds
+      .map((id) => discoveryTermsMap.get(id)?.name || '')
+      .filter(Boolean),
     episodes: payload.linkedEpisodes.map((item) => episodesMap.get(item.episodeId)).filter(Boolean) as PodcastEpisodeRecord[]
   });
 
@@ -968,6 +1691,7 @@ export async function saveBlogPost(postId: string | null, input: unknown, option
   const savedId = upsert.data.id as string;
 
   await syncTaxonomyLinks(supabase, savedId, payload.taxonomy);
+  await syncBlogPostDiscovery(supabase, savedId, payload.discovery);
   await syncEpisodeLinks(supabase, savedId, payload.linkedEpisodes);
   await syncRelatedOverrides(supabase, savedId, payload.relatedPostIds);
 
@@ -988,7 +1712,10 @@ export async function saveBlogPost(postId: string | null, input: unknown, option
       contentJson: document,
       contentMarkdown: markdown,
       seoSnapshot: payload.seo,
-      taxonomySnapshot: payload.taxonomy,
+      taxonomySnapshot: {
+        taxonomy: payload.taxonomy,
+        discovery: payload.discovery
+      },
       linkedEpisodesSnapshot: payload.linkedEpisodes
     });
   }
@@ -1023,9 +1750,19 @@ async function getBlogPostForMutation(id: string): Promise<BlogPostWriteInput> {
     taxonomy: {
       categoryIds: post.taxonomies.categories.map((item: TaxonomyItem) => item.id),
       tagIds: post.taxonomies.tags.map((item: TaxonomyItem) => item.id),
-      seriesIds: post.taxonomies.series.map((item: TaxonomyItem) => item.id),
-      topicClusterIds: post.taxonomies.topicClusters.map((item: TaxonomyItem) => item.id),
-      labelIds: post.taxonomies.labels.map((item: TaxonomyItem) => item.id)
+      seriesIds: [],
+      topicClusterIds: [],
+      labelIds: []
+    },
+    discovery: {
+      primaryTopicId: post.discovery.primaryTopicId,
+      topicIds: post.discovery.topicIds,
+      themeIds: post.discovery.themeIds,
+      entityIds: post.discovery.entityIds,
+      caseIds: post.discovery.caseIds,
+      eventIds: post.discovery.eventIds,
+      collectionIds: post.discovery.collectionIds,
+      seriesIds: post.discovery.seriesIds
     },
     linkedEpisodes: post.linked_episodes.map((item: { episode: PodcastEpisodeRecord; sort_order: number; is_primary: boolean }) => ({
       episodeId: item.episode.id,
@@ -1094,17 +1831,39 @@ export async function restoreBlogRevision(postId: string, revisionId: string) {
   if (error) throw error;
   const current = await getBlogPostForMutation(postId);
   const normalizedSnapshot = normalizeBlogDocument(data.content_json_snapshot);
+  const legacySnapshot = (data.taxonomy_snapshot || {}) as Record<string, any>;
+  const taxonomySnapshot = legacySnapshot.taxonomy || legacySnapshot;
+  const discoverySnapshot = legacySnapshot.discovery || {
+    primaryTopicId: Array.isArray(legacySnapshot.topicClusterIds) ? legacySnapshot.topicClusterIds[0] || null : null,
+    topicIds: Array.isArray(legacySnapshot.topicClusterIds) ? legacySnapshot.topicClusterIds.slice(1) : [],
+    themeIds: [],
+    entityIds: [],
+    caseIds: [],
+    eventIds: [],
+    collectionIds: [],
+    seriesIds: Array.isArray(legacySnapshot.seriesIds) ? legacySnapshot.seriesIds : []
+  };
   return saveBlogPost(postId, {
     ...current,
     title: data.title_snapshot,
     excerpt: data.excerpt_snapshot,
     contentJson: normalizedSnapshot,
     taxonomy: {
-      categoryIds: data.taxonomy_snapshot?.categoryIds || [],
-      tagIds: data.taxonomy_snapshot?.tagIds || [],
-      seriesIds: data.taxonomy_snapshot?.seriesIds || [],
-      topicClusterIds: data.taxonomy_snapshot?.topicClusterIds || [],
-      labelIds: data.taxonomy_snapshot?.labelIds || []
+      categoryIds: taxonomySnapshot?.categoryIds || [],
+      tagIds: taxonomySnapshot?.tagIds || [],
+      seriesIds: taxonomySnapshot?.seriesIds || [],
+      topicClusterIds: taxonomySnapshot?.topicClusterIds || [],
+      labelIds: taxonomySnapshot?.labelIds || []
+    },
+    discovery: {
+      primaryTopicId: discoverySnapshot?.primaryTopicId || null,
+      topicIds: discoverySnapshot?.topicIds || [],
+      themeIds: discoverySnapshot?.themeIds || [],
+      entityIds: discoverySnapshot?.entityIds || [],
+      caseIds: discoverySnapshot?.caseIds || [],
+      eventIds: discoverySnapshot?.eventIds || [],
+      collectionIds: discoverySnapshot?.collectionIds || [],
+      seriesIds: discoverySnapshot?.seriesIds || []
     },
     linkedEpisodes: data.linked_episodes_snapshot || [],
     seo: {
@@ -1161,6 +1920,32 @@ export async function listPublishedBlogPosts(params?: { page?: number; limit?: n
     items,
     pagination
   };
+}
+
+export type BlogPostSitemapRecord = {
+  slug: string;
+  author_id: string;
+  canonical_url: string | null;
+  noindex: boolean;
+  published_at: string | null;
+  updated_at: string;
+};
+
+export async function listPublishedBlogPostsForSitemap() {
+  const supabase = getSupabase();
+  const nowIso = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from('blog_posts')
+    .select('slug, author_id, canonical_url, noindex, published_at, updated_at')
+    .is('deleted_at', null)
+    .eq('status', 'published')
+    .lte('published_at', nowIso)
+    .order('published_at', { ascending: false })
+    .order('updated_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as BlogPostSitemapRecord[];
 }
 
 export async function listFeaturedBlogPosts(params?: { limit?: number }) {
@@ -1362,11 +2147,11 @@ async function getRelatedPostsForPost(postId: string) {
   return hydratePosts((posts || []) as BlogPostRecord[]);
 }
 
-export async function listTaxonomyArchive(kind: Exclude<TaxonomyKind, 'blog_authors'>, slug: string, page = 1) {
+export async function listTaxonomyArchive(kind: TaxonomyKind, slug: string, page = 1) {
   const supabase = getSupabase();
   const normalizedPage = normalizePageNumber(page);
   const config = TAXONOMY_CONFIG[kind];
-  const { data: term, error: termError } = await supabase.from(config.table).select('*').eq('slug', slug).maybeSingle();
+  const { data: term, error: termError } = await supabase.from(config.table).select('*').eq('slug', slug).eq('is_active', true).maybeSingle();
   if (termError) throw termError;
   if (!term) return null;
   const { data: joinData, error: joinError } = await supabase
@@ -1425,10 +2210,27 @@ export async function listTaxonomyArchive(kind: Exclude<TaxonomyKind, 'blog_auth
   };
 }
 
+export async function resolveLegacyBlogTaxonomyRedirect(kind: 'series' | 'topic', slug: string) {
+  const supabase = getSupabase();
+  const normalizedSlug = slugifyBlogText(slug);
+  if (!normalizedSlug) return null;
+
+  const { data, error } = await supabase
+    .from('discovery_terms')
+    .select('slug')
+    .eq('term_type', kind === 'series' ? 'series' : 'topic')
+    .eq('slug', normalizedSlug)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return kind === 'series' ? `/series/${data.slug}` : `/topics/${data.slug}`;
+}
+
 export async function listAuthorArchive(slug: string, page = 1) {
   const supabase = getSupabase();
   const normalizedPage = normalizePageNumber(page);
-  const { data: author, error: authorError } = await supabase.from('blog_authors').select('*').eq('slug', slug).maybeSingle();
+  const { data: author, error: authorError } = await supabase.from('blog_authors').select('*').eq('slug', slug).eq('is_active', true).maybeSingle();
   if (authorError) throw authorError;
   if (!author) return null;
   const offset = (normalizedPage - 1) * SEARCH_PAGE_SIZE;

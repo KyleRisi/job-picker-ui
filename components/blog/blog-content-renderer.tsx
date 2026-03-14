@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { EpisodeMediaPlayer } from '@/components/episode-media-player';
-import { EpisodeCard } from '@/components/episodes-browser';
+import { CompactEpisodeRow, EpisodeCard } from '@/components/episodes-browser';
 import { FeaturedEpisodeShowcase } from '@/components/featured-episode-showcase';
+import { TranscriptBlock } from '@/components/blog/transcript-block';
 import { getImageBlockLayout } from '@/lib/blog/image-layout';
 import { getStoragePublicUrl } from '@/lib/blog/media-url';
 import { toYouTubeEmbedUrl } from '@/lib/blog/youtube';
@@ -10,13 +11,58 @@ import type { BlogContentDocument, RichTextInlineNode } from '@/lib/blog/schema'
 import type { MediaAssetRecord, PodcastEpisodeRecord } from '@/lib/blog/data';
 import type { PodcastEpisode } from '@/lib/podcast-shared';
 
+function decodeBasicEntities(input: string) {
+  return input
+    .replace(/&nbsp;/gi, '\u00a0')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>');
+}
+
+function renderMarkdownishText(input: string) {
+  const decoded = decodeBasicEntities(input || '');
+  const boldRegex = /(\*\*[^*]+?\*\*|__[^_]+?__)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null = null;
+  let key = 0;
+
+  while ((match = boldRegex.exec(decoded)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(decoded.slice(lastIndex, match.index));
+    }
+    const raw = match[0];
+    const boldText = raw.startsWith('**') ? raw.slice(2, -2) : raw.slice(2, -2);
+    parts.push(<strong key={`md-bold-${key++}`}>{boldText}</strong>);
+    lastIndex = match.index + raw.length;
+  }
+
+  if (!parts.length) return decoded;
+  if (lastIndex < decoded.length) {
+    parts.push(decoded.slice(lastIndex));
+  }
+  return parts;
+}
+
+function normalizeInlineHref(rawHref: string) {
+  const href = `${rawHref || ''}`.trim();
+  if (!href) return '#';
+  if (href.startsWith('/') || href.startsWith('#')) return href;
+  if (/^(https?:)?\/\//i.test(href)) return href;
+  if (/^(mailto:|tel:)/i.test(href)) return href;
+  return `https://${href}`;
+}
+
 function renderInline(nodes: RichTextInlineNode[], onDark = false) {
   const inlineCodeClass = onDark ? 'rounded bg-white/15 px-1 py-0.5 text-white' : 'rounded bg-carnival-ink/10 px-1 py-0.5';
   const linkClass = onDark ? 'text-carnival-gold underline underline-offset-2' : 'text-carnival-red underline underline-offset-2';
 
   return nodes.map((node, index) => {
     if (node.type === 'hard_break') return <br key={`br-${index}`} />;
-    let content: React.ReactNode = node.text;
+    let content: React.ReactNode = renderMarkdownishText(node.text || '');
     (node.marks || []).forEach((mark) => {
       if (mark.type === 'bold') content = <strong key={`b-${index}`}>{content}</strong>;
       if (mark.type === 'italic') content = <em key={`i-${index}`}>{content}</em>;
@@ -26,15 +72,18 @@ function renderInline(nodes: RichTextInlineNode[], onDark = false) {
       if (mark.type === 'color') content = <span key={`color-${index}`} style={{ color: mark.value }}>{content}</span>;
       if (mark.type === 'font_size') content = <span key={`font-${index}`} style={{ fontSize: mark.value, lineHeight: 1.6 }}>{content}</span>;
       if (mark.type === 'link') {
-        const external = /^https?:\/\//i.test(mark.href);
-        content = external ? (
-          <a key={`l-${index}`} href={mark.href} target={mark.target || '_blank'} rel={mark.rel || 'noreferrer'} className={linkClass}>
+        const normalizedHref = normalizeInlineHref(mark.href || '');
+        const external = /^(https?:)?\/\//i.test(normalizedHref) || /^(mailto:|tel:)/i.test(normalizedHref);
+        content = (
+          <a
+            key={`l-${index}`}
+            href={normalizedHref}
+            target={external ? '_blank' : undefined}
+            rel={external ? 'noreferrer' : undefined}
+            className={linkClass}
+          >
             {content}
           </a>
-        ) : (
-          <Link key={`l-${index}`} href={mark.href} className={linkClass}>
-            {content}
-          </Link>
         );
       }
     });
@@ -47,13 +96,22 @@ function getAssetUrl(asset: MediaAssetRecord | undefined | null, src?: string) {
   return src || '';
 }
 
+function normalizeCtaHref(rawHref: string) {
+  const href = `${rawHref || ''}`.trim();
+  if (!href) return '#';
+  if (href.startsWith('/') || href.startsWith('#')) return href;
+  if (/^(https?:)?\/\//i.test(href)) return href;
+  if (/^(mailto:|tel:)/i.test(href)) return href;
+  return `https://${href}`;
+}
+
 function toPodcastEpisodeCard(episode: PodcastEpisodeRecord): PodcastEpisode {
   return {
     id: episode.id,
     slug: episode.slug,
     title: episode.title,
     seasonNumber: null,
-    episodeNumber: null,
+    episodeNumber: episode.episode_number ?? null,
     publishedAt: episode.published_at || '',
     description: episode.description_plain || '',
     descriptionHtml: episode.description_html || '',
@@ -122,20 +180,20 @@ export function BlogContentRenderer({
           );
         }
         if (block.type === 'cta_button') {
-          const external = /^https?:\/\//i.test(block.href);
+          const href = normalizeCtaHref(block.href);
+          const external = /^(https?:)?\/\//i.test(href) || /^(mailto:|tel:)/i.test(href);
           const ctaClassName = 'btn-primary !text-white visited:!text-white hover:!text-white !no-underline hover:!no-underline';
           const alignClass = block.align === 'left' ? 'justify-start' : block.align === 'right' ? 'justify-end' : 'justify-center';
           return (
             <div key={block.id} className={`flex ${alignClass}`}>
-              {external ? (
-                <a href={block.href} target="_blank" rel="noreferrer" className={ctaClassName}>
-                  {block.label}
-                </a>
-              ) : (
-                <Link href={block.href || '#'} className={ctaClassName}>
-                  {block.label}
-                </Link>
-              )}
+              <a
+                href={href}
+                target={external ? '_blank' : undefined}
+                rel={external ? 'noreferrer' : undefined}
+                className={ctaClassName}
+              >
+                {block.label}
+              </a>
             </div>
           );
         }
@@ -261,7 +319,7 @@ export function BlogContentRenderer({
               heading={block.heading || 'Listen to the linked episode'}
               headingClassName="text-2xl font-black text-white"
             >
-              <EpisodeCard episode={toPodcastEpisodeCard(episode)} featured />
+              <EpisodeCard episode={toPodcastEpisodeCard(episode)} featured featuredDesktopTextLarger />
             </FeaturedEpisodeShowcase>
           );
         }
@@ -287,15 +345,12 @@ export function BlogContentRenderer({
         }
         if (block.type === 'related_episodes') {
           return linkedEpisodes.length ? (
-            <section key={block.id} className="space-y-2">
+            <section key={block.id} className="space-y-3">
               <h3 className={`text-xl font-black ${headingClass}`}>{block.heading}</h3>
-              <ul className="space-y-1.5 pl-4">
+              <ul className="space-y-4 [&_a]:!text-inherit [&_a]:!no-underline">
                 {linkedEpisodes.map((item) => (
-                  <li key={item.episode.id} className="flex items-baseline gap-1.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 translate-y-[2px]"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                    <Link href={`/episodes/${item.episode.slug}`} className="font-semibold text-white/80 no-underline hover:text-white">
-                      {item.episode.title}
-                    </Link>
+                  <li key={item.episode.id}>
+                    <CompactEpisodeRow episode={toPodcastEpisodeCard(item.episode)} />
                   </li>
                 ))}
               </ul>
@@ -310,9 +365,9 @@ export function BlogContentRenderer({
                 {relatedPosts.map((item) => (
                   <li key={item.id} className="flex items-baseline gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 translate-y-[2px]"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                    <Link href={`/blog/${item.slug}`} className="font-semibold text-white/80 no-underline hover:text-white">
+                    <a href={`/blog/${item.slug}`} target="_blank" rel="noreferrer" className="font-semibold text-white/80 no-underline hover:text-white">
                       {item.title}
-                    </Link>
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -326,7 +381,7 @@ export function BlogContentRenderer({
               <div className="space-y-1.5 pl-4">
                 {block.items.map((item) => (
                   <details key={item.id} className="group">
-                    <summary className="flex cursor-pointer items-baseline gap-1.5 font-bold text-white/80 hover:text-white">
+                    <summary className={`flex cursor-pointer items-baseline gap-1.5 font-bold ${isDark ? 'text-white/80 hover:text-white' : 'text-carnival-ink/85 hover:text-carnival-ink'}`}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 translate-y-[2px] transition group-open:rotate-90"><polyline points="9 18 15 12 9 6"/></svg>
                       {item.question}
                     </summary>
@@ -335,6 +390,16 @@ export function BlogContentRenderer({
                 ))}
               </div>
             </section>
+          );
+        }
+        if (block.type === 'transcript') {
+          return (
+            <TranscriptBlock
+              key={block.id}
+              heading={block.heading || 'Episode transcript'}
+              content={block.content}
+              theme={theme}
+            />
           );
         }
         return null;

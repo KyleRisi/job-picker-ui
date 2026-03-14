@@ -1,77 +1,14 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';
-import Script from 'next/script';
 import { PodcastPlaybackProvider } from '@/components/podcast-playback-provider';
 import { AppShell } from '@/components/app-shell';
-import { DevExtensionErrorGuard } from '@/components/dev-extension-error-guard';
-import { MixpanelProvider } from '@/components/mixpanel-provider';
 import { getPublicSiteUrl } from '@/lib/site-url';
 
 const poppins = Poppins({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800', '900']
 });
-
-const DEV_RUNTIME_NOISE_GUARD_SCRIPT = `
-(() => {
-  if (typeof window === 'undefined') return;
-  if (window.__compendiumDevNoiseGuardInstalled) return;
-  window.__compendiumDevNoiseGuardInstalled = true;
-
-  const patterns = [
-    'runtime.lasterror',
-    'could not establish connection',
-    'receiving end does not exist',
-    'chrome-extension://',
-    'moz-extension://',
-    'metamask',
-    'inpage.js',
-    'lockdown-install.js',
-    '_next/webpack-hmr'
-  ];
-
-  const toText = (value) => {
-    if (!value) return '';
-    if (typeof value === 'string') return value;
-    if (value instanceof Error) return value.message + '\\n' + (value.stack || '');
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return String(value);
-    }
-  };
-
-  const isNoise = (value) => {
-    const text = String(value || '').toLowerCase();
-    return patterns.some((pattern) => text.includes(pattern));
-  };
-
-  window.addEventListener('error', (event) => {
-    const details = [event.message, event.filename, toText(event.error)].join('\\n');
-    if (!isNoise(details)) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-  }, true);
-
-  window.addEventListener('unhandledrejection', (event) => {
-    const details = toText(event.reason);
-    if (!isNoise(details)) return;
-    event.preventDefault();
-  }, true);
-})();
-`;
-
-const HOTJAR_TRACKING_SCRIPT = `
-    (function(h,o,t,j,a,r){
-        h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
-        h._hjSettings={hjid:5098440,hjsv:6};
-        a=o.getElementsByTagName('head')[0];
-        r=o.createElement('script');r.async=1;
-        r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
-        a.appendChild(r);
-    })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
-`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(getPublicSiteUrl()),
@@ -158,19 +95,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={poppins.className}>
-        {process.env.NODE_ENV === 'production' ? (
-          <Script id="hotjar-tracking" strategy="beforeInteractive">
-            {HOTJAR_TRACKING_SCRIPT}
-          </Script>
-        ) : null}
-        {process.env.NODE_ENV !== 'production' ? (
-          <Script id="dev-runtime-noise-guard" strategy="beforeInteractive">
-            {DEV_RUNTIME_NOISE_GUARD_SCRIPT}
-          </Script>
-        ) : null}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }} />
-        <DevExtensionErrorGuard />
-        <MixpanelProvider />
         <PodcastPlaybackProvider>
           <AppShell>{children}</AppShell>
         </PodcastPlaybackProvider>

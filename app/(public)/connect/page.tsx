@@ -31,11 +31,10 @@ export default function ConnectPage() {
     <section className="full-bleed relative -mt-8 -mb-8 overflow-hidden bg-carnival-ink pb-14 md:pb-20">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[72vh] md:h-[78vh]" aria-hidden="true">
         <Image
-          src="/cover-banner-hero.jpg"
+          src="/Cover Banner.png"
           alt="Kyle and Adam from The Compendium Podcast"
           fill
           priority
-          quality={74}
           className="-translate-y-[60px] object-cover object-[50%_0%] md:-translate-y-[18vh]"
           sizes="100vw"
         />
@@ -87,7 +86,7 @@ export default function ConnectPage() {
               </p>
               <Link
                 href="/connect/press-kit"
-                className="mt-4 inline-flex rounded-full bg-carnival-red px-5 py-2.5 text-xs font-black uppercase tracking-wide text-white shadow-lg transition hover:brightness-110"
+                className="mt-5 inline-flex items-center justify-center rounded-full bg-carnival-red px-6 py-3 text-sm font-black uppercase tracking-wide text-white shadow-lg transition hover:brightness-110"
               >
                 Open Press Kit
               </Link>

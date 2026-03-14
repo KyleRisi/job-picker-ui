@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createWebsiteReview } from '@/lib/reviews';
-import { sendNewReviewNotificationEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,27 +36,13 @@ export async function POST(request: NextRequest) {
     }
 
     /* ─── Build review object ─── */
-    const created = await createWebsiteReview({
+    await createWebsiteReview({
       title,
       body,
       rating,
       author: name,
       country
     });
-
-    try {
-      await sendNewReviewNotificationEmail({
-        reviewerName: name,
-        reviewerEmail: email,
-        title: created.title,
-        body: created.body,
-        rating: created.rating,
-        country: created.country,
-        source: 'website'
-      });
-    } catch (emailError) {
-      console.error('Review notification email failed:', emailError);
-    }
 
     return NextResponse.json({
       ok: true,

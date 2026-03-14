@@ -16,7 +16,10 @@ export function JobsTabs({
   showFilledNames: boolean;
   applicationsClosed?: boolean;
 }) {
+  const INITIAL_AVAILABLE_COUNT = 12;
+  const REVEAL_STEP = 12;
   const [tab, setTab] = useState<'available' | 'filled'>('available');
+  const [visibleAvailableCount, setVisibleAvailableCount] = useState(INITIAL_AVAILABLE_COUNT);
   const normalizeStatus = (status: string) => status.trim().toUpperCase();
 
   const available = useMemo(
@@ -34,6 +37,13 @@ export function JobsTabs({
         }),
     [jobs]
   );
+
+  const visibleAvailable = useMemo(
+    () => available.slice(0, visibleAvailableCount),
+    [available, visibleAvailableCount]
+  );
+  const remainingAvailable = Math.max(available.length - visibleAvailable.length, 0);
+  const canLoadMoreAvailable = tab === 'available' && remainingAvailable > 0;
 
   return (
     <section>
@@ -82,7 +92,7 @@ export function JobsTabs({
         className="grid gap-4 px-1 sm:px-0 md:grid-cols-2 xl:grid-cols-3"
       >
         {tab === 'available'
-          ? available.map((job) => (
+            ? visibleAvailable.map((job) => (
               <JobCard
                 key={job.id}
                 job={job}
@@ -101,6 +111,19 @@ export function JobsTabs({
               />
             ))}
       </div>
+        {canLoadMoreAvailable ? (
+          <div className="pt-6 text-center">
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() =>
+                setVisibleAvailableCount((v) => Math.min(v + REVEAL_STEP, available.length))
+              }
+            >
+              Load More Roles ({remainingAvailable} remaining)
+            </button>
+          </div>
+        ) : null}
     </section>
   );
 }

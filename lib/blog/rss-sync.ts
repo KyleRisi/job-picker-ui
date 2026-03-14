@@ -59,6 +59,13 @@ type RssEpisode = {
   last_synced_at: string;
 };
 
+export type EpisodeRssSyncMode = 'auto' | 'full' | 'metadata_without_content';
+
+type SyncPodcastEpisodesOptions = {
+  mode?: EpisodeRssSyncMode;
+  episodeId?: string;
+};
+
 function parseFeedItem(item: Record<string, unknown>, usedSlugs: Set<string>): RssEpisode {
   const title = getText(item.title) || 'Untitled episode';
   const guid = getText(item.guid) || getText((item.enclosure as { url?: unknown } | undefined)?.url) || title;
@@ -94,7 +101,34 @@ function parseFeedItem(item: Record<string, unknown>, usedSlugs: Set<string>): R
   };
 }
 
-export async function syncPodcastEpisodes() {
+function buildExistingEpisodeUpdatePayload(episode: RssEpisode, mode: EpisodeRssSyncMode) {
+  if (mode === 'full') {
+    return {
+      ...episode,
+      is_visible: true,
+      is_archived: false
+    };
+  }
+
+  if (mode === 'metadata_without_content') {
+    return {
+      published_at: episode.published_at,
+      audio_url: episode.audio_url,
+      artwork_url: episode.artwork_url,
+      last_synced_at: episode.last_synced_at
+    };
+  }
+
+  return {
+    published_at: episode.published_at,
+    audio_url: episode.audio_url,
+    artwork_url: episode.artwork_url,
+    last_synced_at: episode.last_synced_at
+  };
+}
+
+export async function syncPodcastEpisodes(options: SyncPodcastEpisodesOptions = {}) {
+  const mode = options.mode || 'auto';
   const supabase = createSupabaseAdminClient();
   const startedAt = new Date().toISOString();
   const { data: logRow, error: logError } = await supabase
@@ -127,12 +161,34 @@ export async function syncPodcastEpisodes() {
     const usedSlugs = new Set<string>();
     const episodes = items.map((item) => parseFeedItem(item, usedSlugs));
 
+    let targetRssGuid: string | null = null;
+    if (options.episodeId) {
+      const { data: existingEpisode, error: existingEpisodeError } = await supabase
+        .from('podcast_episodes')
+        .select('id, rss_guid')
+        .eq('id', options.episodeId)
+        .maybeSingle();
+      if (existingEpisodeError) throw existingEpisodeError;
+      if (!existingEpisode) {
+        throw new Error('Episode not found.');
+      }
+      targetRssGuid = existingEpisode.rss_guid;
+    }
+
+    const episodesToSync = targetRssGuid
+      ? episodes.filter((item) => item.rss_guid === targetRssGuid)
+      : episodes;
+
+    if (targetRssGuid && episodesToSync.length === 0) {
+      throw new Error('Episode was not found in the current RSS feed.');
+    }
+
     let recordsAdded = 0;
     let recordsUpdated = 0;
     let recordsSkipped = 0;
     const errors: string[] = [];
 
-    for (const episode of episodes) {
+    for (const episode of episodesToSync) {
       try {
         const { data: existing, error: existingError } = await supabase
           .from('podcast_episodes')
@@ -141,19 +197,19 @@ export async function syncPodcastEpisodes() {
           .maybeSingle();
         if (existingError) throw existingError;
 
-        const payload = {
-          ...episode,
-          is_visible: true,
-          is_archived: false
-        };
-
         if (!existing) {
+          const payload = {
+            ...episode,
+            is_visible: true,
+            is_archived: false
+          };
           const insert = await supabase.from('podcast_episodes').insert(payload);
           if (insert.error) throw insert.error;
           recordsAdded += 1;
           continue;
         }
 
+        const payload = buildExistingEpisodeUpdatePayload(episode, mode);
         const update = await supabase.from('podcast_episodes').update(payload).eq('id', existing.id);
         if (update.error) throw update.error;
         recordsUpdated += 1;
@@ -179,7 +235,8 @@ export async function syncPodcastEpisodes() {
     return {
       recordsAdded,
       recordsUpdated,
-      recordsSkipped
+      recordsSkipped,
+      mode
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'RSS sync failed.';

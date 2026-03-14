@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { BlogListingPage } from '@/components/blog/blog-listing-page';
-import { listTaxonomyArchive, normalizePageNumber } from '@/lib/blog/data';
+import { listTaxonomyArchive } from '@/lib/blog/data';
 
 export const revalidate = 300;
 
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: { seriesSlug: strin
 }
 
 export default async function BlogSeriesPage({ params, searchParams }: { params: { seriesSlug: string }; searchParams: { page?: string } }) {
-  const archive = await listTaxonomyArchive('series', params.seriesSlug, normalizePageNumber(searchParams.page));
+  const archive = await listTaxonomyArchive('series', params.seriesSlug, Number.parseInt(searchParams.page || '1', 10));
   if (!archive) notFound();
   return (
     <BlogListingPage

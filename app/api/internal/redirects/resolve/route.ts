@@ -7,8 +7,8 @@ import { normalizePath, shouldSkipRedirectLookup } from '@/lib/redirects';
 type ResolveRow = {
   id: string;
   source_path: string;
-  target_url: string;
-  status_code: 301 | 302 | 307 | 308;
+  target_url: string | null;
+  status_code: 301 | 302 | 307 | 308 | 410;
   match_type: 'exact' | 'prefix';
   priority: number;
 };

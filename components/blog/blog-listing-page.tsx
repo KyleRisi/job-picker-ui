@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { CompactPagination } from '@/components/compact-pagination';
 import { BlogPostCard } from '@/components/blog/blog-post-card';
 import { LiveSearchInput } from '@/components/live-search-input';
 import { getStoragePublicUrl } from '@/lib/blog/media-url';
 import type { MediaAssetRecord } from '@/lib/blog/data';
-import { trackMixpanel } from '@/lib/mixpanel-browser';
 
 type ListingPost = {
   id: string;
@@ -185,7 +185,6 @@ export function BlogListingPage({
   const [hasMoreByTab, setHasMoreByTab] = useState<Record<string, boolean>>(() => initialHasMoreByTab);
   const [loadingByTab, setLoadingByTab] = useState<Record<string, boolean>>({});
   const [errorByTab, setErrorByTab] = useState<Record<string, string | null>>({});
-  const lastTrackedSearchRef = useRef('');
   const normalizedQuery = query.trim().toLowerCase();
 
   function pageUrl(page: number) {
@@ -223,7 +222,6 @@ export function BlogListingPage({
   const errorForActive = errorByTab[activeCategory] || null;
 
   const sectionTitleClass = onDark ? 'text-xl font-black text-white sm:text-2xl' : 'text-xl font-black sm:text-2xl';
-  const pageInfoClass = onDark ? 'text-sm text-white/70' : 'text-sm text-carnival-ink/65';
   const tabActiveClass = onDark ? 'text-white' : 'text-carnival-ink';
   const tabInactiveClass = onDark ? 'text-white/55 hover:text-white/85' : 'text-carnival-ink/55 hover:text-carnival-ink/80';
   const emptyClass = onDark ? 'text-white/70' : 'text-carnival-ink/70';
@@ -242,27 +240,6 @@ export function BlogListingPage({
       ariaLabel="Search posts"
     />
   );
-
-  useEffect(() => {
-    if (!normalizedQuery) {
-      lastTrackedSearchRef.current = '';
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      const signature = `${activeCategory}::${normalizedQuery}::${visiblePosts.length}`;
-      if (signature === lastTrackedSearchRef.current) return;
-      lastTrackedSearchRef.current = signature;
-
-      trackMixpanel('Search', {
-        search_query: normalizedQuery,
-        user_id: null,
-        results_count: visiblePosts.length
-      });
-    }, 350);
-
-    return () => window.clearTimeout(timeout);
-  }, [activeCategory, normalizedQuery, visiblePosts.length]);
 
   async function handleLoadMore() {
     const tabKey = activeCategory;
@@ -425,13 +402,12 @@ export function BlogListingPage({
       )}
 
       {!useMagazineLayout && !hasSearchQuery ? (
-        <div className="flex items-center justify-between">
-          <p className={pageInfoClass}>Page {pagination.page} of {pagination.totalPages}</p>
-          <div className="flex gap-2">
-            {pagination.page > 1 ? <Link href={pageUrl(pagination.page - 1)} className="btn-secondary">Previous</Link> : null}
-            {pagination.page < pagination.totalPages ? <Link href={pageUrl(pagination.page + 1)} className="btn-secondary">Next</Link> : null}
-          </div>
-        </div>
+        <CompactPagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          hrefForPage={pageUrl}
+          ariaLabel="Blog pagination"
+        />
       ) : null}
     </section>
   );

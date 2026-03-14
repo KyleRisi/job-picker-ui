@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
@@ -7,7 +8,7 @@ import { useRouter } from 'next/navigation';
 export function AdminActionMenu() {
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const router = useRouter();
-  const pathname = usePathname() || '/admin/jobs';
+  const pathname = usePathname();
   const searchParams = useSearchParams();
 
   function closeMenu() {
@@ -64,6 +65,15 @@ export function AdminActionMenu() {
         >
           Bulk Import Jobs
         </button>
+        <Link href="/admin/exports" className="block rounded px-3 py-2 hover:bg-carnival-cream" onClick={closeMenu}>
+          Exports
+        </Link>
+        <Link href="/admin/reviews" className="block rounded px-3 py-2 hover:bg-carnival-cream" onClick={closeMenu}>
+          Reviews
+        </Link>
+        <Link href="/admin/settings" className="block rounded px-3 py-2 hover:bg-carnival-cream" onClick={closeMenu}>
+          Settings
+        </Link>
       </div>
     </details>
   );

@@ -4,15 +4,15 @@ import { buildRedirectLocation, normalizePath, shouldSkipRedirectLookup } from '
 type ResolveItem = {
   id: string;
   source_path: string;
-  target_url: string;
-  status_code: 301 | 302 | 307 | 308;
+  target_url: string | null;
+  status_code: 301 | 302 | 307 | 308 | 410;
   match_type: 'exact' | 'prefix';
   priority: number;
 };
 
 type CacheEntry = {
   expiresAt: number;
-  item: ResolveItem | null;
+  item: ResolveItem;
 };
 
 const LOOKUP_TIMEOUT_MS = 1200;
@@ -63,9 +63,48 @@ function readFromCache(path: string): ResolveItem | null | undefined {
   return existing.item;
 }
 
-function writeToCache(path: string, item: ResolveItem | null) {
+function writeToCache(path: string, item: ResolveItem) {
   if (cache.size > 5000) cache.clear();
   cache.set(path, { item, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+function normalizeEpisodeSlugCandidate(value: string): string {
+  let decoded = value || '';
+  try {
+    decoded = decodeURIComponent(decoded);
+  } catch {
+    // Keep raw value when malformed escapes are present.
+  }
+
+  return decoded
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+}
+
+function getDeterministicLegacyEpisodeTarget(pathname: string): string | null {
+  const numberedEpisodePath = pathname.match(/^\/episodes\/episode-\d+-(.+)$/);
+  if (numberedEpisodePath?.[1]) {
+    const slug = normalizeEpisodeSlugCandidate(numberedEpisodePath[1]);
+    if (slug) return `/episodes/${slug}`;
+  }
+
+  const singularEpisodePath = pathname.match(/^\/episode\/(.+)$/);
+  if (singularEpisodePath?.[1]) {
+    const slug = normalizeEpisodeSlugCandidate(singularEpisodePath[1]);
+    if (slug) return `/episodes/${slug}`;
+  }
+
+  const podcastLegacyPath = pathname.match(/^\/podcast\/the-compendium-of-fascinating-things\/episode\/(.+)$/);
+  if (podcastLegacyPath?.[1]) {
+    const slug = normalizeEpisodeSlugCandidate(podcastLegacyPath[1]);
+    if (slug) return `/episodes/${slug}`;
+  }
+
+  return null;
 }
 
 async function resolveRedirect(req: NextRequest, normalizedPath: string): Promise<ResolveItem | null> {
@@ -73,7 +112,10 @@ async function resolveRedirect(req: NextRequest, normalizedPath: string): Promis
   if (cached !== undefined) return cached;
 
   const secret = process.env.REDIRECT_RESOLVE_SECRET || '';
-  if (!secret) return null;
+  if (!secret) {
+    console.error('[redirect resolve] REDIRECT_RESOLVE_SECRET is missing; skipping dynamic redirect lookup.');
+    return null;
+  }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), LOOKUP_TIMEOUT_MS);
@@ -95,7 +137,7 @@ async function resolveRedirect(req: NextRequest, normalizedPath: string): Promis
 
     const payload = (await response.json()) as { item?: ResolveItem | null };
     const item = payload.item || null;
-    writeToCache(normalizedPath, item);
+    if (item) writeToCache(normalizedPath, item);
     return item;
   } catch {
     return null;
@@ -111,8 +153,27 @@ export async function middleware(req: NextRequest) {
   const normalizedPath = normalizePath(req.nextUrl.pathname);
   if (shouldSkipRedirectLookup(normalizedPath)) return withBaselineHeaders(req, NextResponse.next());
 
+  const deterministicEpisodeTarget = getDeterministicLegacyEpisodeTarget(normalizedPath);
+  if (deterministicEpisodeTarget && deterministicEpisodeTarget !== normalizedPath) {
+    const destination = buildRedirectLocation({
+      requestUrl: req.nextUrl,
+      requestPath: normalizedPath,
+      sourcePath: normalizedPath,
+      targetUrl: deterministicEpisodeTarget,
+      matchType: 'exact',
+      preserveQuery: true
+    });
+    return withBaselineHeaders(req, NextResponse.redirect(new URL(destination), 301));
+  }
+
   const match = await resolveRedirect(req, normalizedPath);
   if (!match) return withBaselineHeaders(req, NextResponse.next());
+  if (match.status_code === 410) {
+    return withBaselineHeaders(req, new NextResponse('Gone', { status: 410 }));
+  }
+  if (!match.target_url) {
+    return withBaselineHeaders(req, NextResponse.next());
+  }
 
   const destination = buildRedirectLocation({
     requestUrl: req.nextUrl,
@@ -132,5 +193,7 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: '/:path*'
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico).*)'
+  ]
 };

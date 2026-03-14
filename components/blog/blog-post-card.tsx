@@ -3,31 +3,33 @@ import Image from 'next/image';
 import { getStoragePublicUrl } from '@/lib/blog/media-url';
 import type { MediaAssetRecord } from '@/lib/blog/data';
 
+type BlogPostCardPost = {
+  id?: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  excerpt_auto?: string | null;
+  published_at: string | null;
+  is_featured?: boolean;
+  reading_time_minutes: number | null;
+  featured_image: Pick<MediaAssetRecord, 'storage_path' | 'alt_text_default'> | null;
+  taxonomies?: { categories?: Array<{ id: string; name: string; slug: string }> };
+  author?: { name: string; slug: string } | null;
+};
+
 export function BlogPostCard({
   post,
   featured = false,
   compact = false,
   onDark = false
 }: {
-  post: {
-    id?: string;
-    slug: string;
-    title: string;
-    excerpt: string | null;
-    excerpt_auto: string | null;
-    published_at: string | null;
-    is_featured?: boolean;
-    reading_time_minutes: number | null;
-    featured_image: MediaAssetRecord | null;
-    taxonomies: { categories: Array<{ id: string; name: string; slug: string }> };
-    author?: { name: string; slug: string } | null;
-  };
+  post: BlogPostCardPost;
   featured?: boolean;
   compact?: boolean;
   onDark?: boolean;
 }) {
   const imageUrl = post.featured_image ? getStoragePublicUrl(post.featured_image.storage_path) : null;
-  const category = post.taxonomies.categories[0];
+  const category = post.taxonomies?.categories?.[0];
   const excerpt = post.excerpt || post.excerpt_auto || 'Read the full article.';
   const cardClass = onDark ? 'border-white/20 bg-white/10 text-white' : 'border-carnival-ink/15 bg-white';
   const imageBgClass = onDark ? 'bg-white/10' : 'bg-carnival-ink/5';

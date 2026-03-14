@@ -105,15 +105,21 @@ function toSafeHtml(html: string): string {
   const normalized = `${html || ''}`.trim();
   if (!normalized) return '';
 
-  const hasHtmlTags = /<[^>]+>/.test(normalized);
+  // Some feed content arrives double-encoded (for example "&amp;nbsp;").
+  const decodedOnce = decodeHtmlEntities(normalized);
+  const decoded = /&(?:[a-zA-Z]+|#\d+|#x[\da-fA-F]+);/.test(decodedOnce)
+    ? decodeHtmlEntities(decodedOnce)
+    : decodedOnce;
+
+  const hasHtmlTags = /<[^>]+>/.test(decoded);
   const htmlContent = hasHtmlTags
-    ? normalized
-    : normalized
+    ? decoded
+    : decoded
         .split(/\n{2,}/)
         .map((paragraph) => `<p>${paragraph.replace(/\n/g, '<br />')}</p>`)
         .join('');
 
-  return htmlContent
+  const sanitized = htmlContent
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
     .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
@@ -123,6 +129,19 @@ function toSafeHtml(html: string): string {
     .replace(/\s(href|src)\s*=\s*(['"])\s*javascript:[^'"]*\2/gi, '')
     .replace(/<a\s/gi, '<a target="_blank" rel="noreferrer" ')
     .trim();
+
+  // Convert markdown-style emphasis that may be embedded in feed HTML text nodes.
+  return sanitized
+    .split(/(<[^>]+>)/g)
+    .map((chunk) => {
+      if (!chunk || chunk.startsWith('<')) return chunk;
+      return chunk
+        .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
+        .replace(/\*\*/g, '')
+        .replace(/__/g, '');
+    })
+    .join('');
 }
 
 function truncateText(value: string, maxLength: number | null | undefined): string {
@@ -136,6 +155,20 @@ function toSafeNumber(value: string): number | null {
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed)) return null;
   return parsed;
+}
+
+function formatDurationFromSeconds(value: unknown): string | null {
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds) || seconds <= 0) return null;
+  const rounded = Math.floor(seconds);
+  const hours = Math.floor(rounded / 3600);
+  const minutes = Math.floor((rounded % 3600) / 60);
+  const remaining = rounded % 60;
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${remaining.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${remaining.toString().padStart(2, '0')}`;
 }
 
 function resolveEpisodeNumber(item: Record<string, unknown>, title: string): number | null {
@@ -341,15 +374,15 @@ async function getPodcastEpisodesFromDatabase(
       id: episode.id,
       slug: episode.slug,
       title: episode.title,
-      seasonNumber: null,
-      episodeNumber: null,
+      seasonNumber: episode.season_number ?? null,
+      episodeNumber: episode.episode_number ?? null,
       publishedAt: episode.published_at || new Date(0).toISOString(),
       description: truncateText(episode.description_plain, options.descriptionMaxLength ?? DEFAULT_LIST_DESCRIPTION_MAX_LENGTH),
       descriptionHtml: options.includeDescriptionHtml ? toSafeHtml(episode.description_html) : '',
       audioUrl: episode.audio_url,
       artworkUrl: episode.artwork_url,
-      duration: null,
-      sourceUrl: null
+      duration: formatDurationFromSeconds(episode.duration_seconds),
+      sourceUrl: episode.source_url || null
     }));
 
     if (typeof options.limit === 'number' && Number.isFinite(options.limit) && options.limit > 0) {

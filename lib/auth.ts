@@ -14,7 +14,7 @@ export async function requireUser() {
 export async function requireAdmin() {
   const user = await requireUser();
   if ((user.email || '').toLowerCase() !== env.adminEmail) {
-    redirect('/admin?error=forbidden');
+    redirect('/workspace/login?error=forbidden');
   }
   return user;
 }

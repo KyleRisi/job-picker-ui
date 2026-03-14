@@ -9,9 +9,18 @@ type Props = {
   reportsToOptions: string[];
   salaryBenefitOptions: string[];
   rehiringReasons: string[];
+  afterSaveRedirectPath?: string;
+  cancelHref?: string;
 };
 
-export function AdminJobEditForm({ job, reportsToOptions, salaryBenefitOptions, rehiringReasons }: Props) {
+export function AdminJobEditForm({
+  job,
+  reportsToOptions,
+  salaryBenefitOptions,
+  rehiringReasons,
+  afterSaveRedirectPath = '/admin/jobs',
+  cancelHref = '/admin/jobs'
+}: Props) {
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<'AVAILABLE' | 'FILLED' | 'REHIRING'>(job.status);
@@ -51,7 +60,7 @@ export function AdminJobEditForm({ job, reportsToOptions, salaryBenefitOptions, 
 
     if (res.ok) {
       setTimeout(() => {
-        window.location.assign('/admin/jobs');
+        window.location.assign(afterSaveRedirectPath);
       }, 500);
     }
   }
@@ -152,7 +161,7 @@ export function AdminJobEditForm({ job, reportsToOptions, salaryBenefitOptions, 
       </div>
       <div className="md:col-span-2 flex gap-2">
         <button className="btn-primary" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</button>
-        <a className="btn-secondary" href="/admin/jobs">Cancel</a>
+        <a className="btn-secondary" href={cancelHref}>Cancel</a>
       </div>
       {message ? <p className="md:col-span-2 rounded-md bg-blue-100 p-3">{message}</p> : null}
     </form>

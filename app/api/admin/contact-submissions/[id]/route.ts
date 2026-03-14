@@ -28,21 +28,3 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   return ok({ item: update.data });
 }
-
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const adminUser = await requireAdminInApi();
-  if (!adminUser) return badRequest('Forbidden.', 403);
-
-  const supabase = createSupabaseAdminClient();
-  const deletion = await supabase
-    .from('contact_submissions')
-    .delete()
-    .eq('id', params.id)
-    .select('id')
-    .maybeSingle();
-
-  if (deletion.error) return badRequest(deletion.error.message);
-  if (!deletion.data) return badRequest('Contact submission not found.', 404);
-
-  return ok({ deleted: true, id: deletion.data.id });
-}

@@ -1,18 +1,29 @@
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { notFound, permanentRedirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { formatEpisodeDate, getPodcastEpisodeBySlug } from '@/lib/podcast';
-import { BackButton } from '@/components/back-button';
+import { BlogContentRenderer } from '@/components/blog/blog-content-renderer';
+import { BlogPostCard } from '@/components/blog/blog-post-card';
+import { CompactEpisodeRow } from '@/components/episodes-browser';
 import { EpisodeMediaPlayer } from '@/components/episode-media-player';
+import { JoinPatreonCta } from '@/components/join-patreon-cta';
+import { collectReferencedImageIds } from '@/lib/blog/content';
+import { getMediaAssetMapByIds, listBlogAuthors } from '@/lib/blog/data';
+import { breadcrumbsToJsonLd } from '@/lib/breadcrumbs';
+import {
+  buildEpisodeBreadcrumbs,
+  formatEpisodeDate,
+  getResolvedEpisodeBySlug,
+  resolveEpisodeSlugRedirect
+} from '@/lib/episodes';
 import { getPublicSiteUrl } from '@/lib/site-url';
+import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
 
 export const revalidate = 900;
 
-function toMetaDescription(value: string): string {
-  const normalized = `${value || ''}`.replace(/\s+/g, ' ').trim();
-  if (!normalized) return 'Read full details for this podcast episode.';
-  return normalized.length > 155 ? `${normalized.slice(0, 152).trimEnd()}...` : normalized;
-}
+type Params = {
+  slug: string;
+};
 
 function getSpotifyEpisodeUrl(title: string): string {
   const query = encodeURIComponent(`${title} The Compendium Podcast`);
@@ -24,15 +35,8 @@ function getApplePodcastsEpisodeUrl(title: string): string {
   return `https://podcasts.apple.com/us/search?term=${query}`;
 }
 
-type Params = {
-  slug: string;
-};
-
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const episode = await getPodcastEpisodeBySlug(params.slug, {
-    includeDescriptionHtml: true,
-    descriptionMaxLength: null
-  });
+  const episode = await getResolvedEpisodeBySlug(params.slug, { includeHidden: false });
 
   if (!episode) {
     return {
@@ -44,25 +48,26 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     };
   }
 
-  const description = toMetaDescription(episode.description);
-  const canonicalPath = `/episodes/${episode.slug}`;
-
   return {
     title: {
-      absolute: `${episode.title} | The Compendium Podcast`
+      absolute: `${episode.seoTitle} | The Compendium Podcast`
     },
-    description,
+    description: episode.metaDescription || undefined,
     alternates: {
-      canonical: canonicalPath
+      canonical: episode.canonicalUrl
+    },
+    robots: {
+      index: !episode.noindex,
+      follow: !episode.nofollow
     },
     openGraph: {
-      title: `${episode.title} | The Compendium Podcast`,
-      description,
-      url: canonicalPath,
-      images: episode.artworkUrl
+      title: episode.editorial?.socialTitle || episode.seoTitle,
+      description: episode.editorial?.socialDescription || episode.metaDescription || undefined,
+      url: episode.canonicalUrl,
+      images: episode.heroImageUrl
         ? [
             {
-              url: episode.artworkUrl,
+              url: episode.editorial?.socialImageUrl || episode.heroImageUrl,
               width: 1200,
               height: 1200,
               alt: `Artwork for ${episode.title}`
@@ -72,37 +77,42 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${episode.title} | The Compendium Podcast`,
-      description,
-      images: episode.artworkUrl ? [episode.artworkUrl] : undefined
+      title: episode.editorial?.socialTitle || episode.seoTitle,
+      description: episode.editorial?.socialDescription || episode.metaDescription || undefined,
+      images: episode.editorial?.socialImageUrl ? [episode.editorial.socialImageUrl] : episode.heroImageUrl ? [episode.heroImageUrl] : undefined
     }
   };
 }
 
 export default async function EpisodeDetailPage({ params }: { params: Params }) {
-  const episode = await getPodcastEpisodeBySlug(params.slug, {
-    includeDescriptionHtml: true,
-    descriptionMaxLength: null
-  });
+  let episode = await getResolvedEpisodeBySlug(params.slug, { includeHidden: false });
 
-  if (!episode) notFound();
+  if (!episode) {
+    const redirectMatch = await resolveEpisodeSlugRedirect(params.slug);
+    if (redirectMatch) {
+      permanentRedirect(redirectMatch.targetPath);
+    }
+    notFound();
+  }
 
   const siteUrl = getPublicSiteUrl();
-  const canonicalUrl = `${siteUrl}/episodes/${episode.slug}`;
+  const canonicalUrl = `${siteUrl}${episode.canonicalUrl}`;
   const spotifyUrl = getSpotifyEpisodeUrl(episode.title);
   const applePodcastsUrl = getApplePodcastsEpisodeUrl(episode.title);
+  const breadcrumbItems = buildEpisodeBreadcrumbs(episode);
+  const breadcrumbJsonLd = breadcrumbsToJsonLd(breadcrumbItems, siteUrl);
   const episodeJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'PodcastEpisode',
     url: canonicalUrl,
     name: episode.title,
     datePublished: episode.publishedAt,
-    description: episode.description,
+    description: episode.metaDescription,
     associatedMedia: {
       '@type': 'MediaObject',
       contentUrl: episode.audioUrl
     },
-    image: episode.artworkUrl || `${siteUrl}/The Compendium Main.jpg`,
+    image: episode.heroImageUrl || `${siteUrl}/The Compendium Main.jpg`,
     partOfSeries: {
       '@type': 'PodcastSeries',
       name: 'The Compendium Podcast',
@@ -110,23 +120,62 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
     }
   };
 
-  return (
-    <section className="space-y-5">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(episodeJsonLd) }}
-      />
-      <BackButton />
+  const structuredBody = Array.isArray(episode.bodyJson) ? episode.bodyJson : null;
+  const [assetMap, authors] = await Promise.all([
+    structuredBody ? getMediaAssetMapByIds(collectReferencedImageIds(structuredBody)) : Promise.resolve(new Map()),
+    listBlogAuthors()
+  ]);
+  const episodeAuthor = episode.editorial?.authorId
+    ? (authors.find((author) => author.id === episode.editorial?.authorId) || null)
+    : null;
+  const linkedEpisodesForRenderer = [
+    {
+      is_primary: true,
+      episode: {
+        id: episode.id,
+        rss_guid: '',
+        title: episode.source.title,
+        slug: episode.source.slug,
+        description_plain: episode.source.descriptionPlain,
+        description_html: episode.source.descriptionHtml,
+        published_at: episode.publishedAt,
+        audio_url: episode.audioUrl,
+        artwork_url: episode.artworkUrl,
+        transcript: episode.transcript,
+        show_notes: episode.source.showNotes,
+        is_visible: episode.isVisible,
+        is_archived: episode.isArchived,
+        last_synced_at: episode.source.lastSyncedAt,
+        created_at: '',
+        updated_at: '',
+        episode_number: episode.episodeNumber,
+        season_number: episode.seasonNumber,
+        duration_seconds: episode.source.durationSeconds,
+        source_url: episode.source.sourceUrl,
+        missing_from_feed_at: episode.source.missingFromFeedAt
+      }
+    }
+  ];
 
-      <article className="overflow-hidden rounded-xl border-2 border-carnival-ink/20 bg-carnival-ink text-white shadow-card">
-        <div className="grid gap-5 p-5 md:grid-cols-[340px_1fr] md:p-6">
-          <div className="relative aspect-square overflow-hidden rounded-lg border border-white/15 bg-black/25">
-            {episode.artworkUrl ? (
+  return (
+    <section className="-mb-8 space-y-0">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(episodeJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+
+      <section className="full-bleed relative !-mt-8 overflow-hidden bg-carnival-ink text-white">
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-carnival-red/30 blur-[120px]" />
+          <div className="absolute -bottom-24 right-0 h-80 w-80 rounded-full bg-carnival-gold/20 blur-[100px]" />
+        </div>
+        <div className="relative mx-auto max-w-6xl px-4 py-10 md:py-14">
+          <div className="grid items-start gap-5 lg:grid-cols-[360px_1fr]">
+          <div className="relative mx-auto h-[280px] w-[280px] self-start overflow-hidden rounded-lg border border-white/15 bg-black/25 sm:h-[320px] sm:w-[320px] lg:mx-0 lg:h-[360px] lg:w-[360px] lg:max-w-none">
+            {episode.heroImageUrl ? (
               <Image
-                src={episode.artworkUrl}
+                src={episode.heroImageUrl}
                 alt={`Artwork for ${episode.title}`}
                 fill
-                sizes="(max-width: 768px) calc(100vw - 2.5rem), 340px"
+                sizes="(max-width: 639px) 280px, (max-width: 1023px) 320px, 360px"
                 className="object-cover"
                 unoptimized
                 priority
@@ -140,14 +189,29 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
           </div>
 
           <div className="flex min-w-0 flex-col">
-            <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-wide text-white/80">
-              <span>{formatEpisodeDate(episode.publishedAt)}</span>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-black uppercase tracking-wide text-white/80">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <span>{formatEpisodeDate(episode.publishedAt)}</span>
+                {episode.isFeatured ? <span className="rounded-full bg-carnival-gold px-2.5 py-1 text-[11px] text-carnival-ink">Featured</span> : null}
+              </div>
               {episode.episodeNumber !== null ? (
-                <span className="rounded-full bg-carnival-red px-2.5 py-1 text-[11px] text-white">Episode {episode.episodeNumber}</span>
+                <span className="ml-auto rounded-full bg-carnival-red px-2.5 py-1 text-[11px] text-white">Episode {episode.episodeNumber}</span>
               ) : null}
             </div>
 
             <h1 className="mt-3 text-[1.8rem] font-black leading-tight text-white sm:text-[2.2rem]">{episode.title}</h1>
+            {episodeAuthor?.name ? (
+              <p className="mt-2 text-sm font-semibold text-white/85">
+                by{' '}
+                {episodeAuthor.slug ? (
+                  <Link href={`/author/${episodeAuthor.slug}`} className="text-white transition hover:text-carnival-gold">
+                    {episodeAuthor.name}
+                  </Link>
+                ) : (
+                  episodeAuthor.name
+                )}
+              </p>
+            ) : null}
 
             <div className="mt-4">
               <EpisodeMediaPlayer
@@ -163,6 +227,22 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
               />
             </div>
 
+            {episode.discoveryTerms.length ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {episode.discoveryTerms.map((term) => (
+                  term.path ? (
+                    <Link key={term.id} href={term.path} className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white/85 hover:bg-white/10">
+                      {term.name}
+                    </Link>
+                  ) : (
+                    <span key={term.id} className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white/70">
+                      {term.name}
+                    </span>
+                  )
+                ))}
+              </div>
+            ) : null}
+
             <p className="mt-4 text-xs font-black uppercase tracking-wide text-white/80">Listen On</p>
             <div className="mt-2 flex flex-nowrap gap-2">
               <a
@@ -171,33 +251,6 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
                 rel="noreferrer"
                 className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-[#1DB954] px-2 py-2 text-xs font-bold text-white transition hover:brightness-110 sm:gap-2 sm:px-3 sm:text-sm"
               >
-                <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4 fill-current">
-                  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.8" />
-                  <path
-                    d="M8 10.2c2.8-1 5.7-.8 8.5.6"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M8.7 13.1c2.1-.7 4.3-.5 6.2.5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M9.6 15.6c1.5-.4 3-.3 4.3.4"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
                 <span className="truncate">Spotify</span>
               </a>
 
@@ -207,32 +260,97 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
                 rel="noreferrer"
                 className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-[#D56DFB] px-2 py-2 text-xs font-bold text-white transition hover:brightness-110 sm:gap-2 sm:px-3 sm:text-sm"
               >
-                <Image src="/apple-podcasts-icon.svg" alt="" width={16} height={16} className="h-4 w-4 brightness-0 invert" aria-hidden="true" />
                 <span className="truncate">Apple Podcasts</span>
               </a>
 
-              <a
-                href="https://www.patreon.com/cw/TheCompendiumPodcast"
-                target="_blank"
-                rel="noreferrer"
+              <Link
+                href={PATREON_INTERNAL_PATH}
                 className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-carnival-red px-2 py-2 text-xs font-bold text-white transition hover:brightness-110 sm:gap-2 sm:px-3 sm:text-sm"
               >
-                <Image src="/patreon-icon.svg" alt="" width={16} height={16} className="h-4 w-4 brightness-0 invert" aria-hidden="true" />
                 <span className="truncate">Patreon</span>
-              </a>
+              </Link>
             </div>
           </div>
+          </div>
         </div>
-      </article>
+      </section>
 
-      <article className="rounded-xl border-2 border-carnival-ink/15 bg-white p-5 shadow-card sm:p-6">
-        <h2 className="text-xl font-black text-carnival-ink">Episode Description</h2>
-        {episode.descriptionHtml ? (
-          <div className="episode-rich mt-4 text-base leading-relaxed text-carnival-ink/90" dangerouslySetInnerHTML={{ __html: episode.descriptionHtml }} />
+      <article className="-mx-4 bg-white px-5 py-5 sm:mx-0 sm:px-6 sm:py-6">
+        <h2 className="text-xl font-black text-carnival-ink">{episode.bodySource === 'editorial' ? 'Episode Story' : 'Episode Notes'}</h2>
+        {structuredBody && structuredBody.length ? (
+          <div className="mt-4">
+            <BlogContentRenderer
+              document={structuredBody}
+              assetMap={assetMap}
+              linkedEpisodes={linkedEpisodesForRenderer as any}
+              relatedPosts={episode.relatedPosts.map((post) => ({ id: post.id, slug: post.slug, title: post.title }))}
+            />
+          </div>
+        ) : episode.bodyHtml ? (
+          <div className="episode-rich mt-4 text-base leading-relaxed text-carnival-ink/90" dangerouslySetInnerHTML={{ __html: episode.bodyHtml }} />
         ) : (
           <div className="mt-4 text-base leading-relaxed text-carnival-ink/90">No episode description available.</div>
         )}
       </article>
+      <div className="space-y-6 pt-6">
+        {episode.relatedEpisodes.length ? (
+          <section>
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-black text-carnival-ink">Related Episodes</h2>
+            </div>
+            <div className="mt-4 space-y-3">
+              {episode.relatedEpisodes.map((item) => (
+                <CompactEpisodeRow key={`${item.relationshipType}-${item.episode.id}`} episode={item.episode} />
+              ))}
+            </div>
+            <div className="mt-6 flex justify-center">
+              <Link
+                href="/episodes"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-carnival-red px-6 text-sm font-semibold text-white transition hover:brightness-110"
+              >
+                Browse all episodes
+              </Link>
+            </div>
+          </section>
+        ) : null}
+
+        {episode.relatedPosts.length ? (
+          <section>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-xl font-black text-carnival-ink">Related Reading</h2>
+              <Link href="/blog" className="text-sm font-semibold text-carnival-red underline underline-offset-2">Browse the blog</Link>
+            </div>
+            <div className="mt-4 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {episode.relatedPosts.map((post) => (
+                <BlogPostCard
+                  key={post.id}
+                  post={{
+                    id: post.id,
+                    slug: post.slug,
+                    title: post.title,
+                    excerpt: post.excerpt,
+                    excerpt_auto: null,
+                    published_at: post.publishedAt,
+                    reading_time_minutes: post.readingTimeMinutes,
+                    featured_image: post.featuredImage
+                      ? {
+                          storage_path: post.featuredImage.storagePath,
+                          alt_text_default: post.featuredImage.altText
+                        }
+                      : null,
+                    taxonomies: { categories: [] },
+                    author: post.author
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </div>
+
+      <div className="pt-8">
+        <JoinPatreonCta />
+      </div>
     </section>
   );
 }

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-export type AdminTabKey = 'dashboard' | 'blog' | 'jobs' | 'episodes' | 'analytics' | 'reviews' | 'contacts' | 'redirects' | 'exports' | 'settings';
+export type AdminTabKey = 'dashboard' | 'blog' | 'jobs' | 'episodes' | 'analytics' | 'reviews' | 'contacts' | 'redirects' | 'taxonomy' | 'exports' | 'settings';
 
 const TABS: Array<{ key: AdminTabKey; href: string; label: string }> = [
   { key: 'dashboard', href: '/admin', label: 'Dashboard' },
@@ -15,6 +15,7 @@ const TABS: Array<{ key: AdminTabKey; href: string; label: string }> = [
   { key: 'reviews', href: '/admin/reviews', label: 'Reviews' },
   { key: 'contacts', href: '/admin/contacts', label: 'Contacts' },
   { key: 'redirects', href: '/admin/redirects', label: 'Redirects' },
+  { key: 'taxonomy', href: '/admin/blog/taxonomies', label: 'Taxonomy' },
   { key: 'exports', href: '/admin/exports', label: 'Exports' },
   { key: 'settings', href: '/admin/settings', label: 'Settings' }
 ];
@@ -90,6 +91,18 @@ function TabIcon({ tab }: { tab: AdminTabKey }) {
         <path d="m11 3 4 4-4 4" />
         <path d="M19 17H9" />
         <path d="m13 13-4 4 4 4" />
+      </svg>
+    );
+  }
+  if (tab === 'taxonomy') {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <path d="M4 7h7" />
+        <path d="M4 12h10" />
+        <path d="M4 17h6" />
+        <circle cx="16" cy="7" r="2" />
+        <circle cx="19" cy="12" r="2" />
+        <circle cx="15" cy="17" r="2" />
       </svg>
     );
   }
@@ -261,9 +274,15 @@ export function AdminTabs({ current }: { current: AdminTabKey }) {
 
       <aside
         aria-label="Admin navigation"
-        className={`fixed left-0 top-[5.5rem] z-[54] hidden h-[calc(100dvh-5.5rem)] flex-col border-r-2 border-carnival-ink/20 bg-carnival-cream shadow-card transition-[width,padding] duration-300 ease-out md:flex ${
-          collapsed ? 'w-[4.5rem] px-2 py-4' : 'w-72 px-4 py-5'
+        className={`fixed left-0 z-[45] hidden flex-col border-r-2 border-carnival-ink/20 bg-carnival-cream transition-[width,padding] duration-300 ease-out ${
+          hydrated ? 'md:flex' : 'md:invisible md:flex'
+        } ${
+          collapsed ? 'w-[4.5rem] px-2 pt-0 pb-4' : 'w-72 px-4 pt-0 pb-5'
         }`}
+        style={{
+          top: 'calc(var(--app-shell-header-height, 84px) - 1px)',
+          height: 'calc(100dvh - (var(--app-shell-header-height, 84px) - 1px))'
+        }}
       >
         <div className={`mb-4 flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
           {collapsed ? null : (

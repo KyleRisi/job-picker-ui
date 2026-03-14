@@ -220,6 +220,29 @@ function blockToPlainText(block: BlogContentBlock): string {
   }
 }
 
+export function flattenBlogDocumentToRichText(document: BlogContentDocument): RichTextInlineNode[] {
+  const blocks = normalizeBlogDocument(document);
+  const text = blocks
+    .map((block) => blockToPlainText(block))
+    .filter(Boolean)
+    .join('\n\n')
+    .trim();
+
+  if (!text) return createRichText('');
+
+  const lines = text.split('\n');
+  const nodes: RichTextInlineNode[] = [];
+  lines.forEach((line, index) => {
+    if (line) {
+      nodes.push({ type: 'text', text: line, marks: [] });
+    }
+    if (index < lines.length - 1) {
+      nodes.push({ type: 'hard_break' });
+    }
+  });
+  return nodes;
+}
+
 function blockToMarkdown(block: BlogContentBlock): string {
   switch (block.type) {
     case 'paragraph':
@@ -583,6 +606,9 @@ export function buildSeoChecklist(params: {
   canonicalUrl?: string | null;
   document: BlogContentDocument;
   excerpt?: string | null;
+  hasAuthor?: boolean;
+  hasPrimaryCategory?: boolean;
+  hasLinkedEpisode?: boolean;
 }) {
   const warnings: Array<{ key: string; label: string; ok: boolean }> = [];
   const title = params.seoTitle || params.title;
@@ -625,6 +651,21 @@ export function buildSeoChecklist(params: {
     key: 'length',
     label: 'Content has enough substance to rank.',
     ok: plain.split(/\s+/).filter(Boolean).length >= 250
+  });
+  warnings.push({
+    key: 'author',
+    label: 'Post has an author selected.',
+    ok: Boolean(params.hasAuthor)
+  });
+  warnings.push({
+    key: 'primary-category',
+    label: 'Post has a primary category selected.',
+    ok: Boolean(params.hasPrimaryCategory)
+  });
+  warnings.push({
+    key: 'linked-episode',
+    label: 'Post has at least one linked episode.',
+    ok: Boolean(params.hasLinkedEpisode)
   });
 
   const score = Math.round((warnings.filter((warning) => warning.ok).length / warnings.length) * 100);

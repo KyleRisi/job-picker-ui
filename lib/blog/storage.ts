@@ -100,3 +100,16 @@ export async function uploadRemoteImageToBlogStorage(url: string, options?: {
     creditSource: options?.creditSource
   });
 }
+
+export async function deleteBlogMediaFromStorage(storagePath: string) {
+  if (!storagePath) return;
+  const supabase = createSupabaseAdminClient();
+  const result = await supabase.storage.from(getBucket()).remove([storagePath]);
+  if (result.error) {
+    const message = `${result.error.message || ''}`.toLowerCase();
+    const isNotFound = message.includes('not found') || message.includes('no such') || message.includes('does not exist');
+    if (!isNotFound) {
+      throw result.error;
+    }
+  }
+}

@@ -1,0 +1,21 @@
+export type PatreonTier = {
+  id: string;
+  internalKey: 'little_freak' | 'certified_freak' | 'big_top' | string;
+  displayName: string;
+  tagline: string;
+  description: string;
+  features: string[];
+  monthlyPriceUsd: number;
+  annualPriceUsd: number;
+  monthlyPriceLabel: string;
+  annualPriceLabel?: string;
+  annualSavingsLabel?: string;
+  recommended?: boolean;
+  badge?: string;
+  soldOut?: boolean;
+  supportLevel: 'standard' | 'premium' | string;
+  ctaLabel: string;
+  ctaHref: string;
+  active: boolean;
+  displayOrder: number;
+};

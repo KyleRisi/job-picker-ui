@@ -8,12 +8,21 @@
     "netlify:dev": "netlify dev --port 8888 --target-port 3000",
     "netlify:stable": "bash scripts/netlify-stable.sh",
     "deploy:integrity": "node scripts/check-deploy-integrity.mjs",
+    "perf:audit": "node scripts/perf-pagespeed-audit.mjs",
+    "perf:audit:prod": "node scripts/perf-pagespeed-audit.mjs --base https://www.thecompendiumpodcast.com --out docs/performance-inventory.md",
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint",
-    "reviews:import": "set -a && source .env.local && set +a && node scripts/import-apple-reviews.mjs"
+    "reviews:import": "set -a && source .env.local && set +a && node scripts/import-apple-reviews.mjs",
+    "gsc": "npm --prefix tools/google-search-console run cli --",
+    "gsc:install": "npm --prefix tools/google-search-console install",
+    "gsc:auth": "npm run gsc -- authenticate",
+    "gsc:list": "npm run gsc -- list-properties",
+    "gsc:query": "npm run gsc -- query-search-analytics",
+    "gsc:inspect": "npm run gsc -- inspect-site-readiness"
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.49.1",
     "@tiptap/core": "^2.27.2",

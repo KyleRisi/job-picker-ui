@@ -9,9 +9,15 @@ type Props = {
   applicationId: string;
   fullName: string;
   imageUrl: string | null;
+  variant?: 'admin' | 'workspace';
 };
 
-export function AdminApplicationPhotoEditor({ applicationId, fullName, imageUrl }: Props) {
+export function AdminApplicationPhotoEditor({
+  applicationId,
+  fullName,
+  imageUrl,
+  variant = 'admin'
+}: Props) {
   const previewWidth = 216;
   const previewHeight = 264;
   const exportWidth = 360;
@@ -28,6 +34,13 @@ export function AdminApplicationPhotoEditor({ applicationId, fullName, imageUrl 
   const [rotation, setRotation] = useState(0);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
+  const isWorkspace = variant === 'workspace';
+  const primaryButtonClassName = isWorkspace
+    ? 'inline-flex h-9 items-center justify-center rounded-md bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-60'
+    : 'btn-primary';
+  const secondaryButtonClassName = isWorkspace
+    ? 'inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50'
+    : 'btn-secondary';
 
   useEffect(() => {
     if (!isError || !message) return;
@@ -224,7 +237,7 @@ export function AdminApplicationPhotoEditor({ applicationId, fullName, imageUrl 
           <div className="w-full max-w-2xl rounded-xl bg-white p-4 shadow-card">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-lg font-black text-carnival-ink">Adjust Photo</h3>
-              <button type="button" className="btn-secondary" onClick={closeEditor}>
+              <button type="button" className={secondaryButtonClassName} onClick={closeEditor}>
                 Close
               </button>
             </div>
@@ -300,12 +313,12 @@ export function AdminApplicationPhotoEditor({ applicationId, fullName, imageUrl 
                 </div>
 
                 <div className="flex flex-wrap justify-end gap-2 pt-2">
-                  <button type="button" className="btn-secondary" onClick={resetEditor}>
+                  <button type="button" className={secondaryButtonClassName} onClick={resetEditor}>
                     Reset
                   </button>
                   <button
                     type="button"
-                    className="btn-primary"
+                    className={primaryButtonClassName}
                     disabled={saving}
                     onClick={async () => {
                       const edited = await renderEditedImageToDataUrl();

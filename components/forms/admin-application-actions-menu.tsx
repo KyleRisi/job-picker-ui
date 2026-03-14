@@ -6,11 +6,15 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 export function AdminApplicationActionsMenu({
   id,
   broadcastedOnShow = false,
-  editRoleOpen = false
+  editRoleOpen = false,
+  postActionRedirectPath = '/admin',
+  variant = 'admin'
 }: {
   id: string;
   broadcastedOnShow?: boolean;
   editRoleOpen?: boolean;
+  postActionRedirectPath?: string;
+  variant?: 'admin' | 'workspace';
 }) {
   const [message, setMessage] = useState('');
   const [fireLoading, setFireLoading] = useState(false);
@@ -21,6 +25,9 @@ export function AdminApplicationActionsMenu({
   const router = useRouter();
   const pathname = usePathname() || '/admin';
   const searchParams = useSearchParams();
+  const summaryClassName = variant === 'workspace'
+    ? 'inline-flex h-9 cursor-pointer list-none items-center justify-center rounded-md bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-500'
+    : 'btn-secondary cursor-pointer list-none whitespace-nowrap';
 
   function closeMenu() {
     detailsRef.current?.removeAttribute('open');
@@ -58,7 +65,7 @@ export function AdminApplicationActionsMenu({
     const res = await fetch(`/api/admin/applications/${id}/fire`, { method: 'POST' });
     const data = await res.json();
     if (res.ok) {
-      window.location.replace(`/admin?updated=${Date.now()}`);
+      window.location.replace(`${postActionRedirectPath}?updated=${Date.now()}`);
       return;
     }
     setMessage(data.message || data.error || 'Done');
@@ -70,7 +77,7 @@ export function AdminApplicationActionsMenu({
     const res = await fetch(`/api/admin/applications/${id}`, { method: 'DELETE' });
     const data = await res.json();
     if (res.ok) {
-      window.location.assign('/admin');
+      window.location.assign(postActionRedirectPath);
       return;
     }
     setMessage(data.error || 'Could not delete application.');
@@ -108,7 +115,7 @@ export function AdminApplicationActionsMenu({
   return (
     <div className="flex flex-col items-end gap-2">
       <details ref={detailsRef} className="relative">
-        <summary className="btn-secondary cursor-pointer list-none whitespace-nowrap">Admin Actions</summary>
+        <summary className={summaryClassName}>Admin Actions</summary>
         <div className="absolute right-0 z-10 mt-2 w-56 rounded-md border border-carnival-ink/20 bg-white p-1 shadow-card">
           <button
             type="button"

@@ -11,7 +11,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   try {
     const user = await requireBlogAdminApiUser();
     if (!user) {
-      return NextResponse.redirect(new URL('/admin?error=blog-auth', getPublicSiteUrl()));
+      return NextResponse.redirect(new URL('/workspace/login?error=blog-auth', getPublicSiteUrl()));
     }
     const post = await getBlogPostAdminById(params.id);
     if (!post) {
@@ -20,6 +20,6 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     draftMode().enable();
     return NextResponse.redirect(new URL(`/blog/${post.slug}?preview=1`, getPublicSiteUrl()));
   } catch {
-    return NextResponse.redirect(new URL('/admin/blog?error=preview-failed', getPublicSiteUrl()));
+    return NextResponse.redirect(new URL('/workspace/dashboard/blogs?error=preview-failed', getPublicSiteUrl()));
   }
 }

@@ -1,10 +1,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { getPodcastEpisodes, type PodcastEpisode } from '@/lib/podcast';
+import { getEpisodesLandingPageData } from '@/lib/episodes';
+import type { PodcastEpisode } from '@/lib/podcast';
 import { EpisodesBrowser } from '@/components/episodes-browser';
 import type { Metadata } from 'next';
 import { getVisibleReviews, getVisibleReviewsCount } from '@/lib/reviews';
 import { getPublicSiteUrl } from '@/lib/site-url';
+import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
 
 export const metadata: Metadata = {
   title: {
@@ -35,7 +37,6 @@ import { ReviewsSection } from '@/components/reviews-section';
 
 const SPOTIFY_URL = 'https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ';
 const APPLE_PODCASTS_URL = 'https://podcasts.apple.com/gb/podcast/the-compendium-an-assembly-of-fascinating-things/id1676817109';
-const PATREON_URL = 'https://www.patreon.com/cw/TheCompendiumPodcast';
 
 
 /* ─── Podcast JSON-LD (SEO) ─── */
@@ -70,11 +71,14 @@ export default async function HomePage() {
   let reviews = [];
   let reviewCount = 0;
   try {
-    [episodes, reviews, reviewCount] = await Promise.all([
-      getPodcastEpisodes({ descriptionMaxLength: 520 }),
+    const [landingData, loadedReviews, loadedReviewCount] = await Promise.all([
+      getEpisodesLandingPageData(),
       getVisibleReviews(9),
       getVisibleReviewsCount()
     ]);
+    episodes = landingData.episodes;
+    reviews = loadedReviews;
+    reviewCount = loadedReviewCount;
   } catch (error) {
     console.error('Failed to load podcast episodes for home page:', error);
     reviews = await getVisibleReviews(9);
@@ -138,15 +142,13 @@ export default async function HomePage() {
                 </svg>
                 Spotify
               </a>
-              <a
-                href={PATREON_URL}
-                target="_blank"
-                rel="noreferrer"
+              <Link
+                href={PATREON_INTERNAL_PATH}
                 className="inline-flex items-center gap-2 rounded-full bg-carnival-red px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
               >
                 <Image src="/patreon-icon.svg" alt="" width={20} height={20} className="h-5 w-5 brightness-0 invert" aria-hidden="true" />
                 Patreon
-              </a>
+              </Link>
               <a
                 href={APPLE_PODCASTS_URL}
                 target="_blank"
@@ -165,12 +167,15 @@ export default async function HomePage() {
           EPISODES
          ════════════════════════════════════════════════ */}
       {episodes.length > 0 ? (
-        <section className="py-12 md:py-16">
+        <section className="pb-0 pt-12 md:pb-0 md:pt-16">
           <EpisodesBrowser
             episodes={episodes}
             showSearch={false}
             initialCount={9}
             loadMoreCount={9}
+            loadMoreHref="/episodes"
+            featuredDesktopTextLarger
+            showFeaturedTaxonomyChips
             middleSlot={
               <section className="full-bleed relative overflow-hidden bg-carnival-ink py-16 md:py-24">
                 <div className="pointer-events-none absolute inset-0" aria-hidden="true">
@@ -221,7 +226,11 @@ export default async function HomePage() {
           <div className="grid gap-10 md:grid-cols-2">
             {/* Kyle */}
             <div className="text-center">
-              <div className="mx-auto aspect-[1080/1571] w-full max-w-[280px] overflow-hidden rounded-xl border-4 border-carnival-red/70 bg-carnival-red/10 shadow-xl">
+              <Link
+                href="/author/kyle-risi"
+                className="mx-auto block aspect-[1080/1571] w-full max-w-[280px] overflow-hidden rounded-xl border-4 border-carnival-red/70 bg-carnival-red/10 shadow-xl transition hover:brightness-105"
+                aria-label="View Kyle Risi author archive"
+              >
                 <Image
                   src="/Kyle.webp"
                   alt="Kyle Risi — host of The Compendium Podcast"
@@ -230,11 +239,15 @@ export default async function HomePage() {
                   className="h-full w-full object-cover"
                   loading="lazy"
                 />
-              </div>
+              </Link>
               <span className="mt-4 inline-block rounded bg-carnival-red px-3 py-1 text-[11px] font-black uppercase tracking-widest text-white">
                 Your Ringmaster
               </span>
-              <h3 className="mt-2 text-2xl font-black text-carnival-ink">Kyle Risi</h3>
+              <h3 className="mt-2 text-2xl font-black text-carnival-ink">
+                <Link href="/author/kyle-risi" className="hover:text-carnival-red">
+                  Kyle Risi
+                </Link>
+              </h3>
               <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-carnival-ink/85">
                 Hey, I&apos;m Kyle, your host on The Compendium podcast. I believe you don&apos;t
                 need to commit to a 10-part series to learn about a story. That&apos;s why I&apos;m
@@ -244,7 +257,11 @@ export default async function HomePage() {
             </div>
             {/* Adam */}
             <div className="text-center">
-              <div className="mx-auto aspect-[1080/1571] w-full max-w-[280px] overflow-hidden rounded-xl border-4 border-carnival-teal/70 bg-carnival-teal/10 shadow-xl">
+              <Link
+                href="/author/adam-cox"
+                className="mx-auto block aspect-[1080/1571] w-full max-w-[280px] overflow-hidden rounded-xl border-4 border-carnival-teal/70 bg-carnival-teal/10 shadow-xl transition hover:brightness-105"
+                aria-label="View Adam Cox author archive"
+              >
                 <Image
                   src="/Adam.webp"
                   alt="Adam Cox — co-host of The Compendium Podcast"
@@ -253,11 +270,15 @@ export default async function HomePage() {
                   className="h-full w-full object-cover"
                   loading="lazy"
                 />
-              </div>
+              </Link>
               <span className="mt-4 inline-block rounded bg-carnival-teal px-3 py-1 text-[11px] font-black uppercase tracking-widest text-white">
                 Co-Host
               </span>
-              <h3 className="mt-2 text-2xl font-black text-carnival-ink">Adam Cox</h3>
+              <h3 className="mt-2 text-2xl font-black text-carnival-ink">
+                <Link href="/author/adam-cox" className="hover:text-carnival-red">
+                  Adam Cox
+                </Link>
+              </h3>
               <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-carnival-ink/85">
                 I&apos;m Adam Cox, your side-show freak co-pilot on The Compendium. Think of me as
                 your voice. Whether on your commute, at the gym, or during quiet moments. Join Kyle
@@ -298,15 +319,13 @@ export default async function HomePage() {
               </svg>
               Spotify
             </a>
-            <a
-              href={PATREON_URL}
-              target="_blank"
-              rel="noreferrer"
+            <Link
+              href={PATREON_INTERNAL_PATH}
               className="inline-flex items-center gap-2 rounded-full bg-carnival-red px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
             >
               <Image src="/patreon-icon.svg" alt="" width={20} height={20} className="h-5 w-5 brightness-0 invert" aria-hidden="true" />
               Patreon
-            </a>
+            </Link>
             <a
               href={APPLE_PODCASTS_URL}
               target="_blank"

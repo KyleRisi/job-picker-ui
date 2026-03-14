@@ -11,7 +11,9 @@ export async function GET(req: Request) {
     if (!user) return badRequest('Unauthorized.', 401);
     const { searchParams } = new URL(req.url);
     const q = searchParams.get('q') || '';
-    const items = await listMediaAssets(q);
+    const usageParam = (searchParams.get('usage') || 'all').toLowerCase();
+    const usageFilter = usageParam === 'used' || usageParam === 'unused' ? usageParam : 'all';
+    const items = await listMediaAssets(q, usageFilter);
     return ok({ items });
   } catch (error) {
     return badRequest(getErrorMessage(error, 'Failed to load media.'), 500);

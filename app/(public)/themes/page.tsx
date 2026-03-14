@@ -6,7 +6,10 @@ export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: 'Themes | The Compendium Podcast',
-  description: 'Browse every active Compendium theme hub.'
+  description: 'Browse every active Compendium theme hub.',
+  alternates: {
+    canonical: '/themes'
+  }
 };
 
 export default async function ThemesIndexPage() {

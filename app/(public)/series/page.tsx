@@ -6,7 +6,10 @@ export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: 'Series | The Compendium Podcast',
-  description: 'Browse every active Compendium series hub.'
+  description: 'Browse every active Compendium series hub.',
+  alternates: {
+    canonical: '/series'
+  }
 };
 
 export default async function DiscoverySeriesIndexPage() {

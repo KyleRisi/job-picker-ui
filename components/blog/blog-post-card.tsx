@@ -22,12 +22,14 @@ export function BlogPostCard({
   post,
   featured = false,
   compact = false,
-  onDark = false
+  onDark = false,
+  excerptNoSnippet = false
 }: {
   post: BlogPostCardPost;
   featured?: boolean;
   compact?: boolean;
   onDark?: boolean;
+  excerptNoSnippet?: boolean;
 }) {
   const imageUrl = post.featured_image ? getStoragePublicUrl(post.featured_image.storage_path) : null;
   const category = post.taxonomies?.categories?.[0];
@@ -73,7 +75,7 @@ export function BlogPostCard({
               {post.title}
             </Link>
           </h3>
-          <p className={`line-clamp-3 text-sm ${excerptClass}`}>{excerpt}</p>
+          <p data-nosnippet={excerptNoSnippet ? '' : undefined} className={`line-clamp-3 text-sm ${excerptClass}`}>{excerpt}</p>
           <div className={`flex flex-wrap items-center gap-3 text-xs ${metaClass}`}>
             {post.author ? <Link href={`/blog/author/${post.author.slug}`}>{post.author.name}</Link> : null}
             {post.published_at ? <span>{new Date(post.published_at).toLocaleDateString('en-GB')}</span> : null}
@@ -108,7 +110,7 @@ export function BlogPostCard({
             {post.title}
           </Link>
         </h2>
-        <p className={excerptClass}>
+        <p data-nosnippet={excerptNoSnippet ? '' : undefined} className={excerptClass}>
           {excerpt}
         </p>
         <div className={`flex flex-wrap items-center gap-3 text-sm ${metaClass}`}>

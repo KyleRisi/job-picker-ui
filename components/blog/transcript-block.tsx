@@ -27,6 +27,7 @@ export function TranscriptBlock({
   const [activeMatchIndex, setActiveMatchIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(true);
   const matchRefs = useRef<Array<HTMLElement | null>>([]);
+  const transcriptScrollRef = useRef<HTMLDivElement | null>(null);
   const transcriptText = useMemo(() => transcriptNodesToText(content || []), [content]);
   const lowerQuery = searchQuery.trim().toLowerCase();
 
@@ -54,9 +55,19 @@ export function TranscriptBlock({
 
   useEffect(() => {
     if (!matchCount) return;
+    const transcriptScroll = transcriptScrollRef.current;
     const activeNode = matchRefs.current[activeMatchIndex];
-    if (!activeNode) return;
-    activeNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (!transcriptScroll || !activeNode) return;
+
+    // Keep page position stable by only scrolling the transcript container.
+    // Place the active hit near the top with a little context (roughly 2-3 lines).
+    const containerRect = transcriptScroll.getBoundingClientRect();
+    const nodeRect = activeNode.getBoundingClientRect();
+    const nodeTopWithinContainer = nodeRect.top - containerRect.top + transcriptScroll.scrollTop;
+    const contextOffset = 72;
+    const nextTop = Math.max(0, nodeTopWithinContainer - contextOffset);
+
+    transcriptScroll.scrollTo({ top: nextTop, behavior: 'smooth' });
   }, [activeMatchIndex, matchCount]);
 
   const goToPreviousMatch = () => {
@@ -153,7 +164,7 @@ export function TranscriptBlock({
           </div>
         ) : null}
       </div>
-      <div className="mt-3 max-h-[600px] overflow-y-auto">
+      <div ref={transcriptScrollRef} className="mt-3 max-h-[600px] overflow-y-auto">
         <p className={`whitespace-pre-wrap text-base leading-7 ${isDark ? 'text-white/85' : 'text-carnival-ink/85'}`}>
           {matchRegex
             ? transcriptText.split(matchRegex).map((part, index) => {

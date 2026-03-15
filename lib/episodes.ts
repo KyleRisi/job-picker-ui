@@ -539,12 +539,15 @@ function pickPreferredEpisodeSourceHtml(row: PodcastEpisodeRow) {
 function resolveBody(row: PodcastEpisodeRow, editorial: PodcastEpisodeEditorialRow | null | undefined) {
   const bodyJson = Array.isArray(editorial?.body_json) ? normalizeBlogDocument(editorial?.body_json) : null;
   const bodyJsonMarkdown = bodyJson ? (blogDocumentToMarkdown(bodyJson) || '').trim() : '';
-  if (bodyJson && bodyJson.length > 0 && bodyJsonMarkdown) {
-    const effectiveBodyMarkdown = editorial?.body_markdown || bodyJsonMarkdown;
+  if (bodyJson && bodyJson.length > 0) {
+    const effectiveBodyMarkdown = editorial?.body_markdown || bodyJsonMarkdown || null;
+    const sourceHtml = pickPreferredEpisodeSourceHtml(row);
     return {
       bodyJson,
       bodyMarkdown: effectiveBodyMarkdown,
-      bodyHtml: toSafeHtml(marked.parse(effectiveBodyMarkdown) as string),
+      bodyHtml: effectiveBodyMarkdown
+        ? toSafeHtml(marked.parse(effectiveBodyMarkdown) as string)
+        : toSafeHtml(sourceHtml),
       bodySource: 'editorial' as const
     };
   }

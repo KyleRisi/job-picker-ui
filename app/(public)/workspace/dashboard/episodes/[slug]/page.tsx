@@ -151,13 +151,19 @@ export default async function EpisodeEditorPage({ params }: { params: Promise<{ 
     (episode.source.descriptionPlain || '').trim()
   ].find((value) => typeof value === 'string' && value.trim());
   const sourceBodyFallback = sourceSeed ? markdownToBlogDocument(sourceSeed) : [];
+  const editorialBodyJson = Array.isArray(episode.bodyJson) ? episode.bodyJson : [];
+  const transcriptBlocks = editorialBodyJson.filter((block) => block?.type === 'transcript');
+  const nonTranscriptBlocks = editorialBodyJson.filter((block) => block?.type !== 'transcript');
+  const hydratedEpisodeEditorDocument = nonTranscriptBlocks.length > 0
+    ? editorialBodyJson
+    : (sourceBodyFallback.length ? [...sourceBodyFallback, ...transcriptBlocks] : editorialBodyJson);
   const postLike = {
     id: episode.id,
     title: editorial?.webTitle || episode.title || '',
     slug: editorial?.webSlug || episode.slug || '',
     status: episode.isArchived ? 'archived' : (episode.isVisible ? 'published' : 'draft'),
     excerpt: editorial?.excerpt || '',
-    content_json: Array.isArray(episode.bodyJson) && episode.bodyJson.length ? episode.bodyJson : sourceBodyFallback,
+    content_json: hydratedEpisodeEditorDocument.length ? hydratedEpisodeEditorDocument : sourceBodyFallback,
     published_at: episode.publishedAt || null,
     is_featured: episode.isFeatured,
     author_id: editorial?.authorId || null,

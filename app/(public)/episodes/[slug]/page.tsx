@@ -123,6 +123,12 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
   };
 
   const structuredBody = Array.isArray(episode.bodyJson) ? episode.bodyJson : null;
+  const structuredBodyWithoutTranscript = structuredBody
+    ? structuredBody.filter((block) => block?.type !== 'transcript')
+    : [];
+  const transcriptOnlyStructuredBlocks = structuredBody
+    ? structuredBody.filter((block) => block?.type === 'transcript')
+    : [];
   const [assetMap, authors] = await Promise.all([
     structuredBody ? getMediaAssetMapByIds(collectReferencedImageIds(structuredBody)) : Promise.resolve(new Map()),
     listBlogAuthors()
@@ -288,7 +294,7 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
 
       <article className="-mx-4 bg-white px-5 py-5 sm:mx-0 sm:px-6 sm:py-6">
         <h2 className="text-xl font-black text-carnival-ink">Episode Story</h2>
-        {structuredBody && structuredBody.length ? (
+        {structuredBody && structuredBodyWithoutTranscript.length ? (
           <div className="mt-4">
             <BlogContentRenderer
               document={structuredBody}
@@ -298,7 +304,28 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
             />
           </div>
         ) : episode.bodyHtml ? (
-          <div className="episode-rich mt-4 text-base leading-relaxed text-carnival-ink/90" dangerouslySetInnerHTML={{ __html: episode.bodyHtml }} />
+          <>
+            <div className="episode-rich mt-4 text-base leading-relaxed text-carnival-ink/90" dangerouslySetInnerHTML={{ __html: episode.bodyHtml }} />
+            {transcriptOnlyStructuredBlocks.length ? (
+              <div className="mt-6">
+                <BlogContentRenderer
+                  document={transcriptOnlyStructuredBlocks}
+                  assetMap={assetMap}
+                  linkedEpisodes={linkedEpisodesForRenderer as any}
+                  relatedPosts={episode.relatedPosts.map((post) => ({ id: post.id, slug: post.slug, title: post.title }))}
+                />
+              </div>
+            ) : null}
+          </>
+        ) : transcriptOnlyStructuredBlocks.length ? (
+          <div className="mt-4">
+            <BlogContentRenderer
+              document={transcriptOnlyStructuredBlocks}
+              assetMap={assetMap}
+              linkedEpisodes={linkedEpisodesForRenderer as any}
+              relatedPosts={episode.relatedPosts.map((post) => ({ id: post.id, slug: post.slug, title: post.title }))}
+            />
+          </div>
         ) : (
           <div className="mt-4 text-base leading-relaxed text-carnival-ink/90">No episode description available.</div>
         )}
@@ -311,7 +338,7 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
             </div>
             <div className="mt-4 space-y-3">
               {episode.relatedEpisodes.map((item) => (
-                <CompactEpisodeRow key={`${item.relationshipType}-${item.episode.id}`} episode={item.episode} />
+                <CompactEpisodeRow key={`${item.relationshipType}-${item.episode.id}`} episode={item.episode} excerptNoSnippet />
               ))}
             </div>
             <div className="mt-6 flex justify-center">
@@ -335,6 +362,7 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
               {episode.relatedPosts.map((post) => (
                 <BlogPostCard
                   key={post.id}
+                  excerptNoSnippet
                   post={{
                     id: post.id,
                     slug: post.slug,

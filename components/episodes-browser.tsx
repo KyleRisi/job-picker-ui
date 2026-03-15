@@ -13,6 +13,7 @@ import { CompactPagination } from '@/components/compact-pagination';
 import { trackMixpanel } from '@/lib/mixpanel-browser';
 import { pageHref } from '@/lib/pagination';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
+import { isTaxonomyPublicDisplayable } from '@/lib/taxonomy-route-policy';
 
 function toExcerpt(value: string, maxLength: number): string {
   const normalized = `${value || ''}`.replace(/\s+/g, ' ').trim();
@@ -137,13 +138,17 @@ export function EpisodeCard({
   episode: PodcastEpisode;
   featured: boolean;
   featuredDesktopTextLarger?: boolean;
-  taxonomyChips?: Array<{ id: string; name: string; path: string | null }>;
+  taxonomyChips?: Array<{ id: string; name: string; path: string | null; publicDisplayable?: boolean }>;
   showInlinePlayer?: boolean;
 }) {
   const excerpt = toExcerpt(episode.description, featured ? 480 : 220);
   const detailHref = `/episodes/${episode.slug}`;
   const spotifyEpisodeUrl = getSpotifyEpisodeUrl(episode.title);
   const applePodcastsEpisodeUrl = getApplePodcastsEpisodeUrl(episode.title);
+  const visibleTaxonomyChips = useMemo(
+    () => (taxonomyChips || []).filter((chip) => chip.publicDisplayable && chip.path),
+    [taxonomyChips]
+  );
 
   return (
     <article
@@ -248,25 +253,16 @@ export function EpisodeCard({
 
           {featured ? (
             <>
-              {taxonomyChips?.length ? (
+              {visibleTaxonomyChips.length ? (
                 <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-bold text-carnival-ink/70">
-                  {taxonomyChips.map((chip) => (
-                    chip.path ? (
-                      <Link
-                        key={chip.id}
-                        href={chip.path}
-                        className="rounded-full border border-carnival-ink/20 px-3 py-1 text-[11px] font-semibold text-carnival-ink/75 transition hover:border-carnival-red hover:text-carnival-red"
-                      >
-                        {chip.name}
-                      </Link>
-                    ) : (
-                      <span
-                        key={chip.id}
-                        className="rounded-full border border-carnival-ink/20 px-3 py-1 text-[11px] font-semibold text-carnival-ink/60"
-                      >
-                        {chip.name}
-                      </span>
-                    )
+                  {visibleTaxonomyChips.map((chip) => (
+                    <Link
+                      key={chip.id}
+                      href={chip.path as string}
+                      className="rounded-full border border-carnival-ink/20 px-3 py-1 text-[11px] font-semibold text-carnival-ink/75 transition hover:border-carnival-red hover:text-carnival-red"
+                    >
+                      {chip.name}
+                    </Link>
                   ))}
                 </div>
               ) : null}
@@ -311,25 +307,16 @@ export function EpisodeCard({
               </Link>
             )}
 
-            {!featured && taxonomyChips?.length ? (
+            {!featured && visibleTaxonomyChips.length ? (
               <div className="hidden lg:flex flex-wrap items-center gap-2 text-xs font-bold text-carnival-ink/70">
-                {taxonomyChips.map((chip) => (
-                  chip.path ? (
-                    <Link
-                      key={chip.id}
-                      href={chip.path}
-                      className="rounded-full border border-carnival-ink/20 px-3 py-1 text-[11px] font-semibold text-carnival-ink/75 transition hover:border-carnival-red hover:text-carnival-red"
-                    >
-                      {chip.name}
-                    </Link>
-                  ) : (
-                    <span
-                      key={chip.id}
-                      className="rounded-full border border-carnival-ink/20 px-3 py-1 text-[11px] font-semibold text-carnival-ink/60"
-                    >
-                      {chip.name}
-                    </span>
-                  )
+                {visibleTaxonomyChips.map((chip) => (
+                  <Link
+                    key={chip.id}
+                    href={chip.path as string}
+                    className="rounded-full border border-carnival-ink/20 px-3 py-1 text-[11px] font-semibold text-carnival-ink/75 transition hover:border-carnival-red hover:text-carnival-red"
+                  >
+                    {chip.name}
+                  </Link>
                 ))}
               </div>
             ) : null}
@@ -661,12 +648,31 @@ export function EpisodesBrowser({
   }, [filteredEpisodes, normalizedQuery, showFeaturedEpisode]);
 
   const featuredTaxonomyChips = useMemo(() => {
-    if (!showFeaturedTaxonomyChips || !featuredEpisode) return [] as Array<{ id: string; name: string; path: string | null }>;
+    if (!showFeaturedTaxonomyChips || !featuredEpisode) return [] as Array<{ id: string; name: string; path: string | null; publicDisplayable?: boolean }>;
     const terms = (featuredEpisode as PodcastEpisode & {
-      discoveryTerms?: Array<{ id: string; name: string; path: string | null }>;
+      discoveryTerms?: Array<{
+        id: string;
+        name: string;
+        path: string | null;
+        isActive: boolean;
+        termType: string;
+        slug: string;
+        entitySubtype: string | null;
+      }>;
     }).discoveryTerms;
-    if (!Array.isArray(terms) || !terms.length) return [] as Array<{ id: string; name: string; path: string | null }>;
-    return terms.slice(0, 6).map((term) => ({ id: term.id, name: term.name, path: term.path }));
+    if (!Array.isArray(terms) || !terms.length) return [] as Array<{ id: string; name: string; path: string | null; publicDisplayable?: boolean }>;
+    return terms.slice(0, 6).map((term) => ({
+      id: term.id,
+      name: term.name,
+      path: term.path,
+      publicDisplayable: isTaxonomyPublicDisplayable({
+        isActive: term.isActive,
+        termType: term.termType,
+        slug: term.slug,
+        entitySubtype: term.entitySubtype,
+        path: term.path
+      })
+    }));
   }, [featuredEpisode, showFeaturedTaxonomyChips]);
 
   const allStandardEpisodes = featuredEpisode

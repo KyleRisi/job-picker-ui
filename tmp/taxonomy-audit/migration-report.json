@@ -1,0 +1,594 @@
+{
+  "generated_at": "2026-03-15T14:11:17.242Z",
+  "inventory_checked": true,
+  "inventory_check_reason": "",
+  "inventory_discovery_route_count": 58,
+  "unclassified_inventory_routes": [],
+  "route_count": 73,
+  "routes": [
+    {
+      "route": "/blog/category/crime-stories",
+      "previous_behavior": "legacy_blog_category_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/true-crime",
+      "rationale": "Required mapping from retirement brief."
+    },
+    {
+      "route": "/blog/category/cults-belief-moral-panics",
+      "previous_behavior": "legacy_blog_category_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/cults-belief-moral-panics",
+      "rationale": "Legacy blog category duplicates approved topic."
+    },
+    {
+      "route": "/blog/category/disasters-survival",
+      "previous_behavior": "legacy_blog_category_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/disasters-survival",
+      "rationale": "Legacy blog category duplicates approved topic."
+    },
+    {
+      "route": "/blog/category/history",
+      "previous_behavior": "legacy_blog_category_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/history",
+      "rationale": "Legacy blog category duplicates approved topic."
+    },
+    {
+      "route": "/blog/category/incredible-events",
+      "previous_behavior": "legacy_blog_category_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/history",
+      "rationale": "Required mapping from retirement brief."
+    },
+    {
+      "route": "/blog/category/incredible-people",
+      "previous_behavior": "legacy_blog_category_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/incredible-people",
+      "rationale": "Legacy blog category duplicates approved topic."
+    },
+    {
+      "route": "/blog/category/mysteries",
+      "previous_behavior": "legacy_blog_category_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/mysteries-unexplained",
+      "rationale": "Required mapping from retirement brief."
+    },
+    {
+      "route": "/blog/category/mysteries-unexplained",
+      "previous_behavior": "legacy_blog_category_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/mysteries-unexplained",
+      "rationale": "Legacy blog category duplicates approved topic."
+    },
+    {
+      "route": "/blog/category/pop-culture-entertainment",
+      "previous_behavior": "legacy_blog_category_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/pop-culture-entertainment",
+      "rationale": "Legacy blog category duplicates approved topic."
+    },
+    {
+      "route": "/blog/category/prison-breaks",
+      "previous_behavior": "legacy_blog_category_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/true-crime",
+      "rationale": "Required mapping from retirement brief."
+    },
+    {
+      "route": "/blog/category/scams-hoaxes-cons",
+      "previous_behavior": "legacy_blog_category_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/scams-hoaxes-cons",
+      "rationale": "Legacy blog category duplicates approved topic."
+    },
+    {
+      "route": "/blog/category/true-crime",
+      "previous_behavior": "legacy_blog_category_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/true-crime",
+      "rationale": "Legacy blog category duplicates approved topic."
+    },
+    {
+      "route": "/blog/series",
+      "previous_behavior": "legacy_blog_series_family",
+      "new_behavior": "retired_no_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Legacy series archive family retired."
+    },
+    {
+      "route": "/blog/series/amanda-knox-meredith-kercher",
+      "previous_behavior": "legacy_blog_series_archive",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Ambiguous successor; conservative retirement."
+    },
+    {
+      "route": "/blog/series/american-cases",
+      "previous_behavior": "legacy_blog_series_archive",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Deprecated non-approved collection surrogate."
+    },
+    {
+      "route": "/blog/series/british-cases",
+      "previous_behavior": "legacy_blog_series_archive",
+      "new_behavior": "redirect_to_collection_hub",
+      "status_code": 301,
+      "redirect_destination": "/collections/british-cases",
+      "rationale": "Legacy series maps to approved collection."
+    },
+    {
+      "route": "/blog/series/emanuela-orlandi",
+      "previous_behavior": "legacy_blog_series_archive",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Ambiguous successor; conservative retirement."
+    },
+    {
+      "route": "/blog/series/international-cases",
+      "previous_behavior": "legacy_blog_series_archive",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Deprecated non-approved collection surrogate."
+    },
+    {
+      "route": "/blog/series/princess-diana",
+      "previous_behavior": "legacy_blog_series_archive",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Ambiguous successor; conservative retirement."
+    },
+    {
+      "route": "/blog/series/survival-stories",
+      "previous_behavior": "legacy_blog_series_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/disasters-survival",
+      "rationale": "Legacy series overlaps approved topic intent."
+    },
+    {
+      "route": "/blog/series/titanic",
+      "previous_behavior": "legacy_blog_series_archive",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Ambiguous successor; conservative retirement."
+    },
+    {
+      "route": "/blog/topic/conspiracies-cover-ups",
+      "previous_behavior": "legacy_blog_topic_archive",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Ambiguous successor; conservative retirement."
+    },
+    {
+      "route": "/blog/topic/cults",
+      "previous_behavior": "legacy_blog_topic_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/cults-belief-moral-panics",
+      "rationale": "Legacy topic cluster has clear successor."
+    },
+    {
+      "route": "/blog/topic/disappearances",
+      "previous_behavior": "legacy_blog_topic_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/true-crime",
+      "rationale": "Legacy topic cluster has clear successor."
+    },
+    {
+      "route": "/blog/topic/hoaxes",
+      "previous_behavior": "legacy_blog_topic_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/scams-hoaxes-cons",
+      "rationale": "Legacy topic cluster has clear successor."
+    },
+    {
+      "route": "/blog/topic/kidnappings",
+      "previous_behavior": "legacy_blog_topic_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/true-crime",
+      "rationale": "Legacy topic cluster has clear successor."
+    },
+    {
+      "route": "/blog/topic/media-frenzy",
+      "previous_behavior": "legacy_blog_topic_archive",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Ambiguous successor; conservative retirement."
+    },
+    {
+      "route": "/blog/topic/murders",
+      "previous_behavior": "legacy_blog_topic_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/true-crime",
+      "rationale": "Legacy topic cluster has clear successor."
+    },
+    {
+      "route": "/blog/topic/scams-frauds",
+      "previous_behavior": "legacy_blog_topic_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/scams-hoaxes-cons",
+      "rationale": "Legacy topic cluster has clear successor."
+    },
+    {
+      "route": "/blog/topic/scandals",
+      "previous_behavior": "legacy_blog_topic_archive",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Ambiguous successor; conservative retirement."
+    },
+    {
+      "route": "/blog/topic/serial-killers",
+      "previous_behavior": "legacy_blog_topic_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/true-crime",
+      "rationale": "Legacy topic cluster has clear successor."
+    },
+    {
+      "route": "/blog/topic/survival-against-the-odds",
+      "previous_behavior": "legacy_blog_topic_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/disasters-survival",
+      "rationale": "Legacy topic cluster has clear successor."
+    },
+    {
+      "route": "/blog/topic/top-episodes",
+      "previous_behavior": "legacy_blog_topic_archive",
+      "new_behavior": "redirect_to_episode_index",
+      "status_code": 301,
+      "redirect_destination": "/episodes",
+      "rationale": "Required mapping from retirement brief."
+    },
+    {
+      "route": "/blog/topic/unsolved-mysteries",
+      "previous_behavior": "legacy_blog_topic_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/mysteries-unexplained",
+      "rationale": "Legacy topic cluster has clear successor."
+    },
+    {
+      "route": "/blog/topic/wrongful-convictions",
+      "previous_behavior": "legacy_blog_topic_archive",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/true-crime",
+      "rationale": "Legacy topic cluster has clear successor."
+    },
+    {
+      "route": "/cases",
+      "previous_behavior": "cases_index_page",
+      "new_behavior": "retired_no_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Family retired as non-primary taxonomy surface."
+    },
+    {
+      "route": "/collections",
+      "previous_behavior": "indexable_collections_index",
+      "new_behavior": "indexable_collections_index",
+      "status_code": 200,
+      "redirect_destination": null,
+      "rationale": "Index remains live with approved collections only."
+    },
+    {
+      "route": "/collections/american-cases",
+      "previous_behavior": "collection_hub_indexable",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Geo facet without clear canonical successor."
+    },
+    {
+      "route": "/collections/british-cases",
+      "previous_behavior": "indexable_collection_hub",
+      "new_behavior": "indexable_collection_hub",
+      "status_code": 200,
+      "redirect_destination": null,
+      "rationale": "Approved secondary collection."
+    },
+    {
+      "route": "/collections/frauds-hoaxes-cons",
+      "previous_behavior": "duplicate_collection_hub",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/scams-hoaxes-cons",
+      "rationale": "Required mapping from retirement brief."
+    },
+    {
+      "route": "/collections/international-cases",
+      "previous_behavior": "collection_hub_indexable",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Geo facet without clear canonical successor."
+    },
+    {
+      "route": "/collections/music-fame-pop-culture",
+      "previous_behavior": "duplicate_collection_hub",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/pop-culture-entertainment",
+      "rationale": "Required mapping from retirement brief."
+    },
+    {
+      "route": "/collections/survival-stories",
+      "previous_behavior": "collection_hub_indexable",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/disasters-survival",
+      "rationale": "Collection intent overlaps approved disasters topic."
+    },
+    {
+      "route": "/events",
+      "previous_behavior": "events_index_page",
+      "new_behavior": "retired_no_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Family retired as non-primary taxonomy surface."
+    },
+    {
+      "route": "/people",
+      "previous_behavior": "people_index_page",
+      "new_behavior": "retired_no_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Family retired as non-primary taxonomy surface."
+    },
+    {
+      "route": "/series",
+      "previous_behavior": "series_index_page",
+      "new_behavior": "retired_no_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Family retired as non-primary taxonomy surface."
+    },
+    {
+      "route": "/series/amanda-knox-meredith-kercher",
+      "previous_behavior": "series_hub_indexable",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Ambiguous successor; conservative retirement."
+    },
+    {
+      "route": "/series/emanuela-orlandi",
+      "previous_behavior": "series_hub_indexable",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Ambiguous successor; conservative retirement."
+    },
+    {
+      "route": "/series/princess-diana",
+      "previous_behavior": "series_hub_indexable",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Ambiguous successor; conservative retirement."
+    },
+    {
+      "route": "/series/titanic",
+      "previous_behavior": "series_hub_indexable",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Ambiguous successor; conservative retirement."
+    },
+    {
+      "route": "/themes",
+      "previous_behavior": "theme_index_page",
+      "new_behavior": "retired_no_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Family retired as non-primary taxonomy surface."
+    },
+    {
+      "route": "/themes/conspiracies-cover-ups",
+      "previous_behavior": "theme_hub_indexable",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Ambiguous successor; conservative retirement."
+    },
+    {
+      "route": "/themes/cults",
+      "previous_behavior": "theme_hub_indexable",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/cults-belief-moral-panics",
+      "rationale": "Clear thematic successor to approved topic."
+    },
+    {
+      "route": "/themes/disappearances",
+      "previous_behavior": "theme_hub_indexable",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/true-crime",
+      "rationale": "Clear thematic successor to approved topic."
+    },
+    {
+      "route": "/themes/hoaxes",
+      "previous_behavior": "theme_hub_indexable",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/scams-hoaxes-cons",
+      "rationale": "Clear thematic successor to approved topic."
+    },
+    {
+      "route": "/themes/kidnappings",
+      "previous_behavior": "theme_hub_indexable",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/true-crime",
+      "rationale": "Clear thematic successor to approved topic."
+    },
+    {
+      "route": "/themes/media-frenzy",
+      "previous_behavior": "theme_hub_indexable",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Ambiguous successor; conservative retirement."
+    },
+    {
+      "route": "/themes/murders",
+      "previous_behavior": "theme_hub_indexable",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/true-crime",
+      "rationale": "Clear thematic successor to approved topic."
+    },
+    {
+      "route": "/themes/scams-frauds",
+      "previous_behavior": "theme_hub_indexable",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/scams-hoaxes-cons",
+      "rationale": "Clear thematic successor to approved topic."
+    },
+    {
+      "route": "/themes/scandals",
+      "previous_behavior": "theme_hub_indexable",
+      "new_behavior": "retired_no_confident_successor",
+      "status_code": 410,
+      "redirect_destination": null,
+      "rationale": "Ambiguous successor; conservative retirement."
+    },
+    {
+      "route": "/themes/serial-killers",
+      "previous_behavior": "theme_hub_indexable",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/true-crime",
+      "rationale": "Clear thematic successor to approved topic."
+    },
+    {
+      "route": "/themes/survival-against-the-odds",
+      "previous_behavior": "theme_hub_indexable",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/disasters-survival",
+      "rationale": "Clear thematic successor to approved topic."
+    },
+    {
+      "route": "/themes/unsolved-mysteries",
+      "previous_behavior": "theme_hub_indexable",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/mysteries-unexplained",
+      "rationale": "Clear thematic successor to approved topic."
+    },
+    {
+      "route": "/themes/wrongful-convictions",
+      "previous_behavior": "theme_hub_indexable",
+      "new_behavior": "redirect_to_topic_hub",
+      "status_code": 301,
+      "redirect_destination": "/topics/true-crime",
+      "rationale": "Clear thematic successor to approved topic."
+    },
+    {
+      "route": "/topics",
+      "previous_behavior": "indexable_topics_index",
+      "new_behavior": "indexable_topics_index",
+      "status_code": 200,
+      "redirect_destination": null,
+      "rationale": "Approved primary taxonomy index."
+    },
+    {
+      "route": "/topics/cults-belief-moral-panics",
+      "previous_behavior": "indexable_topic_hub",
+      "new_behavior": "indexable_topic_hub",
+      "status_code": 200,
+      "redirect_destination": null,
+      "rationale": "Approved primary topic."
+    },
+    {
+      "route": "/topics/disasters-survival",
+      "previous_behavior": "indexable_topic_hub",
+      "new_behavior": "indexable_topic_hub",
+      "status_code": 200,
+      "redirect_destination": null,
+      "rationale": "Approved topic retained by editorial direction."
+    },
+    {
+      "route": "/topics/history",
+      "previous_behavior": "indexable_topic_hub",
+      "new_behavior": "indexable_topic_hub",
+      "status_code": 200,
+      "redirect_destination": null,
+      "rationale": "Approved primary topic."
+    },
+    {
+      "route": "/topics/incredible-people",
+      "previous_behavior": "indexable_topic_hub",
+      "new_behavior": "indexable_topic_hub",
+      "status_code": 200,
+      "redirect_destination": null,
+      "rationale": "Approved primary topic."
+    },
+    {
+      "route": "/topics/mysteries-unexplained",
+      "previous_behavior": "indexable_topic_hub",
+      "new_behavior": "indexable_topic_hub",
+      "status_code": 200,
+      "redirect_destination": null,
+      "rationale": "Approved primary topic."
+    },
+    {
+      "route": "/topics/pop-culture-entertainment",
+      "previous_behavior": "indexable_topic_hub",
+      "new_behavior": "indexable_topic_hub",
+      "status_code": 200,
+      "redirect_destination": null,
+      "rationale": "Approved primary topic."
+    },
+    {
+      "route": "/topics/scams-hoaxes-cons",
+      "previous_behavior": "indexable_topic_hub",
+      "new_behavior": "indexable_topic_hub",
+      "status_code": 200,
+      "redirect_destination": null,
+      "rationale": "Approved primary topic."
+    },
+    {
+      "route": "/topics/true-crime",
+      "previous_behavior": "indexable_topic_hub",
+      "new_behavior": "indexable_topic_hub",
+      "status_code": 200,
+      "redirect_destination": null,
+      "rationale": "Approved primary topic."
+    }
+  ]
+}

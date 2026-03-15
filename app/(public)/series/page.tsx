@@ -1,18 +1,14 @@
 import type { Metadata } from 'next';
-import { DiscoveryTermIndexPage } from '@/components/discovery-term-index-page';
-import { listActiveDiscoveryTerms } from '@/lib/episodes';
+import { notFound } from 'next/navigation';
+import { ROBOTS_NOINDEX_NOFOLLOW } from '@/lib/seo';
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: 'Series | The Compendium Podcast',
-  description: 'Browse every active Compendium series hub.',
-  alternates: {
-    canonical: '/series'
-  }
+  title: 'Series Archive Retired',
+  robots: ROBOTS_NOINDEX_NOFOLLOW
 };
 
-export default async function DiscoverySeriesIndexPage() {
-  const terms = (await listActiveDiscoveryTerms()).filter((term) => term.termType === 'series');
-  return <DiscoveryTermIndexPage routeKey="series" terms={terms} />;
+export default function DiscoverySeriesIndexPage() {
+  notFound();
 }

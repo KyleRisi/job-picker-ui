@@ -2,6 +2,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { unstable_cache } from 'next/cache';
 import { marked } from 'marked';
 import { normalizePath } from '@/lib/redirects';
+import { isApprovedCollectionSlug, isApprovedTopicSlug, resolveTaxonomyPublicPath } from '@/lib/taxonomy-route-policy';
 import {
   formatEpisodeDate,
   type BreadcrumbItem,
@@ -440,14 +441,11 @@ function toMetaDescription(value: string): string {
 }
 
 function resolveTermPath(term: Pick<DiscoveryTermRow, 'term_type' | 'entity_subtype' | 'slug'>): string | null {
-  if (term.term_type === 'topic') return `/topics/${term.slug}`;
-  if (term.term_type === 'theme') return `/themes/${term.slug}`;
-  if (term.term_type === 'entity' && term.entity_subtype === 'person') return `/people/${term.slug}`;
-  if (term.term_type === 'case') return `/cases/${term.slug}`;
-  if (term.term_type === 'event') return `/events/${term.slug}`;
-  if (term.term_type === 'collection') return `/collections/${term.slug}`;
-  if (term.term_type === 'series') return `/series/${term.slug}`;
-  return null;
+  return resolveTaxonomyPublicPath({
+    termType: term.term_type,
+    entitySubtype: term.entity_subtype,
+    slug: term.slug
+  });
 }
 
 function mapDiscoveryTerm(row: DiscoveryTermRow): DiscoveryTerm {
@@ -1163,7 +1161,6 @@ const EPISODE_LANDING_TAXONOMY_RAILS: Array<{
 }> = [
   { key: 'true-crime', title: 'True Crime', termType: 'topic', slug: 'true-crime' },
   { key: 'history', title: 'History', termType: 'topic', slug: 'history' },
-  { key: 'british-cases', title: 'British Cases', termType: 'collection', slug: 'british-cases' },
   { key: 'incredible-people', title: 'Incredible People', termType: 'topic', slug: 'incredible-people' },
   { key: 'scandals', title: 'Scandals', termType: 'theme', slug: 'scandals' }
 ];
@@ -1239,6 +1236,10 @@ function getDiscoveryTermRouteFilter(routeKey: string): { termType: DiscoveryTer
 async function getDiscoveryHubPageUncached(routeKey: string, slug: string, page = 1): Promise<DiscoveryHubPage | null> {
   const filter = getDiscoveryTermRouteFilter(routeKey);
   if (!filter) return null;
+  const normalizedSlug = slugifyEpisodeText(slug);
+  if (routeKey === 'topics' && !isApprovedTopicSlug(normalizedSlug)) return null;
+  if (routeKey === 'collections' && !isApprovedCollectionSlug(normalizedSlug)) return null;
+
   const supabase = await getSupabaseAdmin();
   let termRow: DiscoveryTermRow | null = null;
   try {
@@ -1246,7 +1247,7 @@ async function getDiscoveryHubPageUncached(routeKey: string, slug: string, page 
       .from('discovery_terms')
       .select('*')
       .eq('term_type', filter.termType)
-      .eq('slug', slugifyEpisodeText(slug))
+      .eq('slug', normalizedSlug)
       .eq('is_active', true)
       .limit(1);
     if (filter.entitySubtype) termQuery = termQuery.eq('entity_subtype', filter.entitySubtype);
@@ -1438,7 +1439,7 @@ export function buildBlogPostBreadcrumbs(post: {
   ];
   const category = post.taxonomies?.categories?.[0];
   if (category) {
-    items.push({ name: category.name, href: `/blog/category/${category.slug}` });
+    items.push({ name: category.name, href: `/topics/${category.slug}` });
   }
   items.push({ name: post.title, href: `/blog/${post.slug}` });
   return items;

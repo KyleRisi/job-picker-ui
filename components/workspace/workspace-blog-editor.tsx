@@ -2169,6 +2169,13 @@ function asNullableText(value: unknown) {
   return trimmed ? trimmed : null;
 }
 
+function normalizeIdArray(value: unknown) {
+  if (!Array.isArray(value)) return [] as string[];
+  return value
+    .map((item) => `${item || ''}`.trim())
+    .filter(Boolean);
+}
+
 function toLocalDateTimeInput(value: string | null | undefined) {
   if (!value) return '';
   const date = new Date(value);
@@ -2274,32 +2281,64 @@ export function WorkspaceBlogEditor({
   const [relatedPostIds, setRelatedPostIds] = useState<string[]>(
     Array.isArray(postAny.related_override_ids) ? postAny.related_override_ids : []
   );
-  const [primaryCategoryId, setPrimaryCategoryId] = useState<string | null>(
-    postAny?.discovery?.primaryTopicId
+  const initialPrimaryTopicId = postAny?.discovery?.primaryTopicId
     || postAny?.primary_topic_id
     || postAny?.primary_category_id
-    || null
+    || null;
+  const [primaryCategoryId, setPrimaryCategoryId] = useState<string | null>(
+    initialPrimaryTopicId
   );
   const [seriesIds, setSeriesIds] = useState<string[]>(
-    Array.isArray(postAny?.discovery?.seriesIds)
-      ? postAny.discovery.seriesIds.filter(Boolean).slice(0, 1)
-      : Array.isArray(postAny?.taxonomies?.series)
-        ? postAny.taxonomies.series.map((item: any) => item.id).filter(Boolean).slice(0, 1)
-        : []
+    isEpisodeMode
+      ? []
+      : Array.isArray(postAny?.discovery?.seriesIds)
+        ? normalizeIdArray(postAny.discovery.seriesIds).slice(0, 1)
+        : Array.isArray(postAny?.taxonomies?.series)
+          ? normalizeIdArray(postAny.taxonomies.series.map((item: any) => item.id)).slice(0, 1)
+          : []
   );
   const [topicIds, setTopicIds] = useState<string[]>(
-    Array.isArray(postAny?.discovery?.topicIds)
-      ? postAny.discovery.topicIds.filter(Boolean).slice(0, 3)
-      : Array.isArray(postAny?.taxonomies?.topicClusters)
-        ? postAny.taxonomies.topicClusters.map((item: any) => item.id).filter(Boolean).slice(0, 3)
-      : []
+    (() => {
+      const rawTopicIds = Array.isArray(postAny?.discovery?.topicIds)
+        ? normalizeIdArray(postAny.discovery.topicIds)
+        : Array.isArray(postAny?.taxonomies?.topicClusters)
+          ? normalizeIdArray(postAny.taxonomies.topicClusters.map((item: any) => item.id))
+          : [];
+      const dedupedTopicIds = Array.from(new Set(rawTopicIds));
+      if (!isEpisodeMode) return dedupedTopicIds.slice(0, 3);
+      return dedupedTopicIds.filter((id) => id !== initialPrimaryTopicId).slice(0, 1);
+    })()
   );
   const [themeIds, setThemeIds] = useState<string[]>(
-    Array.isArray(postAny?.discovery?.themeIds) ? postAny.discovery.themeIds.filter(Boolean).slice(0, 3) : []
+    isEpisodeMode
+      ? []
+      : Array.isArray(postAny?.discovery?.themeIds)
+        ? normalizeIdArray(postAny.discovery.themeIds).slice(0, 3)
+        : []
   );
   const [collectionIds, setCollectionIds] = useState<string[]>(
-    Array.isArray(postAny?.discovery?.collectionIds) ? postAny.discovery.collectionIds.filter(Boolean).slice(0, 2) : []
+    Array.isArray(postAny?.discovery?.collectionIds)
+      ? normalizeIdArray(postAny.discovery.collectionIds).slice(0, isEpisodeMode ? 1 : 2)
+      : []
   );
+  const [removedInactiveNotice, setRemovedInactiveNotice] = useState<string[]>([]);
+  const taxonomyOptionById = useMemo(
+    () => new Map<string, string>([
+      ...taxonomyOptions.categories.map((item) => [item.id, item.name] as const),
+      ...taxonomyOptions.series.map((item) => [item.id, item.name] as const),
+      ...taxonomyOptions.topics.map((item) => [item.id, item.name] as const),
+      ...taxonomyOptions.themes.map((item) => [item.id, item.name] as const),
+      ...taxonomyOptions.collections.map((item) => [item.id, item.name] as const)
+    ]),
+    [taxonomyOptions]
+  );
+  const taxonomyIdSets = useMemo(() => ({
+    categories: new Set(taxonomyOptions.categories.map((item) => item.id)),
+    series: new Set(taxonomyOptions.series.map((item) => item.id)),
+    topics: new Set(taxonomyOptions.topics.map((item) => item.id)),
+    themes: new Set(taxonomyOptions.themes.map((item) => item.id)),
+    collections: new Set(taxonomyOptions.collections.map((item) => item.id))
+  }), [taxonomyOptions]);
   const [hasPrimaryListenBlockInEditor, setHasPrimaryListenBlockInEditor] = useState(false);
   const activeSlug = useMemo(() => {
     if (isEpisodeMode) return post.slug;
@@ -2498,15 +2537,56 @@ export function WorkspaceBlogEditor({
       if (Array.isArray(parsed.linkedEpisodeIds)) setLinkedEpisodeIds(parsed.linkedEpisodeIds.filter(Boolean));
       if (Array.isArray(parsed.relatedPostIds)) setRelatedPostIds(parsed.relatedPostIds.filter(Boolean));
       if (typeof parsed.primaryCategoryId === 'string' || parsed.primaryCategoryId === null) setPrimaryCategoryId(parsed.primaryCategoryId || null);
-      if (Array.isArray(parsed.seriesIds)) setSeriesIds(parsed.seriesIds.filter(Boolean).slice(0, 1));
-      if (Array.isArray(parsed.topicIds)) setTopicIds(parsed.topicIds.filter(Boolean).slice(0, 3));
-      if (Array.isArray(parsed.themeIds)) setThemeIds(parsed.themeIds.filter(Boolean).slice(0, 3));
-      if (Array.isArray(parsed.collectionIds)) setCollectionIds(parsed.collectionIds.filter(Boolean).slice(0, 2));
+      if (Array.isArray(parsed.seriesIds) && !isEpisodeMode) setSeriesIds(parsed.seriesIds.filter(Boolean).slice(0, 1));
+      if (Array.isArray(parsed.topicIds)) {
+        const parsedPrimaryTopicId = typeof parsed.primaryCategoryId === 'string' ? parsed.primaryCategoryId : primaryCategoryId;
+        const deduped = Array.from(new Set(parsed.topicIds.filter(Boolean))).filter((id) => id !== parsedPrimaryTopicId);
+        setTopicIds(deduped.slice(0, isEpisodeMode ? 1 : 3));
+      }
+      if (Array.isArray(parsed.themeIds) && !isEpisodeMode) setThemeIds(parsed.themeIds.filter(Boolean).slice(0, 3));
+      if (Array.isArray(parsed.collectionIds)) {
+        const deduped = Array.from(new Set(parsed.collectionIds.filter(Boolean)));
+        setCollectionIds(deduped.slice(0, isEpisodeMode ? 1 : 2));
+      }
       setIsDirty(true);
     } catch {
       // Ignore malformed or unavailable local draft data.
     }
-  }, [draftStorageKey, editor, episodeSourceLastSyncedAt, isEpisodeMode]);
+  }, [draftStorageKey, editor, episodeSourceLastSyncedAt, isEpisodeMode, primaryCategoryId]);
+
+  useEffect(() => {
+    const removed: string[] = [];
+    const sanitizeList = (current: string[], allowed: Set<string>, apply: (next: string[]) => void) => {
+      const next = current.filter((id) => allowed.has(id));
+      if (next.length !== current.length) {
+        current
+          .filter((id) => !allowed.has(id))
+          .forEach((id) => removed.push(taxonomyOptionById.get(id) || id));
+        apply(next);
+      }
+    };
+
+    if (primaryCategoryId && !taxonomyIdSets.categories.has(primaryCategoryId)) {
+      removed.push(taxonomyOptionById.get(primaryCategoryId) || primaryCategoryId);
+      setPrimaryCategoryId(null);
+    }
+    sanitizeList(seriesIds, taxonomyIdSets.series, setSeriesIds);
+    sanitizeList(topicIds, taxonomyIdSets.topics, setTopicIds);
+    sanitizeList(themeIds, taxonomyIdSets.themes, setThemeIds);
+    sanitizeList(collectionIds, taxonomyIdSets.collections, setCollectionIds);
+
+    if (removed.length) {
+      setRemovedInactiveNotice((current) => Array.from(new Set([...current, ...removed])));
+    }
+  }, [
+    collectionIds,
+    primaryCategoryId,
+    seriesIds,
+    taxonomyIdSets,
+    taxonomyOptionById,
+    themeIds,
+    topicIds
+  ]);
 
   useEffect(() => {
     if (!editor) return;
@@ -2717,6 +2797,13 @@ export function WorkspaceBlogEditor({
     if (current.length >= max) return current;
     return [...current, id];
   }
+  const payloadPrimaryTopicId = primaryCategoryId && taxonomyIdSets.categories.has(primaryCategoryId)
+    ? primaryCategoryId
+    : null;
+  const payloadSeriesIds = seriesIds.filter((id) => taxonomyIdSets.series.has(id));
+  const payloadTopicIds = topicIds.filter((id) => taxonomyIdSets.topics.has(id));
+  const payloadThemeIds = themeIds.filter((id) => taxonomyIdSets.themes.has(id));
+  const payloadCollectionIds = collectionIds.filter((id) => taxonomyIdSets.collections.has(id));
 
   function buildPostPayload(
     currentContentJson: ReturnType<typeof tiptapJsonToBlocks>,
@@ -2725,7 +2812,7 @@ export function WorkspaceBlogEditor({
     const legacyPrimaryCategoryId = postAny.primary_category_id || post.taxonomies.categories[0]?.id || null;
     const legacyCategoryIds = Array.from(new Set((post.taxonomies.categories || []).map((category) => category.id)));
     const legacyTagIds = Array.from(new Set((post.taxonomies.tags || []).map((tag) => tag.id)));
-    const normalizedTopicIds = Array.from(new Set(topicIds.filter(Boolean))).slice(0, 3);
+    const normalizedTopicIds = Array.from(new Set(payloadTopicIds.filter(Boolean))).slice(0, 3);
     const baseDiscovery = postAny.discovery || {};
     const normalizedLinkedEpisodeIds = linkedEpisodeIds.filter(Boolean);
     const syncedContent = normalizePrimaryListenEpisodeBlocksForSave(
@@ -2753,23 +2840,23 @@ export function WorkspaceBlogEditor({
       scheduledAt: nextEffectiveStatus === 'scheduled' ? publishAtIso : null,
       archivedAt: nextEffectiveStatus === 'archived' ? toIsoDateTimeOrNull(postAny.archived_at) || new Date().toISOString() : null,
       isFeatured,
-      primaryCategoryId: legacyPrimaryCategoryId,
+      primaryCategoryId: payloadPrimaryTopicId || legacyPrimaryCategoryId,
       taxonomy: {
         categoryIds: legacyCategoryIds,
         tagIds: legacyTagIds,
-        seriesIds,
+        seriesIds: payloadSeriesIds,
         topicClusterIds: [],
         labelIds: Array.isArray(postAny?.taxonomies?.labels) ? postAny.taxonomies.labels.map((item: any) => item.id) : []
       },
       discovery: {
-        primaryTopicId: primaryCategoryId || null,
+        primaryTopicId: payloadPrimaryTopicId,
         topicIds: normalizedTopicIds,
-        themeIds,
+        themeIds: payloadThemeIds,
         entityIds: Array.isArray(baseDiscovery.entityIds) ? baseDiscovery.entityIds : [],
         caseIds: Array.isArray(baseDiscovery.caseIds) ? baseDiscovery.caseIds : [],
         eventIds: Array.isArray(baseDiscovery.eventIds) ? baseDiscovery.eventIds : [],
-        collectionIds,
-        seriesIds
+        collectionIds: payloadCollectionIds,
+        seriesIds: payloadSeriesIds
       },
       linkedEpisodes: normalizedLinkedEpisodeIds.map((episodeId, index) => ({
         episodeId,
@@ -2794,7 +2881,10 @@ export function WorkspaceBlogEditor({
   }
 
   async function buildEpisodePayload(currentContentJson: ReturnType<typeof tiptapJsonToBlocks>) {
-    const normalizedTopicIds = Array.from(new Set(topicIds.filter(Boolean))).slice(0, 3);
+    const normalizedSecondaryTopicIds = Array.from(new Set(payloadTopicIds.filter(Boolean)))
+      .filter((id) => id !== (payloadPrimaryTopicId || ''))
+      .slice(0, 1);
+    const normalizedCollectionIds = Array.from(new Set(payloadCollectionIds.filter(Boolean))).slice(0, 1);
     const baseDiscovery = postAny.discovery || {};
     const normalizedRelatedEpisodeIds = linkedEpisodeIds.filter((id) => id && id !== (episodeId || post.id));
     const normalizedBody = normalizeBlogDocument(currentContentJson);
@@ -2826,13 +2916,14 @@ export function WorkspaceBlogEditor({
       isArchived: isEpisodeArchived,
       editorialNotes: asNullableText(postAny?.editorial?.editorial_notes) || null,
       discovery: {
-        primaryTopicId: primaryCategoryId || null,
-        themeIds,
+        primaryTopicId: payloadPrimaryTopicId,
+        topicIds: normalizedSecondaryTopicIds,
+        themeIds: Array.isArray(baseDiscovery.themeIds) ? baseDiscovery.themeIds : [],
         entityIds: Array.isArray(baseDiscovery.entityIds) ? baseDiscovery.entityIds : [],
         caseIds: Array.isArray(baseDiscovery.caseIds) ? baseDiscovery.caseIds : [],
         eventIds: Array.isArray(baseDiscovery.eventIds) ? baseDiscovery.eventIds : [],
-        collectionIds,
-        seriesIds
+        collectionIds: normalizedCollectionIds,
+        seriesIds: payloadSeriesIds
       },
       relatedEpisodes: normalizedRelatedEpisodeIds.map((relatedEpisodeId, index) => ({
         episodeId: relatedEpisodeId,
@@ -2855,8 +2946,25 @@ export function WorkspaceBlogEditor({
     return buildPostPayload(currentContentJson, overrides);
   }
 
+  function getEpisodeTaxonomyValidationError(): string | null {
+    if (!isEpisodeMode) return null;
+    if (!primaryCategoryId) return 'Episodes must have exactly one primary topic before saving.';
+    if (Array.from(new Set(topicIds.filter(Boolean).filter((id) => id !== primaryCategoryId))).length > 1) {
+      return 'Episodes can only have one secondary topic.';
+    }
+    if (Array.from(new Set(collectionIds.filter(Boolean))).length > 1) {
+      return 'Episodes can only have one collection.';
+    }
+    return null;
+  }
+
   async function persist() {
     if (!editor || saving || !isDirty) return;
+    const taxonomyError = getEpisodeTaxonomyValidationError();
+    if (taxonomyError) {
+      window.alert(taxonomyError);
+      return;
+    }
     setSaving(true);
     try {
       const payload = await buildPayload(tiptapJsonToBlocks(editor.getJSON() as any));
@@ -2881,6 +2989,11 @@ export function WorkspaceBlogEditor({
 
   async function publishPost() {
     if (!editor || saving) return;
+    const taxonomyError = getEpisodeTaxonomyValidationError();
+    if (taxonomyError) {
+      window.alert(taxonomyError);
+      return;
+    }
     setSaving(true);
     try {
       const payload = await buildPayload(tiptapJsonToBlocks(editor.getJSON() as any), { status: 'published' });
@@ -3291,79 +3404,133 @@ export function WorkspaceBlogEditor({
 
       <SidebarSection title="Taxonomy" defaultOpen={false}>
         <div className="space-y-3">
+          {removedInactiveNotice.length ? (
+            <div className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs text-amber-900">
+              Removed inactive taxonomy terms from editor state: {removedInactiveNotice.join(', ')}.
+            </div>
+          ) : null}
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-700">Primary category</label>
+            <label className="mb-1 block text-xs font-medium text-slate-700">Primary topic</label>
             <select
               className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
               value={primaryCategoryId || ''}
               onChange={(event) => {
                 const value = event.currentTarget.value || null;
                 setPrimaryCategoryId(value);
+                if (value && topicIds.includes(value)) {
+                  setTopicIds((current) => current.filter((id) => id !== value));
+                }
                 setIsDirty(true);
               }}
             >
-              <option value="">Select primary category</option>
+              <option value="">Select primary topic</option>
               {taxonomyOptions.categories.map((category) => (
                 <option key={category.id} value={category.id}>{category.name}</option>
               ))}
             </select>
           </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-700">Series (max 1)</label>
-            <select
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-              value={seriesIds[0] || ''}
-              onChange={(event) => {
-                const value = event.currentTarget.value;
-                setSeriesIds(value ? [value] : []);
-                setIsDirty(true);
-              }}
-            >
-              <option value="">None</option>
-              {taxonomyOptions.series.map((series) => (
-                <option key={series.id} value={series.id}>{series.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-700">Topics (max 3)</label>
-            <CheckboxDropdown
-              label="Topics"
-              options={taxonomyOptions.topics}
-              selectedIds={topicIds}
-              maxSelections={3}
-              onToggle={(topicId) => {
-                setTopicIds(toggleIdWithMax(topicIds, topicId, 3));
-                setIsDirty(true);
-              }}
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-700">Themes (max 3)</label>
-            <CheckboxDropdown
-              label="Themes"
-              options={taxonomyOptions.themes}
-              selectedIds={themeIds}
-              maxSelections={3}
-              onToggle={(themeId) => {
-                setThemeIds(toggleIdWithMax(themeIds, themeId, 3));
-                setIsDirty(true);
-              }}
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-700">Collections (max 2)</label>
-            <CheckboxDropdown
-              label="Collections"
-              options={taxonomyOptions.collections}
-              selectedIds={collectionIds}
-              maxSelections={2}
-              onToggle={(collectionId) => {
-                setCollectionIds(toggleIdWithMax(collectionIds, collectionId, 2));
-                setIsDirty(true);
-              }}
-            />
-          </div>
+          {isEpisodeMode ? (
+            <>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-700">Secondary topic (optional, max 1)</label>
+                <select
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                  value={topicIds[0] || ''}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value;
+                    setTopicIds(value ? [value] : []);
+                    setIsDirty(true);
+                  }}
+                >
+                  <option value="">None</option>
+                  {taxonomyOptions.topics
+                    .filter((topic) => !primaryCategoryId || topic.id !== primaryCategoryId)
+                    .map((topic) => (
+                      <option key={topic.id} value={topic.id}>{topic.name}</option>
+                    ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-700">Collection (optional, max 1)</label>
+                <select
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                  value={collectionIds[0] || ''}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value;
+                    setCollectionIds(value ? [value] : []);
+                    setIsDirty(true);
+                  }}
+                >
+                  <option value="">None</option>
+                  {taxonomyOptions.collections.map((collection) => (
+                    <option key={collection.id} value={collection.id}>{collection.name}</option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-xs text-slate-500">
+                Episodes require exactly one primary topic, with at most one secondary topic and one collection.
+              </p>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-700">Series (max 1)</label>
+                <select
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                  value={seriesIds[0] || ''}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value;
+                    setSeriesIds(value ? [value] : []);
+                    setIsDirty(true);
+                  }}
+                >
+                  <option value="">None</option>
+                  {taxonomyOptions.series.map((series) => (
+                    <option key={series.id} value={series.id}>{series.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-700">Topics (max 3)</label>
+                <CheckboxDropdown
+                  label="Topics"
+                  options={taxonomyOptions.topics}
+                  selectedIds={topicIds}
+                  maxSelections={3}
+                  onToggle={(topicId) => {
+                    setTopicIds(toggleIdWithMax(topicIds, topicId, 3));
+                    setIsDirty(true);
+                  }}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-700">Themes (max 3)</label>
+                <CheckboxDropdown
+                  label="Themes"
+                  options={taxonomyOptions.themes}
+                  selectedIds={themeIds}
+                  maxSelections={3}
+                  onToggle={(themeId) => {
+                    setThemeIds(toggleIdWithMax(themeIds, themeId, 3));
+                    setIsDirty(true);
+                  }}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-700">Collections (max 2)</label>
+                <CheckboxDropdown
+                  label="Collections"
+                  options={taxonomyOptions.collections}
+                  selectedIds={collectionIds}
+                  maxSelections={2}
+                  onToggle={(collectionId) => {
+                    setCollectionIds(toggleIdWithMax(collectionIds, collectionId, 2));
+                    setIsDirty(true);
+                  }}
+                />
+              </div>
+            </>
+          )}
         </div>
       </SidebarSection>
 

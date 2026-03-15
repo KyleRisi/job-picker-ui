@@ -1,0 +1,35 @@
+lib/episodes.ts:443:  if (term.term_type === 'topic') return `/topics/${term.slug}`;
+lib/episodes.ts:444:  if (term.term_type === 'theme') return `/themes/${term.slug}`;
+lib/episodes.ts:445:  if (term.term_type === 'entity' && term.entity_subtype === 'person') return `/people/${term.slug}`;
+lib/episodes.ts:446:  if (term.term_type === 'case') return `/cases/${term.slug}`;
+lib/episodes.ts:447:  if (term.term_type === 'event') return `/events/${term.slug}`;
+lib/episodes.ts:448:  if (term.term_type === 'collection') return `/collections/${term.slug}`;
+lib/episodes.ts:449:  if (term.term_type === 'series') return `/series/${term.slug}`;
+lib/episodes.ts:1441:    items.push({ name: category.name, href: `/blog/category/${category.slug}` });
+components/blog/blog-post-card.tsx:59:            <Link href={`/blog/category/${category.slug}`} className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide transition ${categoryClass}`}>
+components/blog/blog-post-card.tsx:94:          <Link href={`/blog/category/${category.slug}`} className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide transition ${categoryClass}`}>
+app/(public)/topics/[slug]/page.tsx:33:      canonical: `/topics/${params.slug}`
+app/(public)/blog/tag/[tagSlug]/page.tsx:14:    alternates: { canonical: `/blog/tag/${params.tagSlug}` },
+app/(public)/blog/tag/[tagSlug]/page.tsx:28:      basePath={`/blog/tag/${archive.term.slug}`}
+lib/blog/data.ts:825:  if (kind === 'categories') return `/blog/category/${slug}`;
+lib/blog/data.ts:826:  if (kind === 'tags') return `/blog/tag/${slug}`;
+lib/blog/data.ts:827:  if (kind === 'series') return `/blog/series/${slug}`;
+lib/blog/data.ts:828:  if (kind === 'topic_clusters') return `/blog/topic/${slug}`;
+lib/blog/data.ts:889:    { kind: 'categories', prefix: '/blog/category/' },
+lib/blog/data.ts:890:    { kind: 'tags', prefix: '/blog/tag/' },
+lib/blog/data.ts:891:    { kind: 'series', prefix: '/blog/series/' },
+lib/blog/data.ts:892:    { kind: 'topic_clusters', prefix: '/blog/topic/' },
+lib/blog/data.ts:2227:  return kind === 'series' ? `/series/${data.slug}` : `/topics/${data.slug}`;
+app/(public)/themes/[slug]/page.tsx:33:      canonical: `/themes/${params.slug}`
+app/(public)/blog/topic/[topicSlug]/page.tsx:13:    alternates: { canonical: `/blog/topic/${params.topicSlug}` }
+app/(public)/blog/topic/[topicSlug]/page.tsx:26:      basePath={`/blog/topic/${archive.term.slug}`}
+app/(public)/collections/[slug]/page.tsx:33:      canonical: `/collections/${params.slug}`
+app/(public)/blog/category/[categorySlug]/page.tsx:13:    alternates: { canonical: `/blog/category/${params.categorySlug}` }
+app/(public)/blog/category/[categorySlug]/page.tsx:26:      basePath={`/blog/category/${archive.term.slug}`}
+components/blog/admin-taxonomies-manager.tsx:75:  if (kind === 'categories') return `/blog/category/${slug}`;
+components/blog/admin-taxonomies-manager.tsx:76:  if (kind === 'tags') return `/blog/tag/${slug}`;
+components/blog/admin-taxonomies-manager.tsx:77:  if (kind === 'series') return `/blog/series/${slug}`;
+components/blog/admin-taxonomies-manager.tsx:78:  if (kind === 'topic_clusters') return `/blog/topic/${slug}`;
+app/(public)/blog/series/[seriesSlug]/page.tsx:13:    alternates: { canonical: `/blog/series/${params.seriesSlug}` }
+app/(public)/blog/series/[seriesSlug]/page.tsx:26:      basePath={`/blog/series/${archive.term.slug}`}
+app/(public)/series/[slug]/page.tsx:33:      canonical: `/series/${params.slug}`

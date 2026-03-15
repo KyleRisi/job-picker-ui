@@ -170,6 +170,7 @@ type DiscoveryTermRow = {
   name: string;
   slug: string;
   term_type: DiscoveryTermType;
+  is_active?: boolean;
 };
 
 const PATREON_URL = 'https://www.patreon.com/cw/TheCompendiumPodcast';
@@ -181,6 +182,15 @@ const TAXONOMY_CONFIG: Record<TaxonomyKind, { table: string; joinTable: string; 
   series: { table: 'series', joinTable: 'blog_post_series', idColumn: 'series_id' },
   topic_clusters: { table: 'topic_clusters', joinTable: 'blog_post_topic_clusters', idColumn: 'topic_cluster_id' },
   post_labels: { table: 'post_labels', joinTable: 'blog_post_labels', idColumn: 'label_id' }
+};
+
+const INTERNAL_ARCHIVEABLE_TAXONOMY_LEGACY_PREFIX: Record<ArchiveableTaxonomyKind, string> = {
+  categories: '/topics/',
+  tags: '/blog/tag/',
+  series: '/blog/series/',
+  topic_clusters: '/blog/topic/',
+  post_labels: '/blog',
+  blog_authors: '/blog/author/'
 };
 
 function getSupabase() {
@@ -415,7 +425,11 @@ async function getDiscoveryTermsByIds(
   ids: string[]
 ) {
   if (!ids.length) return new Map<string, DiscoveryTermRow>();
-  const { data, error } = await supabase.from('discovery_terms').select('id, name, slug, term_type').in('id', ids);
+  const { data, error } = await supabase
+    .from('discovery_terms')
+    .select('id, name, slug, term_type, is_active')
+    .in('id', ids)
+    .eq('is_active', true);
   if (error) throw error;
   return new Map((data || []).map((item) => [item.id, item as DiscoveryTermRow]));
 }
@@ -495,8 +509,9 @@ async function getDiscoveryForPosts(
   if (!postIds.length) return new Map<string, DiscoveryAssignmentState>();
   const { data, error } = await supabase
     .from('blog_post_discovery_terms')
-    .select('blog_post_id, term_id, is_primary, sort_order, discovery_terms!inner(term_type, name)')
+    .select('blog_post_id, term_id, is_primary, sort_order, discovery_terms!inner(term_type, name, is_active)')
     .in('blog_post_id', postIds)
+    .eq('discovery_terms.is_active', true)
     .order('sort_order', { ascending: true });
   if (error) throw error;
 
@@ -654,11 +669,19 @@ async function syncBlogPostDiscovery(
     ...discovery.seriesIds
   ];
   const uniqueIds = [...new Set(ids)];
-  const { data: terms, error: termsError } = await supabase
-    .from('discovery_terms')
-    .select('id, term_type')
-    .in('id', uniqueIds.length ? uniqueIds : ['00000000-0000-0000-0000-000000000000']);
-  if (termsError) throw termsError;
+  let terms: Array<{ id: string; term_type: DiscoveryTermType }> = [];
+  if (uniqueIds.length) {
+    const { data: fetchedTerms, error: termsError } = await supabase
+      .from('discovery_terms')
+      .select('id, term_type')
+      .in('id', uniqueIds)
+      .eq('is_active', true);
+    if (termsError) throw termsError;
+    terms = (fetchedTerms || []) as Array<{ id: string; term_type: DiscoveryTermType }>;
+    if (terms.length !== uniqueIds.length) {
+      throw new Error('One or more discovery terms are archived or invalid.');
+    }
+  }
 
   const termTypeById = new Map((terms || []).map((row: any) => [row.id as string, row.term_type as DiscoveryTermType]));
   if (discovery.primaryTopicId && termTypeById.get(discovery.primaryTopicId) !== 'topic') {
@@ -821,13 +844,12 @@ async function hydratePosts(baseRows: BlogPostRecord[]) {
   }));
 }
 
-export function getArchiveableTaxonomyUrlPath(kind: ArchiveableTaxonomyKind, slug: string) {
-  if (kind === 'categories') return `/blog/category/${slug}`;
-  if (kind === 'tags') return `/blog/tag/${slug}`;
-  if (kind === 'series') return `/blog/series/${slug}`;
-  if (kind === 'topic_clusters') return `/blog/topic/${slug}`;
-  if (kind === 'blog_authors') return `/blog/author/${slug}`;
-  return `/blog`;
+// Internal-only legacy taxonomy route map used by archive/redirect safety checks.
+// Do not use these paths as public canonical URL sources.
+export function getInternalArchiveableTaxonomyLegacyUrlPath(kind: ArchiveableTaxonomyKind, slug: string) {
+  if (kind === 'post_labels') return '/blog';
+  const prefix = INTERNAL_ARCHIVEABLE_TAXONOMY_LEGACY_PREFIX[kind] || '/blog/';
+  return `${prefix}${slug}`;
 }
 
 async function assertNoRedirectUrlOwnershipConflict(supabase: SupabaseClient, sourcePath: string, excludeRedirectId?: string) {
@@ -885,13 +907,10 @@ async function resolveRedirectDestinationChain(supabase: SupabaseClient, sourceP
 async function assertTargetIsNotArchivedTaxonomy(supabase: SupabaseClient, targetUrl: string) {
   if (!targetUrl.startsWith('/')) return;
   const normalized = normalizePath(targetUrl);
-  const matchers: Array<{ kind: ArchiveableTaxonomyKind; prefix: string }> = [
-    { kind: 'categories', prefix: '/blog/category/' },
-    { kind: 'tags', prefix: '/blog/tag/' },
-    { kind: 'series', prefix: '/blog/series/' },
-    { kind: 'topic_clusters', prefix: '/blog/topic/' },
-    { kind: 'blog_authors', prefix: '/blog/author/' }
-  ];
+  // Internal-only legacy prefixes for archive target validation.
+  const matchers = (Object.entries(INTERNAL_ARCHIVEABLE_TAXONOMY_LEGACY_PREFIX) as Array<[ArchiveableTaxonomyKind, string]>)
+    .filter(([kind]) => kind !== 'post_labels')
+    .map(([kind, prefix]) => ({ kind, prefix }));
 
   const matched = matchers.find((item) => normalized.startsWith(item.prefix));
   if (!matched) return;
@@ -999,7 +1018,7 @@ export async function upsertTaxonomy(kind: TaxonomyKind, input: unknown) {
   const table = TAXONOMY_CONFIG[kind].table;
   const normalizedSlug = slugifyBlogText(parsed.slug || parsed.name);
   if (!normalizedSlug) throw new Error('Slug is required.');
-  await assertNoRedirectUrlOwnershipConflict(supabase, getArchiveableTaxonomyUrlPath(kind, normalizedSlug));
+  await assertNoRedirectUrlOwnershipConflict(supabase, getInternalArchiveableTaxonomyLegacyUrlPath(kind, normalizedSlug));
   const basePayload = {
     ...(parsed.id ? { id: parsed.id } : {}),
     name: parsed.name.trim(),
@@ -1044,7 +1063,7 @@ export async function saveBlogAuthor(input: unknown) {
   const parsed = taxonomyTermWriteSchema.parse(input);
   const normalizedSlug = slugifyBlogText(parsed.slug || parsed.name);
   if (!normalizedSlug) throw new Error('Slug is required.');
-  await assertNoRedirectUrlOwnershipConflict(supabase, getArchiveableTaxonomyUrlPath('blog_authors', normalizedSlug));
+  await assertNoRedirectUrlOwnershipConflict(supabase, getInternalArchiveableTaxonomyLegacyUrlPath('blog_authors', normalizedSlug));
   const payload = {
     ...(parsed.id ? { id: parsed.id } : {}),
     name: parsed.name.trim(),
@@ -1111,8 +1130,11 @@ export async function archiveTaxonomy(params: {
   if (rowError) throw rowError;
   if (!row) throw new Error('Taxonomy not found.');
   if (row.is_active === false) throw new Error('This taxonomy is already archived.');
+  if (params.kind === 'blog_authors' && params.mode !== 'merge_redirect_301') {
+    throw new Error('Author archive requires reassignment/merge. Use merge_redirect_301.');
+  }
 
-  const sourcePath = getArchiveableTaxonomyUrlPath(params.kind, row.slug);
+  const sourcePath = getInternalArchiveableTaxonomyLegacyUrlPath(params.kind, row.slug);
   let affectedCount = 0;
   let redirectTarget: string | null = null;
   const mergeTargetId = params.mergeTargetId || null;
@@ -1133,9 +1155,9 @@ export async function archiveTaxonomy(params: {
     if (!mergeTarget || mergeTarget.is_active === false) {
       throw new Error('Merge target must be active.');
     }
-    redirectTarget = getArchiveableTaxonomyUrlPath(params.kind, mergeTarget.slug);
+    redirectTarget = getInternalArchiveableTaxonomyLegacyUrlPath(params.kind, mergeTarget.slug);
 
-    if (params.kind === 'blog_authors') {
+      if (params.kind === 'blog_authors') {
       const { data: assignedRows, error: assignedRowsError } = await supabase
         .from('blog_posts')
         .select('id')
@@ -1148,8 +1170,8 @@ export async function archiveTaxonomy(params: {
         .update({ author_id: mergeTargetId })
         .eq('author_id', params.taxonomyId);
       if (reassignError) throw reassignError;
-    } else {
-      const config = TAXONOMY_CONFIG[params.kind];
+      } else {
+        const config = TAXONOMY_CONFIG[params.kind];
       const { data: linkedRows, error: linkedRowsError } = await supabase
         .from(config.joinTable)
         .select('post_id')
@@ -1167,12 +1189,19 @@ export async function archiveTaxonomy(params: {
           .upsert(mergeRows, { onConflict: `post_id,${config.idColumn}` });
         if (upsertError) throw upsertError;
       }
-      const { error: cleanupError } = await supabase
-        .from(config.joinTable)
-        .delete()
-        .eq(config.idColumn, params.taxonomyId);
-      if (cleanupError) throw cleanupError;
-    }
+        const { error: cleanupError } = await supabase
+          .from(config.joinTable)
+          .delete()
+          .eq(config.idColumn, params.taxonomyId);
+        if (cleanupError) throw cleanupError;
+        if (params.kind === 'categories') {
+          const { error: primaryCategoryReassignError } = await supabase
+            .from('blog_posts')
+            .update({ primary_category_id: mergeTargetId })
+            .eq('primary_category_id', params.taxonomyId);
+          if (primaryCategoryReassignError) throw primaryCategoryReassignError;
+        }
+      }
   } else if (params.mode === 'redirect_301') {
     const chosen = `${params.redirectTarget || ''}`.trim();
     if (!chosen) throw new Error('Redirect target is required.');
@@ -1180,6 +1209,35 @@ export async function archiveTaxonomy(params: {
     await assertTargetIsNotArchivedTaxonomy(supabase, redirectTarget);
     if (redirectTarget.startsWith('/') && normalizePath(redirectTarget) === normalizePath(sourcePath)) {
       throw new Error('Redirect target must be different to the source URL.');
+    }
+  }
+
+  if (params.kind !== 'blog_authors' && params.mode !== 'merge_redirect_301') {
+    const config = TAXONOMY_CONFIG[params.kind];
+    const { count: linkedCount, error: linkedCountError } = await supabase
+      .from(config.joinTable)
+      .select('post_id', { count: 'exact', head: true })
+      .eq(config.idColumn, params.taxonomyId);
+    if (linkedCountError) throw linkedCountError;
+    const { error: removeJoinError } = await supabase
+      .from(config.joinTable)
+      .delete()
+      .eq(config.idColumn, params.taxonomyId);
+    if (removeJoinError) throw removeJoinError;
+    affectedCount = Math.max(affectedCount, linkedCount || 0);
+
+    if (params.kind === 'categories') {
+      const { count: primaryCount, error: primaryCountError } = await supabase
+        .from('blog_posts')
+        .select('id', { count: 'exact', head: true })
+        .eq('primary_category_id', params.taxonomyId);
+      if (primaryCountError) throw primaryCountError;
+      const { error: primaryClearError } = await supabase
+        .from('blog_posts')
+        .update({ primary_category_id: null })
+        .eq('primary_category_id', params.taxonomyId);
+      if (primaryClearError) throw primaryClearError;
+      affectedCount = Math.max(affectedCount, primaryCount || 0);
     }
   }
 
@@ -1582,14 +1640,28 @@ export async function createBlogPost(initial?: Partial<BlogPostWriteInput>) {
 export async function saveBlogPost(postId: string | null, input: unknown, options?: { autosave?: boolean }) {
   const payload = blogPostWriteSchema.parse(input);
   const supabase = getSupabase();
+  const uniqueCategoryIds = [...new Set(payload.taxonomy.categoryIds)];
+  const uniqueTagIds = [...new Set(payload.taxonomy.tagIds)];
   const linkedEpisodeIds = payload.linkedEpisodes.map((item) => item.episodeId);
   const document = normalizePrimaryListenEpisodeBlocksForSave(
     syncPrimaryListenEpisodeBlocksEpisode(normalizeBlogDocument(payload.contentJson), linkedEpisodeIds[0]),
     linkedEpisodeIds
   );
 
-  const categoriesMap = await getTaxonomyItemsByIds(supabase, 'categories', payload.taxonomy.categoryIds);
-  const tagsMap = await getTaxonomyItemsByIds(supabase, 'tags', payload.taxonomy.tagIds);
+  const categoriesMap = await getTaxonomyItemsByIds(supabase, 'categories', uniqueCategoryIds);
+  const tagsMap = await getTaxonomyItemsByIds(supabase, 'tags', uniqueTagIds);
+  if (categoriesMap.size !== uniqueCategoryIds.length) {
+    throw new Error('One or more categories are archived or invalid.');
+  }
+  if (tagsMap.size !== uniqueTagIds.length) {
+    throw new Error('One or more tags are archived or invalid.');
+  }
+  if (payload.primaryCategoryId) {
+    const primaryCategoryMap = await getTaxonomyItemsByIds(supabase, 'categories', [payload.primaryCategoryId]);
+    if (!primaryCategoryMap.has(payload.primaryCategoryId)) {
+      throw new Error('Primary category must reference an active category.');
+    }
+  }
   const discoveryIds = [
     ...(payload.discovery.primaryTopicId ? [payload.discovery.primaryTopicId] : []),
     ...payload.discovery.topicIds,
@@ -1600,7 +1672,11 @@ export async function saveBlogPost(postId: string | null, input: unknown, option
     ...payload.discovery.collectionIds,
     ...payload.discovery.seriesIds
   ];
-  const discoveryTermsMap = await getDiscoveryTermsByIds(supabase, [...new Set(discoveryIds)]);
+  const uniqueDiscoveryIds = [...new Set(discoveryIds)];
+  const discoveryTermsMap = await getDiscoveryTermsByIds(supabase, uniqueDiscoveryIds);
+  if (discoveryTermsMap.size !== uniqueDiscoveryIds.length) {
+    throw new Error('One or more discovery terms are archived or invalid.');
+  }
   const episodesMap = await getEpisodesByIds(
     supabase,
     payload.linkedEpisodes.map((item) => item.episodeId)
@@ -1630,8 +1706,8 @@ export async function saveBlogPost(postId: string | null, input: unknown, option
     title: payload.title,
     excerpt: excerptPlain,
     contentPlain: plainText,
-    categories: payload.taxonomy.categoryIds.map((id) => categoriesMap.get(id)).filter(Boolean) as TaxonomyItem[],
-    tags: payload.taxonomy.tagIds.map((id) => tagsMap.get(id)).filter(Boolean) as TaxonomyItem[],
+    categories: uniqueCategoryIds.map((id) => categoriesMap.get(id)).filter(Boolean) as TaxonomyItem[],
+    tags: uniqueTagIds.map((id) => tagsMap.get(id)).filter(Boolean) as TaxonomyItem[],
     discoveryTerms: discoveryIds
       .map((id) => discoveryTermsMap.get(id)?.name || '')
       .filter(Boolean),
@@ -2224,7 +2300,7 @@ export async function resolveLegacyBlogTaxonomyRedirect(kind: 'series' | 'topic'
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  return kind === 'series' ? `/series/${data.slug}` : `/topics/${data.slug}`;
+  return kind === 'series' ? `/collections/${data.slug}` : `/topics/${data.slug}`;
 }
 
 export async function listAuthorArchive(slug: string, page = 1) {

@@ -72,10 +72,10 @@ function isArchiveable(kind: TabKey) {
 }
 
 function taxonomyPath(kind: TabKey, slug: string) {
-  if (kind === 'categories') return `/blog/category/${slug}`;
-  if (kind === 'tags') return `/blog/tag/${slug}`;
-  if (kind === 'series') return `/blog/series/${slug}`;
-  if (kind === 'topic_clusters') return `/blog/topic/${slug}`;
+  if (kind === 'categories') return `/topics/${slug}`;
+  if (kind === 'tags') return '/blog';
+  if (kind === 'series') return `/collections/${slug}`;
+  if (kind === 'topic_clusters') return `/topics/${slug}`;
   if (kind === 'blog_authors') return `/blog/author/${slug}`;
   return `/blog`;
 }

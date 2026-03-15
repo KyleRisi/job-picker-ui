@@ -1,0 +1,14 @@
+lib/blog/data.ts:826:  if (kind === 'tags') return `/blog/tag/${slug}`;
+lib/blog/data.ts:827:  if (kind === 'series') return `/blog/series/${slug}`;
+lib/blog/data.ts:828:  if (kind === 'topic_clusters') return `/blog/topic/${slug}`;
+lib/blog/data.ts:890:    { kind: 'tags', prefix: '/blog/tag/' },
+lib/blog/data.ts:891:    { kind: 'series', prefix: '/blog/series/' },
+lib/blog/data.ts:892:    { kind: 'topic_clusters', prefix: '/blog/topic/' },
+app/(public)/blog/topic/[topicSlug]/page.tsx:16:  const route = `/blog/topic/${params.topicSlug}`;
+app/(public)/themes/[slug]/page.tsx:20:  const route = `/themes/${params.slug}`;
+app/(public)/series/[slug]/page.tsx:20:  const route = `/series/${params.slug}`;
+app/(public)/blog/category/[categorySlug]/page.tsx:16:  const route = `/blog/category/${params.categorySlug}`;
+app/(public)/blog/series/[seriesSlug]/page.tsx:16:  const route = `/blog/series/${params.seriesSlug}`;
+app/(public)/cases/[slug]/page.tsx:20:  const route = `/cases/${params.slug}`;
+app/(public)/events/[slug]/page.tsx:20:  const route = `/events/${params.slug}`;
+app/(public)/people/[slug]/page.tsx:20:  const route = `/people/${params.slug}`;

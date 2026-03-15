@@ -44,6 +44,11 @@ type SelectOption = {
   id: string;
   label: string;
 };
+type TaxonomyOption = {
+  id: string;
+  name: string;
+  is_active?: boolean;
+};
 type AdminEpisodeOption = {
   id: string;
   title: string;
@@ -2298,8 +2303,8 @@ export function AdminPostEditor({
 }: {
   initialPost: any;
   authors: Array<{ id: string; name: string }>;
-  categories: Array<{ id: string; name: string }>;
-  tags: Array<{ id: string; name: string }>;
+  categories: TaxonomyOption[];
+  tags: TaxonomyOption[];
   episodes: AdminEpisodeOption[];
   relatedPostOptions: Array<{ id: string; title: string }>;
   mode?: 'blog' | 'episode';
@@ -2430,6 +2435,15 @@ export function AdminPostEditor({
   const [categoryOptions, setCategoryOptions] = useState(categories);
   const [tagOptions, setTagOptions] = useState(tags);
   const [discoveryOptions, setDiscoveryOptions] = useState(discoveryTerms);
+  const [removedInactiveNotice, setRemovedInactiveNotice] = useState<string[]>([]);
+  const activeCategoryOptions = useMemo(
+    () => categoryOptions.filter((item) => item.is_active !== false),
+    [categoryOptions]
+  );
+  const activeTagOptions = useMemo(
+    () => tagOptions.filter((item) => item.is_active !== false),
+    [tagOptions]
+  );
   const episodeSelectOptions = useMemo<SelectOption[]>(
     () => episodes.map((episode) => ({ id: episode.id, label: episode.title })),
     [episodes]
@@ -2447,6 +2461,28 @@ export function AdminPostEditor({
     collection: discoveryOptions.filter((term) => term.term_type === 'collection' && term.is_active).map((term) => ({ id: term.id, label: term.name })),
     series: discoveryOptions.filter((term) => term.term_type === 'series' && term.is_active).map((term) => ({ id: term.id, label: term.name }))
   }), [discoveryOptions]);
+  const activeCategoryIdSet = useMemo(
+    () => new Set(activeCategoryOptions.map((item) => item.id)),
+    [activeCategoryOptions]
+  );
+  const activeTagIdSet = useMemo(
+    () => new Set(activeTagOptions.map((item) => item.id)),
+    [activeTagOptions]
+  );
+  const discoveryOptionById = useMemo(
+    () => new Map(discoveryOptions.map((item) => [item.id, item])),
+    [discoveryOptions]
+  );
+  const discoveryActiveSets = useMemo(() => ({
+    topic: new Set(discoveryOptionsByType.topic.map((item) => item.id)),
+    theme: new Set(discoveryOptionsByType.theme.map((item) => item.id)),
+    entity: new Set(discoveryOptionsByType.entity.map((item) => item.id)),
+    case: new Set(discoveryOptionsByType.case.map((item) => item.id)),
+    event: new Set(discoveryOptionsByType.event.map((item) => item.id)),
+    collection: new Set(discoveryOptionsByType.collection.map((item) => item.id)),
+    series: new Set(discoveryOptionsByType.series.map((item) => item.id))
+  }), [discoveryOptionsByType]);
+  const discoveryOptionsLoaded = discoveryOptions.length > 0;
   const structuredBlockExtension = useMemo(
     () => StructuredBlockNode.configure({ episodes, posts: relatedPostOptions }),
     [episodes, relatedPostOptions]
@@ -2497,8 +2533,8 @@ export function AdminPostEditor({
     values: string[];
     setter: (next: string[]) => void;
   }> = [
-    { label: 'Categories', items: categoryOptions, values: categoryIds, setter: setCategoryIds },
-    { label: 'Tags', items: tagOptions, values: tagIds, setter: setTagIds }
+    { label: 'Categories', items: activeCategoryOptions, values: categoryIds, setter: setCategoryIds },
+    { label: 'Tags', items: activeTagOptions, values: tagIds, setter: setTagIds }
   ];
 
   useEffect(() => {
@@ -2513,7 +2549,11 @@ export function AdminPostEditor({
         if (!active || !response.ok || !Array.isArray(data?.items)) return;
         const mapped = data.items
           .filter((item: any) => item?.id && item?.name)
-          .map((item: any) => ({ id: item.id as string, name: item.name as string }));
+          .map((item: any) => ({
+            id: item.id as string,
+            name: item.name as string,
+            is_active: item.is_active !== false
+          }));
         if (kind === 'categories') setCategoryOptions(mapped);
         if (kind === 'tags') setTagOptions(mapped);
       } catch {
@@ -2534,7 +2574,7 @@ export function AdminPostEditor({
 
     async function loadDiscoveryOptions() {
       try {
-        const response = await fetch('/api/admin/blog/discovery-terms', { cache: 'no-store' });
+        const response = await fetch('/api/admin/discovery-terms', { cache: 'no-store' });
         const data = await response.json().catch(() => ({}));
         if (!active || !response.ok || !Array.isArray(data?.items)) return;
         setDiscoveryOptions(data.items as DiscoveryTermOption[]);
@@ -2549,6 +2589,68 @@ export function AdminPostEditor({
       active = false;
     };
   }, [isEpisodeMode]);
+
+  useEffect(() => {
+    const removed: string[] = [];
+    const taxonomyNameById = new Map<string, string>([
+      ...categoryOptions.map((item) => [item.id, item.name] as const),
+      ...tagOptions.map((item) => [item.id, item.name] as const)
+    ]);
+    const sanitizeList = (current: string[], allowed: Set<string>, apply: (next: string[]) => void) => {
+      const next = current.filter((id) => allowed.has(id));
+      if (next.length !== current.length) {
+        current.filter((id) => !allowed.has(id)).forEach((id) => {
+          removed.push(taxonomyNameById.get(id) || discoveryOptionById.get(id)?.name || id);
+        });
+        apply(next);
+      }
+    };
+
+    if (!isEpisodeMode) {
+      sanitizeList(categoryIds, activeCategoryIdSet, setCategoryIds);
+      sanitizeList(tagIds, activeTagIdSet, setTagIds);
+      if (primaryCategoryId && !activeCategoryIdSet.has(primaryCategoryId)) {
+        removed.push(taxonomyNameById.get(primaryCategoryId) || primaryCategoryId);
+        setPrimaryCategoryId('');
+      }
+    }
+
+    if (discoveryOptionsLoaded) {
+      if (primaryTopicId && !discoveryActiveSets.topic.has(primaryTopicId)) {
+        removed.push(discoveryOptionById.get(primaryTopicId)?.name || primaryTopicId);
+        setPrimaryTopicId(null);
+      }
+      sanitizeList(themeIds, discoveryActiveSets.theme, setThemeIds);
+      sanitizeList(entityIds, discoveryActiveSets.entity, setEntityIds);
+      sanitizeList(caseIds, discoveryActiveSets.case, setCaseIds);
+      sanitizeList(eventIds, discoveryActiveSets.event, setEventIds);
+      sanitizeList(collectionIds, discoveryActiveSets.collection, setCollectionIds);
+      sanitizeList(seriesIds, discoveryActiveSets.series, setSeriesIds);
+    }
+
+    if (removed.length) {
+      setRemovedInactiveNotice((current) => Array.from(new Set([...current, ...removed])));
+    }
+  }, [
+    activeCategoryIdSet,
+    activeTagIdSet,
+    caseIds,
+    categoryIds,
+    categoryOptions,
+    collectionIds,
+    discoveryOptionsLoaded,
+    discoveryActiveSets,
+    discoveryOptionById,
+    entityIds,
+    eventIds,
+    isEpisodeMode,
+    primaryCategoryId,
+    primaryTopicId,
+    seriesIds,
+    tagIds,
+    tagOptions,
+    themeIds
+  ]);
 
   const selectedFeaturedAsset = useMemo(() => {
     if (!featuredImageId) return null;
@@ -2818,6 +2920,46 @@ export function AdminPostEditor({
   const postUrlBase = canonicalOrigin || editorBaseOrigin || defaultPublicOrigin;
   const postUrlPrefix = `${postUrlBase}/${isEpisodeMode ? 'episodes' : 'blog'}/`;
   const statusControlValue = status === 'scheduled' ? 'published' : status;
+  const payloadCategoryIds = useMemo(
+    () => categoryIds.filter((id) => activeCategoryIdSet.has(id)),
+    [activeCategoryIdSet, categoryIds]
+  );
+  const payloadTagIds = useMemo(
+    () => tagIds.filter((id) => activeTagIdSet.has(id)),
+    [activeTagIdSet, tagIds]
+  );
+  const payloadPrimaryTopicId = useMemo(
+    () => {
+      if (!primaryTopicId) return null;
+      if (!discoveryOptionsLoaded) return primaryTopicId;
+      return discoveryActiveSets.topic.has(primaryTopicId) ? primaryTopicId : null;
+    },
+    [discoveryActiveSets.topic, discoveryOptionsLoaded, primaryTopicId]
+  );
+  const payloadThemeIds = useMemo(
+    () => (discoveryOptionsLoaded ? themeIds.filter((id) => discoveryActiveSets.theme.has(id)) : themeIds),
+    [discoveryActiveSets.theme, discoveryOptionsLoaded, themeIds]
+  );
+  const payloadEntityIds = useMemo(
+    () => (discoveryOptionsLoaded ? entityIds.filter((id) => discoveryActiveSets.entity.has(id)) : entityIds),
+    [discoveryActiveSets.entity, discoveryOptionsLoaded, entityIds]
+  );
+  const payloadCaseIds = useMemo(
+    () => (discoveryOptionsLoaded ? caseIds.filter((id) => discoveryActiveSets.case.has(id)) : caseIds),
+    [caseIds, discoveryActiveSets.case, discoveryOptionsLoaded]
+  );
+  const payloadEventIds = useMemo(
+    () => (discoveryOptionsLoaded ? eventIds.filter((id) => discoveryActiveSets.event.has(id)) : eventIds),
+    [discoveryActiveSets.event, discoveryOptionsLoaded, eventIds]
+  );
+  const payloadCollectionIds = useMemo(
+    () => (discoveryOptionsLoaded ? collectionIds.filter((id) => discoveryActiveSets.collection.has(id)) : collectionIds),
+    [collectionIds, discoveryActiveSets.collection, discoveryOptionsLoaded]
+  );
+  const payloadSeriesIds = useMemo(
+    () => (discoveryOptionsLoaded ? seriesIds.filter((id) => discoveryActiveSets.series.has(id)) : seriesIds),
+    [discoveryActiveSets.series, discoveryOptionsLoaded, seriesIds]
+  );
 
   function getPayload(): BlogPostWriteInput | Record<string, unknown> {
     if (isEpisodeMode) {
@@ -2843,13 +2985,13 @@ export function AdminPostEditor({
         isArchived: episodeArchived,
         editorialNotes: editorialNotes.trim() || null,
         discovery: {
-          primaryTopicId,
-          themeIds,
-          entityIds,
-          caseIds,
-          eventIds,
-          collectionIds,
-          seriesIds
+          primaryTopicId: payloadPrimaryTopicId,
+          themeIds: payloadThemeIds,
+          entityIds: payloadEntityIds,
+          caseIds: payloadCaseIds,
+          eventIds: payloadEventIds,
+          collectionIds: payloadCollectionIds,
+          seriesIds: payloadSeriesIds
         },
         relatedEpisodes: episodeRelationshipRows.map((item, index) => ({
           episodeId: item.episodeId,
@@ -2881,19 +3023,19 @@ export function AdminPostEditor({
       scheduledAt: effectiveStatus === 'scheduled' ? publishAtIso : null,
       archivedAt: effectiveStatus === 'archived' ? initialPost.archived_at || new Date().toISOString() : null,
       isFeatured,
-      primaryCategoryId: primaryCategoryId || null,
+      primaryCategoryId: primaryCategoryId && activeCategoryIdSet.has(primaryCategoryId) ? primaryCategoryId : null,
       taxonomy: {
-        categoryIds,
-        tagIds
+        categoryIds: payloadCategoryIds,
+        tagIds: payloadTagIds
       },
       discovery: {
-        primaryTopicId,
-        themeIds,
-        entityIds,
-        caseIds,
-        eventIds,
-        collectionIds,
-        seriesIds
+        primaryTopicId: payloadPrimaryTopicId,
+        themeIds: payloadThemeIds,
+        entityIds: payloadEntityIds,
+        caseIds: payloadCaseIds,
+        eventIds: payloadEventIds,
+        collectionIds: payloadCollectionIds,
+        seriesIds: payloadSeriesIds
       },
       linkedEpisodes: normalizedLinkedEpisodeIds.map((episodeId, index) => ({
         episodeId,
@@ -2925,7 +3067,7 @@ export function AdminPostEditor({
       if (!seoTitle?.trim()) publishErrors.push('SEO title is required');
       if (!seoDescription?.trim()) publishErrors.push('Meta description is required');
       if (!focusKeyword?.trim()) publishErrors.push('Focus keyword is required');
-      if (categoryIds.length === 0) publishErrors.push('At least one category is required');
+      if (payloadCategoryIds.length === 0) publishErrors.push('At least one active category is required');
       if (publishErrors.length > 0) {
         setSaveMessage(publishErrors.join('. ') + '.');
         setSaving(false);
@@ -3367,6 +3509,11 @@ export function AdminPostEditor({
           </div>
         </div>
       </div>
+      {removedInactiveNotice.length ? (
+        <div className="border-b border-[#f3d5c3] bg-[#fff7f1] px-4 py-2 text-xs text-[#8e4c2a]">
+          Removed inactive taxonomy terms from editor state: {removedInactiveNotice.join(', ')}.
+        </div>
+      ) : null}
 
       <div className={`grid min-h-[calc(100vh-3rem)] grid-cols-1 items-start xl:h-[calc(100vh-3rem)] xl:min-h-0 xl:overflow-hidden ${sidebarOpen ? 'xl:grid-cols-[minmax(0,1fr)_clamp(360px,36vw,520px)]' : ''}`}>
         <div className="flex min-h-0 flex-col xl:h-full xl:overflow-y-auto">
@@ -3706,7 +3853,7 @@ export function AdminPostEditor({
                         <label className="label text-sm">Primary category</label>
                         <select className="input rounded-xl border-[#dfe3ef]" value={primaryCategoryId} onChange={(event) => setPrimaryCategoryId(event.currentTarget.value)}>
                           <option value="">None</option>
-                          {categoryOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                          {activeCategoryOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                         </select>
                       </div>
                       <div className="space-y-4">

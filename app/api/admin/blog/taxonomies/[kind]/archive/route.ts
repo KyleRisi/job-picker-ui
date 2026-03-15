@@ -4,7 +4,7 @@ import { badRequest, ok } from '@/lib/server';
 import { requireBlogAdminApiUser } from '@/lib/blog/auth';
 import {
   archiveTaxonomy,
-  getArchiveableTaxonomyUrlPath,
+  getInternalArchiveableTaxonomyLegacyUrlPath,
   getTaxonomyArchiveImpact,
   listArchiveTargets,
   listBlogAuthors,
@@ -49,7 +49,7 @@ async function listRedirectSuggestions(kind: ArchiveableKind, currentId: string)
       .map((item) => ({
         id: item.id,
         name: item.name,
-        path: getArchiveableTaxonomyUrlPath('blog_authors', item.slug)
+        path: getInternalArchiveableTaxonomyLegacyUrlPath('blog_authors', item.slug)
       }));
   }
   const items = await listTaxonomy(kind, { includeArchived: false });
@@ -58,7 +58,7 @@ async function listRedirectSuggestions(kind: ArchiveableKind, currentId: string)
     .map((item) => ({
       id: item.id,
       name: item.name,
-      path: getArchiveableTaxonomyUrlPath(kind, item.slug)
+      path: getInternalArchiveableTaxonomyLegacyUrlPath(kind, item.slug)
     }));
 }
 

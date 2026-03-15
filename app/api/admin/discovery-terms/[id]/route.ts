@@ -68,5 +68,11 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     .eq('id', params.id);
 
   if (error) return badRequest(error.message);
+  const [episodeLinksDelete, postLinksDelete] = await Promise.all([
+    supabase.from('episode_discovery_terms').delete().eq('term_id', params.id),
+    supabase.from('blog_post_discovery_terms').delete().eq('term_id', params.id)
+  ]);
+  if (episodeLinksDelete.error) return badRequest(episodeLinksDelete.error.message);
+  if (postLinksDelete.error) return badRequest(postLinksDelete.error.message);
   return ok({ message: 'Taxonomy archived.' });
 }

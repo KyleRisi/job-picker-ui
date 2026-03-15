@@ -9,6 +9,7 @@ import { JoinPatreonCta } from '@/components/join-patreon-cta';
 import { ViewModeToggle, VIEW_MODE_STORAGE_KEY, type ViewMode } from '@/components/view-mode-toggle';
 import { pageHref } from '@/lib/pagination';
 import type { DiscoveryHubPage as DiscoveryHubPageData } from '@/lib/podcast-shared';
+import { resolveHubIntroText } from '@/lib/seo-page-copy';
 
 const LABELS: Record<string, string> = {
   topics: 'Topics',
@@ -50,6 +51,7 @@ export function DiscoveryHubPage({
 
   const basePath = hub.term.path || `/${routeKey}/${hub.term.slug}`;
   const hrefForPage = (page: number) => pageHref(basePath, page);
+  const introText = resolveHubIntroText(hub);
 
   return (
     <>
@@ -67,7 +69,7 @@ export function DiscoveryHubPage({
                 {hub.pagination.total}
               </span>
             </div>
-            {hub.term.description ? <p className="mt-3 max-w-2xl text-[16px] leading-relaxed text-white/90 md:text-[18px]">{hub.term.description}</p> : null}
+            {introText ? <p className="mt-3 max-w-2xl text-[16px] leading-relaxed text-white/90 md:text-[18px]">{introText}</p> : null}
             {hub.relatedTerms.length ? (
               <div className="mt-8">
                 <h2 className="text-[14px] font-black uppercase tracking-[0.2em] text-white/75">Related Terms</h2>

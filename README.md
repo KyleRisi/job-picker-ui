@@ -113,6 +113,51 @@ Notes:
 
 This check fetches the homepage HTML, extracts `/_next/static/chunks/*.js` references, and fails if any chunk `HEAD` request is non-`200`.
 
+## Taxonomy SEO post-deploy audit
+
+Run policy-driven live verification for taxonomy/discovery routes:
+
+```bash
+npm run taxonomy:seo:audit -- --base https://www.thecompendiumpodcast.com
+```
+
+Optional flags:
+- `--out-dir tmp/taxonomy-audit/postdeploy` (default)
+- `--max-crawl-pages 300`
+- `--timeout-ms 12000`
+
+This audit verifies:
+- policy expected live URLs return `200`
+- policy expected redirects return `301` to expected destination
+- policy expected retired URLs return `410`
+- retired/invalid taxonomy URLs are absent from sitemap
+- live taxonomy/discovery canonical tags match expected route canonical
+- retired/invalid taxonomy URLs are not linked from crawled public pages
+- retired/invalid taxonomy URLs are not rendered as public taxonomy/discovery chip links
+
+Artifacts (timestamped + latest aliases) are written to `tmp/taxonomy-audit/postdeploy/`:
+- `taxonomy-seo-audit-<timestamp>.json`
+- `taxonomy-seo-audit-<timestamp>.csv`
+- `taxonomy-seo-audit-<timestamp>.md`
+- `taxonomy-seo-audit.latest.json`
+- `taxonomy-seo-audit.latest.csv`
+- `taxonomy-seo-audit.latest.md`
+
+The report includes per-URL pass/fail rows with:
+- URL
+- expected state
+- actual status
+- final URL
+- canonical found
+- canonical expected
+- present in sitemap
+- internally linked
+- incorrect public chip rendering
+- pass/fail
+- failure reason
+
+It also includes totals, grouped failure categories, and recommended fixes in priority order.
+
 ## Performance audit
 
 - Generate production performance inventory:

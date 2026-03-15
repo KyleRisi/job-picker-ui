@@ -159,6 +159,7 @@ export default async function EpisodesPage({ searchParams }: EpisodesPageProps) 
 
           <EpisodesBrowser
             episodes={pagedEpisodes}
+            searchEpisodes={episodes}
             initialViewMode={initialViewMode}
             initialSortOrder={initialSortOrder}
             sectionId="catalogue"

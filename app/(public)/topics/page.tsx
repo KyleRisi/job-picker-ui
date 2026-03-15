@@ -1,12 +1,15 @@
 import type { Metadata } from 'next';
 import { DiscoveryTermIndexPage } from '@/components/discovery-term-index-page';
 import { listActiveDiscoveryTerms } from '@/lib/episodes';
+import { getHubIndexSeo } from '@/lib/seo-page-copy';
 
 export const revalidate = 300;
 
+const seo = getHubIndexSeo('topics');
+
 export const metadata: Metadata = {
-  title: 'Topics | The Compendium Podcast',
-  description: 'Browse every active Compendium topic hub.',
+  title: seo.title,
+  description: seo.description,
   alternates: {
     canonical: '/topics'
   }

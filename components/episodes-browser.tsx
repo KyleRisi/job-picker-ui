@@ -515,6 +515,7 @@ function SortOrderToggle({ order, onChange }: { order: SortOrder; onChange: (o: 
 
 export function EpisodesBrowser({
   episodes,
+  searchEpisodes,
   showSearch = true,
   initialCount = INITIAL_COUNT,
   loadMoreCount = LOAD_MORE_COUNT,
@@ -534,6 +535,7 @@ export function EpisodesBrowser({
   preservedSearchParams
 }: {
   episodes: PodcastEpisode[];
+  searchEpisodes?: PodcastEpisode[];
   showSearch?: boolean;
   initialCount?: number;
   loadMoreCount?: number;
@@ -609,15 +611,17 @@ export function EpisodesBrowser({
   }, [viewMode, viewModeReady]);
 
   const normalizedQuery = query.trim().toLowerCase();
+  const searchCorpus = searchEpisodes && searchEpisodes.length ? searchEpisodes : episodes;
   const filteredEpisodes = useMemo(() => {
-    const sortedEpisodes = [...episodes].sort(byPublishedDate(sortOrder));
+    const source = normalizedQuery ? searchCorpus : episodes;
+    const sortedEpisodes = [...source].sort(byPublishedDate(sortOrder));
     if (!normalizedQuery) return sortedEpisodes;
     return sortedEpisodes.filter((episode) => {
       const inTitle = episode.title.toLowerCase().includes(normalizedQuery);
       const inEpisodeNumber = episode.episodeNumber !== null && `${episode.episodeNumber}`.includes(normalizedQuery);
       return inTitle || inEpisodeNumber;
     });
-  }, [episodes, normalizedQuery, sortOrder]);
+  }, [episodes, normalizedQuery, searchCorpus, sortOrder]);
 
   useEffect(() => {
     if (!normalizedQuery) {

@@ -19,6 +19,7 @@ import {
 import { getPublicSiteUrl } from '@/lib/site-url';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
 import { isTaxonomyPublicDisplayable } from '@/lib/taxonomy-route-policy';
+import { resolveEpisodeSummary } from '@/lib/seo-page-copy';
 
 export const revalidate = 900;
 
@@ -164,6 +165,7 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
     entitySubtype: term.entitySubtype,
     path: term.path
   }));
+  const episodeSummary = resolveEpisodeSummary(episode);
 
   return (
     <section className="-mb-8 space-y-0">
@@ -277,8 +279,15 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
         </div>
       </section>
 
+      {episodeSummary ? (
+        <section className="-mx-4 bg-white px-5 pt-5 sm:mx-0 sm:px-6 sm:pt-6">
+          <h2 className="text-xl font-black text-carnival-ink">Episode Summary</h2>
+          <p className="mt-3 text-base leading-relaxed text-carnival-ink/90">{episodeSummary}</p>
+        </section>
+      ) : null}
+
       <article className="-mx-4 bg-white px-5 py-5 sm:mx-0 sm:px-6 sm:py-6">
-        <h2 className="text-xl font-black text-carnival-ink">{episode.bodySource === 'editorial' ? 'Episode Story' : 'Episode Notes'}</h2>
+        <h2 className="text-xl font-black text-carnival-ink">Episode Story</h2>
         {structuredBody && structuredBody.length ? (
           <div className="mt-4">
             <BlogContentRenderer

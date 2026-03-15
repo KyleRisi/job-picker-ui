@@ -2322,6 +2322,7 @@ export function WorkspaceBlogEditor({
       : []
   );
   const [removedInactiveNotice, setRemovedInactiveNotice] = useState<string[]>([]);
+  const draftHydratedRef = useRef(false);
   const taxonomyOptionById = useMemo(
     () => new Map<string, string>([
       ...taxonomyOptions.categories.map((item) => [item.id, item.name] as const),
@@ -2435,7 +2436,13 @@ export function WorkspaceBlogEditor({
   }, [editor]);
 
   useEffect(() => {
+    draftHydratedRef.current = false;
+  }, [draftStorageKey]);
+
+  useEffect(() => {
     if (!editor) return;
+    if (draftHydratedRef.current) return;
+    draftHydratedRef.current = true;
     try {
       const raw = window.localStorage.getItem(draftStorageKey);
       if (!raw) return;
@@ -2539,7 +2546,7 @@ export function WorkspaceBlogEditor({
       if (typeof parsed.primaryCategoryId === 'string' || parsed.primaryCategoryId === null) setPrimaryCategoryId(parsed.primaryCategoryId || null);
       if (Array.isArray(parsed.seriesIds) && !isEpisodeMode) setSeriesIds(parsed.seriesIds.filter(Boolean).slice(0, 1));
       if (Array.isArray(parsed.topicIds)) {
-        const parsedPrimaryTopicId = typeof parsed.primaryCategoryId === 'string' ? parsed.primaryCategoryId : primaryCategoryId;
+        const parsedPrimaryTopicId = typeof parsed.primaryCategoryId === 'string' ? parsed.primaryCategoryId : null;
         const deduped = Array.from(new Set(parsed.topicIds.filter(Boolean))).filter((id) => id !== parsedPrimaryTopicId);
         setTopicIds(deduped.slice(0, isEpisodeMode ? 1 : 3));
       }
@@ -2552,7 +2559,7 @@ export function WorkspaceBlogEditor({
     } catch {
       // Ignore malformed or unavailable local draft data.
     }
-  }, [draftStorageKey, editor, episodeSourceLastSyncedAt, isEpisodeMode, primaryCategoryId]);
+  }, [draftStorageKey, editor, episodeSourceLastSyncedAt, isEpisodeMode]);
 
   useEffect(() => {
     const removed: string[] = [];
@@ -2576,7 +2583,13 @@ export function WorkspaceBlogEditor({
     sanitizeList(collectionIds, taxonomyIdSets.collections, setCollectionIds);
 
     if (removed.length) {
-      setRemovedInactiveNotice((current) => Array.from(new Set([...current, ...removed])));
+      setRemovedInactiveNotice((current) => {
+        const next = Array.from(new Set([...current, ...removed]));
+        if (next.length === current.length && next.every((value, index) => value === current[index])) {
+          return current;
+        }
+        return next;
+      });
     }
   }, [
     collectionIds,
@@ -2840,7 +2853,9 @@ export function WorkspaceBlogEditor({
       scheduledAt: nextEffectiveStatus === 'scheduled' ? publishAtIso : null,
       archivedAt: nextEffectiveStatus === 'archived' ? toIsoDateTimeOrNull(postAny.archived_at) || new Date().toISOString() : null,
       isFeatured,
-      primaryCategoryId: payloadPrimaryTopicId || legacyPrimaryCategoryId,
+      // Keep legacy blog category separate from discovery primary topic.
+      // Workspace taxonomy selector sets discovery topics, which are validated/saved under `discovery.primaryTopicId`.
+      primaryCategoryId: legacyPrimaryCategoryId,
       taxonomy: {
         categoryIds: legacyCategoryIds,
         tagIds: legacyTagIds,

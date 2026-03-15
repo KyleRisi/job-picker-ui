@@ -18,6 +18,7 @@ import {
 } from '@/lib/episodes';
 import { getPublicSiteUrl } from '@/lib/site-url';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
+import { isTaxonomyPublicDisplayable } from '@/lib/taxonomy-route-policy';
 
 export const revalidate = 900;
 
@@ -156,6 +157,13 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
       }
     }
   ];
+  const publicDiscoveryChips = episode.discoveryTerms.filter((term) => isTaxonomyPublicDisplayable({
+    isActive: term.isActive,
+    termType: term.termType,
+    slug: term.slug,
+    entitySubtype: term.entitySubtype,
+    path: term.path
+  }));
 
   return (
     <section className="-mb-8 space-y-0">
@@ -227,18 +235,12 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
               />
             </div>
 
-            {episode.discoveryTerms.length ? (
+            {publicDiscoveryChips.length ? (
               <div className="mt-4 flex flex-wrap gap-2">
-                {episode.discoveryTerms.map((term) => (
-                  term.path ? (
-                    <Link key={term.id} href={term.path} className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white/85 hover:bg-white/10">
-                      {term.name}
-                    </Link>
-                  ) : (
-                    <span key={term.id} className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white/70">
-                      {term.name}
-                    </span>
-                  )
+                {publicDiscoveryChips.map((term) => (
+                  <Link key={term.id} href={term.path as string} className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white/85 hover:bg-white/10">
+                    {term.name}
+                  </Link>
                 ))}
               </div>
             ) : null}

@@ -13,6 +13,6 @@ export const metadata: Metadata = {
 };
 
 export default async function CollectionsIndexPage() {
-  const terms = (await listActiveDiscoveryTerms()).filter((term) => term.termType === 'collection');
+  const terms = (await listActiveDiscoveryTerms()).filter((term) => term.termType === 'collection' && term.path);
   return <DiscoveryTermIndexPage routeKey="collections" terms={terms} />;
 }

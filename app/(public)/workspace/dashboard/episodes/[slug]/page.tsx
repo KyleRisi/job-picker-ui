@@ -3,6 +3,7 @@ import { getResolvedEpisodeBySlug, listActiveDiscoveryTerms } from '@/lib/episod
 import { listBlogAuthors, listBlogPostsAdmin, listPodcastEpisodes } from '@/lib/blog/data';
 import { markdownToBlogDocument } from '@/lib/blog/content';
 import { WorkspaceBlogEditor } from '@/components/workspace/workspace-blog-editor';
+import { isApprovedCollectionSlug, isApprovedTopicSlug } from '@/lib/taxonomy-route-policy';
 
 function decodeCommonHtmlEntities(value: string) {
   const decoded = value
@@ -131,12 +132,15 @@ export default async function EpisodeEditorPage({ params }: { params: Promise<{ 
 
   const discoveryFromEpisode = {
     primaryTopicId: episode.primaryTopic?.id || null,
-    topicIds: episode.discoveryTerms.filter((term) => term.termType === 'topic').map((term) => term.id),
+    topicIds: episode.discoveryTerms
+      .filter((term) => term.termType === 'topic' && term.id !== episode.primaryTopic?.id)
+      .slice(0, 1)
+      .map((term) => term.id),
     themeIds: episode.discoveryTerms.filter((term) => term.termType === 'theme').map((term) => term.id),
     entityIds: episode.discoveryTerms.filter((term) => term.termType === 'entity').map((term) => term.id),
     caseIds: episode.discoveryTerms.filter((term) => term.termType === 'case').map((term) => term.id),
     eventIds: episode.discoveryTerms.filter((term) => term.termType === 'event').map((term) => term.id),
-    collectionIds: episode.discoveryTerms.filter((term) => term.termType === 'collection').map((term) => term.id),
+    collectionIds: episode.discoveryTerms.filter((term) => term.termType === 'collection').slice(0, 1).map((term) => term.id),
     seriesIds: episode.discoveryTerms.filter((term) => term.termType === 'series').map((term) => term.id)
   };
 
@@ -201,10 +205,16 @@ export default async function EpisodeEditorPage({ params }: { params: Promise<{ 
   };
 
   const taxonomyOptions = {
-    categories: discoveryTerms.filter((term) => term.termType === 'topic').map((term) => ({ id: term.id, name: term.name })),
-    topics: discoveryTerms.filter((term) => term.termType === 'topic').map((term) => ({ id: term.id, name: term.name })),
+    categories: discoveryTerms
+      .filter((term) => term.termType === 'topic' && isApprovedTopicSlug(term.slug))
+      .map((term) => ({ id: term.id, name: term.name })),
+    topics: discoveryTerms
+      .filter((term) => term.termType === 'topic' && isApprovedTopicSlug(term.slug))
+      .map((term) => ({ id: term.id, name: term.name })),
     themes: discoveryTerms.filter((term) => term.termType === 'theme').map((term) => ({ id: term.id, name: term.name })),
-    collections: discoveryTerms.filter((term) => term.termType === 'collection').map((term) => ({ id: term.id, name: term.name })),
+    collections: discoveryTerms
+      .filter((term) => term.termType === 'collection' && isApprovedCollectionSlug(term.slug))
+      .map((term) => ({ id: term.id, name: term.name })),
     series: discoveryTerms.filter((term) => term.termType === 'series').map((term) => ({ id: term.id, name: term.name }))
   };
 

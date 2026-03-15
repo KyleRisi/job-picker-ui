@@ -1,0 +1,345 @@
+{
+  "generated_at": "2026-03-15T10:37:22.397Z",
+  "counts": {
+    "discovery_terms_total": 48,
+    "discovery_terms_active": 29,
+    "categories_total": 8,
+    "topic_clusters_total": 13,
+    "series_total": 8,
+    "tags_total": 0,
+    "taxonomy_related_redirects_total": 0,
+    "internal_reference_hits": 35,
+    "taxonomy_route_files": 18,
+    "active_discovery_paths_total": 29
+  },
+  "active_discovery_paths": [
+    {
+      "id": "8c294dee-4e76-4100-8d64-d3f10d82ca25",
+      "name": "British Cases",
+      "slug": "british-cases",
+      "term_type": "collection",
+      "entity_subtype": null,
+      "path": "/collections/british-cases"
+    },
+    {
+      "id": "0f29dba7-4691-4cd7-999e-bc5fb08e7f17",
+      "name": "American Cases",
+      "slug": "american-cases",
+      "term_type": "collection",
+      "entity_subtype": null,
+      "path": "/collections/american-cases"
+    },
+    {
+      "id": "b09be281-d76c-4923-a353-71e337632679",
+      "name": "International Cases",
+      "slug": "international-cases",
+      "term_type": "collection",
+      "entity_subtype": null,
+      "path": "/collections/international-cases"
+    },
+    {
+      "id": "9bc81af9-b706-4147-9401-9fa193e3a056",
+      "name": "Survival Stories",
+      "slug": "survival-stories",
+      "term_type": "collection",
+      "entity_subtype": null,
+      "path": "/collections/survival-stories"
+    },
+    {
+      "id": "ca36a7bb-0ae6-4b02-82b2-52e00029a016",
+      "name": "Princess Diana",
+      "slug": "princess-diana",
+      "term_type": "series",
+      "entity_subtype": null,
+      "path": "/series/princess-diana"
+    },
+    {
+      "id": "be95fbf8-f36d-49aa-abcf-56bc680377fc",
+      "name": "Titanic",
+      "slug": "titanic",
+      "term_type": "series",
+      "entity_subtype": null,
+      "path": "/series/titanic"
+    },
+    {
+      "id": "c614a860-0838-42e0-a03c-218fc854b62a",
+      "name": "Amanda Knox and Meredith Kercher",
+      "slug": "amanda-knox-meredith-kercher",
+      "term_type": "series",
+      "entity_subtype": null,
+      "path": "/series/amanda-knox-meredith-kercher"
+    },
+    {
+      "id": "2cc9c294-0fec-4914-96a2-f730b8e7c741",
+      "name": "Emanuela Orlandi",
+      "slug": "emanuela-orlandi",
+      "term_type": "series",
+      "entity_subtype": null,
+      "path": "/series/emanuela-orlandi"
+    },
+    {
+      "id": "183579a7-15d5-4440-9d13-2110072b4fbb",
+      "name": "Murders",
+      "slug": "murders",
+      "term_type": "theme",
+      "entity_subtype": null,
+      "path": "/themes/murders"
+    },
+    {
+      "id": "d386b9e8-ee7a-44a3-892e-5ff38025a78a",
+      "name": "Disappearances",
+      "slug": "disappearances",
+      "term_type": "theme",
+      "entity_subtype": null,
+      "path": "/themes/disappearances"
+    },
+    {
+      "id": "bf50884d-883d-4527-9f83-2ae98dc98e19",
+      "name": "Kidnappings",
+      "slug": "kidnappings",
+      "term_type": "theme",
+      "entity_subtype": null,
+      "path": "/themes/kidnappings"
+    },
+    {
+      "id": "e8f185ae-29e8-46ad-9f54-cf347edbf960",
+      "name": "Unsolved Mysteries",
+      "slug": "unsolved-mysteries",
+      "term_type": "theme",
+      "entity_subtype": null,
+      "path": "/themes/unsolved-mysteries"
+    },
+    {
+      "id": "d1bc8a60-94c1-48b6-bec7-4bbef9f5ce32",
+      "name": "Wrongful Convictions",
+      "slug": "wrongful-convictions",
+      "term_type": "theme",
+      "entity_subtype": null,
+      "path": "/themes/wrongful-convictions"
+    },
+    {
+      "id": "a1803f6e-5744-44b4-b72d-e310a0d5db78",
+      "name": "Serial Killers",
+      "slug": "serial-killers",
+      "term_type": "theme",
+      "entity_subtype": null,
+      "path": "/themes/serial-killers"
+    },
+    {
+      "id": "5ed5cb9e-a1e8-4371-88c9-ed4736bf1434",
+      "name": "Scams & Frauds",
+      "slug": "scams-frauds",
+      "term_type": "theme",
+      "entity_subtype": null,
+      "path": "/themes/scams-frauds"
+    },
+    {
+      "id": "6b9bbd7d-be82-4d65-a9b1-385ab85135e6",
+      "name": "Hoaxes",
+      "slug": "hoaxes",
+      "term_type": "theme",
+      "entity_subtype": null,
+      "path": "/themes/hoaxes"
+    },
+    {
+      "id": "0bf0f74a-8a4a-4a6f-8d21-73ed1b11cbce",
+      "name": "Scandals",
+      "slug": "scandals",
+      "term_type": "theme",
+      "entity_subtype": null,
+      "path": "/themes/scandals"
+    },
+    {
+      "id": "cfaa8007-c1a1-4171-9042-3b443cefe780",
+      "name": "Cults",
+      "slug": "cults",
+      "term_type": "theme",
+      "entity_subtype": null,
+      "path": "/themes/cults"
+    },
+    {
+      "id": "bd7be370-a578-4f50-afec-3bcbe0163388",
+      "name": "Media Frenzy",
+      "slug": "media-frenzy",
+      "term_type": "theme",
+      "entity_subtype": null,
+      "path": "/themes/media-frenzy"
+    },
+    {
+      "id": "cb07bf1b-c433-48d0-8023-b076b364f046",
+      "name": "Survival Against the Odds",
+      "slug": "survival-against-the-odds",
+      "term_type": "theme",
+      "entity_subtype": null,
+      "path": "/themes/survival-against-the-odds"
+    },
+    {
+      "id": "7ba09a90-8cf2-4909-8ea7-e19a6095adfb",
+      "name": "Conspiracies & Cover-Ups",
+      "slug": "conspiracies-cover-ups",
+      "term_type": "theme",
+      "entity_subtype": null,
+      "path": "/themes/conspiracies-cover-ups"
+    },
+    {
+      "id": "fac53eab-1de6-4612-832f-a7aa6dd5f0b5",
+      "name": "True Crime",
+      "slug": "true-crime",
+      "term_type": "topic",
+      "entity_subtype": null,
+      "path": "/topics/true-crime"
+    },
+    {
+      "id": "3b268f64-94c1-42ad-84a0-33045f86e5f0",
+      "name": "History",
+      "slug": "history",
+      "term_type": "topic",
+      "entity_subtype": null,
+      "path": "/topics/history"
+    },
+    {
+      "id": "3a8974cf-e99b-4fcd-bb13-efea4fb62bc0",
+      "name": "Incredible People",
+      "slug": "incredible-people",
+      "term_type": "topic",
+      "entity_subtype": null,
+      "path": "/topics/incredible-people"
+    },
+    {
+      "id": "e69f29b6-d327-4c13-ade0-efd30f348b94",
+      "name": "Scams, Hoaxes & Cons",
+      "slug": "scams-hoaxes-cons",
+      "term_type": "topic",
+      "entity_subtype": null,
+      "path": "/topics/scams-hoaxes-cons"
+    },
+    {
+      "id": "72b7313a-1b5b-4dab-b489-24d6f41b2b89",
+      "name": "Disasters & Survival",
+      "slug": "disasters-survival",
+      "term_type": "topic",
+      "entity_subtype": null,
+      "path": "/topics/disasters-survival"
+    },
+    {
+      "id": "f96c5176-4470-4083-ac23-bdf2d264221c",
+      "name": "Mysteries & The Unexplained",
+      "slug": "mysteries-unexplained",
+      "term_type": "topic",
+      "entity_subtype": null,
+      "path": "/topics/mysteries-unexplained"
+    },
+    {
+      "id": "29b79904-9d2d-478f-adce-e15567fe2e8d",
+      "name": "Cults, Belief & Moral Panics",
+      "slug": "cults-belief-moral-panics",
+      "term_type": "topic",
+      "entity_subtype": null,
+      "path": "/topics/cults-belief-moral-panics"
+    },
+    {
+      "id": "0d5e72ef-b649-4593-b670-1d146e60deb3",
+      "name": "Pop Culture & Entertainment",
+      "slug": "pop-culture-entertainment",
+      "term_type": "topic",
+      "entity_subtype": null,
+      "path": "/topics/pop-culture-entertainment"
+    }
+  ],
+  "legacy_blog_taxonomy_slugs": {
+    "categories": [
+      "cults-belief-moral-panics",
+      "disasters-survival",
+      "history",
+      "incredible-people",
+      "mysteries-unexplained",
+      "pop-culture-entertainment",
+      "scams-hoaxes-cons",
+      "true-crime"
+    ],
+    "topic_clusters": [
+      "conspiracies-cover-ups",
+      "cults",
+      "disappearances",
+      "hoaxes",
+      "kidnappings",
+      "media-frenzy",
+      "murders",
+      "scams-frauds",
+      "scandals",
+      "serial-killers",
+      "survival-against-the-odds",
+      "unsolved-mysteries",
+      "wrongful-convictions"
+    ],
+    "series": [
+      "amanda-knox-meredith-kercher",
+      "american-cases",
+      "british-cases",
+      "emanuela-orlandi",
+      "international-cases",
+      "princess-diana",
+      "survival-stories",
+      "titanic"
+    ],
+    "tags": []
+  },
+  "taxonomy_related_redirects": [],
+  "route_files": [
+    "app/(public)/topics/[slug]/page.tsx",
+    "app/(public)/topics/page.tsx",
+    "app/(public)/blog/tag/[tagSlug]/page.tsx",
+    "app/(public)/events/[slug]/page.tsx",
+    "app/(public)/events/page.tsx",
+    "app/(public)/cases/[slug]/page.tsx",
+    "app/(public)/cases/page.tsx",
+    "app/(public)/blog/series/[seriesSlug]/page.tsx",
+    "app/(public)/series/[slug]/page.tsx",
+    "app/(public)/series/page.tsx",
+    "app/(public)/themes/[slug]/page.tsx",
+    "app/(public)/themes/page.tsx",
+    "app/(public)/blog/category/[categorySlug]/page.tsx",
+    "app/(public)/blog/topic/[topicSlug]/page.tsx",
+    "app/(public)/people/[slug]/page.tsx",
+    "app/(public)/people/page.tsx",
+    "app/(public)/collections/page.tsx",
+    "app/(public)/collections/[slug]/page.tsx"
+  ],
+  "internal_reference_hits": [
+    "lib/episodes.ts:443:  if (term.term_type === 'topic') return `/topics/${term.slug}`;",
+    "lib/episodes.ts:444:  if (term.term_type === 'theme') return `/themes/${term.slug}`;",
+    "lib/episodes.ts:445:  if (term.term_type === 'entity' && term.entity_subtype === 'person') return `/people/${term.slug}`;",
+    "lib/episodes.ts:446:  if (term.term_type === 'case') return `/cases/${term.slug}`;",
+    "lib/episodes.ts:447:  if (term.term_type === 'event') return `/events/${term.slug}`;",
+    "lib/episodes.ts:448:  if (term.term_type === 'collection') return `/collections/${term.slug}`;",
+    "lib/episodes.ts:449:  if (term.term_type === 'series') return `/series/${term.slug}`;",
+    "lib/episodes.ts:1441:    items.push({ name: category.name, href: `/blog/category/${category.slug}` });",
+    "components/blog/blog-post-card.tsx:59:            <Link href={`/blog/category/${category.slug}`} className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide transition ${categoryClass}`}>",
+    "components/blog/blog-post-card.tsx:94:          <Link href={`/blog/category/${category.slug}`} className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide transition ${categoryClass}`}>",
+    "app/(public)/topics/[slug]/page.tsx:33:      canonical: `/topics/${params.slug}`",
+    "app/(public)/blog/tag/[tagSlug]/page.tsx:14:    alternates: { canonical: `/blog/tag/${params.tagSlug}` },",
+    "app/(public)/blog/tag/[tagSlug]/page.tsx:28:      basePath={`/blog/tag/${archive.term.slug}`}",
+    "lib/blog/data.ts:825:  if (kind === 'categories') return `/blog/category/${slug}`;",
+    "lib/blog/data.ts:826:  if (kind === 'tags') return `/blog/tag/${slug}`;",
+    "lib/blog/data.ts:827:  if (kind === 'series') return `/blog/series/${slug}`;",
+    "lib/blog/data.ts:828:  if (kind === 'topic_clusters') return `/blog/topic/${slug}`;",
+    "lib/blog/data.ts:889:    { kind: 'categories', prefix: '/blog/category/' },",
+    "lib/blog/data.ts:890:    { kind: 'tags', prefix: '/blog/tag/' },",
+    "lib/blog/data.ts:891:    { kind: 'series', prefix: '/blog/series/' },",
+    "lib/blog/data.ts:892:    { kind: 'topic_clusters', prefix: '/blog/topic/' },",
+    "lib/blog/data.ts:2227:  return kind === 'series' ? `/series/${data.slug}` : `/topics/${data.slug}`;",
+    "app/(public)/themes/[slug]/page.tsx:33:      canonical: `/themes/${params.slug}`",
+    "app/(public)/blog/topic/[topicSlug]/page.tsx:13:    alternates: { canonical: `/blog/topic/${params.topicSlug}` }",
+    "app/(public)/blog/topic/[topicSlug]/page.tsx:26:      basePath={`/blog/topic/${archive.term.slug}`}",
+    "app/(public)/collections/[slug]/page.tsx:33:      canonical: `/collections/${params.slug}`",
+    "app/(public)/blog/category/[categorySlug]/page.tsx:13:    alternates: { canonical: `/blog/category/${params.categorySlug}` }",
+    "app/(public)/blog/category/[categorySlug]/page.tsx:26:      basePath={`/blog/category/${archive.term.slug}`}",
+    "components/blog/admin-taxonomies-manager.tsx:75:  if (kind === 'categories') return `/blog/category/${slug}`;",
+    "components/blog/admin-taxonomies-manager.tsx:76:  if (kind === 'tags') return `/blog/tag/${slug}`;",
+    "components/blog/admin-taxonomies-manager.tsx:77:  if (kind === 'series') return `/blog/series/${slug}`;",
+    "components/blog/admin-taxonomies-manager.tsx:78:  if (kind === 'topic_clusters') return `/blog/topic/${slug}`;",
+    "app/(public)/blog/series/[seriesSlug]/page.tsx:13:    alternates: { canonical: `/blog/series/${params.seriesSlug}` }",
+    "app/(public)/blog/series/[seriesSlug]/page.tsx:26:      basePath={`/blog/series/${archive.term.slug}`}",
+    "app/(public)/series/[slug]/page.tsx:33:      canonical: `/series/${params.slug}`"
+  ]
+}

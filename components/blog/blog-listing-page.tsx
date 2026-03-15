@@ -144,7 +144,16 @@ export function BlogListingPage({
     }
   }
 
-  const preferredOrder = ['true-crime', 'history', 'incredible-people', 'incredible-events'];
+  const preferredOrder = [
+    'true-crime',
+    'history',
+    'incredible-people',
+    'scams-hoaxes-cons',
+    'mysteries-unexplained',
+    'pop-culture-entertainment',
+    'cults-belief-moral-panics',
+    'disasters-survival'
+  ];
   const priorityBySlug = new Map(preferredOrder.map((slug, index) => [slug, index]));
   const categoryTabs = [...categoryMap.values()]
     .filter((section) => section.posts.length > 0)

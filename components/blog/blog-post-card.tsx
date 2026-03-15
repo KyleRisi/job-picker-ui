@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getStoragePublicUrl } from '@/lib/blog/media-url';
 import type { MediaAssetRecord } from '@/lib/blog/data';
+import { resolveTaxonomyPublicPath } from '@/lib/taxonomy-route-policy';
 
 type BlogPostCardPost = {
   id?: string;
@@ -30,6 +31,13 @@ export function BlogPostCard({
 }) {
   const imageUrl = post.featured_image ? getStoragePublicUrl(post.featured_image.storage_path) : null;
   const category = post.taxonomies?.categories?.[0];
+  const categoryPublicPath = category
+    ? resolveTaxonomyPublicPath({
+        termType: 'topic',
+        slug: category.slug,
+        entitySubtype: null
+      })
+    : null;
   const excerpt = post.excerpt || post.excerpt_auto || 'Read the full article.';
   const cardClass = onDark ? 'border-white/20 bg-white/10 text-white' : 'border-carnival-ink/15 bg-white';
   const imageBgClass = onDark ? 'bg-white/10' : 'bg-carnival-ink/5';
@@ -55,8 +63,8 @@ export function BlogPostCard({
           </Link>
         ) : null}
         <div className="space-y-3 p-4">
-          {category ? (
-            <Link href={`/blog/category/${category.slug}`} className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide transition ${categoryClass}`}>
+          {category && categoryPublicPath ? (
+            <Link href={categoryPublicPath} className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide transition ${categoryClass}`}>
               {category.name}
             </Link>
           ) : null}
@@ -90,8 +98,8 @@ export function BlogPostCard({
         </div>
       ) : null}
       <div className="space-y-3 p-6">
-        {category ? (
-          <Link href={`/blog/category/${category.slug}`} className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide transition ${categoryClass}`}>
+        {category && categoryPublicPath ? (
+          <Link href={categoryPublicPath} className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide transition ${categoryClass}`}>
             {category.name}
           </Link>
         ) : null}

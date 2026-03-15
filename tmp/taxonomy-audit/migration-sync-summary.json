@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-03-15T14:11:18.355Z",
+  "route_count": 73,
+  "inventory_checked": true,
+  "inventory_check_reason": "",
+  "inventory_discovery_route_count": 58,
+  "unclassified_inventory_routes": [],
+  "persisted_to_supabase": true,
+  "supabase_reason": "",
+  "supabase_audit_upserts": 73,
+  "supabase_redirect_upserts": 62,
+  "supabase_redirect_disabled": 0,
+  "report_json": "/Users/kyle/Dev/compendium-circus-hr/tmp/taxonomy-audit/migration-report.json",
+  "report_csv": "/Users/kyle/Dev/compendium-circus-hr/tmp/taxonomy-audit/migration-report.csv"
+}

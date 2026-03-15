@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildRedirectLocation, normalizePath, shouldSkipRedirectLookup } from '@/lib/redirects';
+import { getTaxonomyRoutePolicy } from '@/lib/taxonomy-route-policy';
 
 type ResolveItem = {
   id: string;
@@ -152,6 +153,30 @@ export async function middleware(req: NextRequest) {
 
   const normalizedPath = normalizePath(req.nextUrl.pathname);
   if (shouldSkipRedirectLookup(normalizedPath)) return withBaselineHeaders(req, NextResponse.next());
+
+  const taxonomyRoutePolicy = getTaxonomyRoutePolicy(normalizedPath);
+  if (taxonomyRoutePolicy?.action === 'gone_410') {
+    return withBaselineHeaders(req, new NextResponse('Gone', { status: 410 }));
+  }
+  if (taxonomyRoutePolicy?.action === 'redirect_301' && taxonomyRoutePolicy.redirect_destination) {
+    const destination = buildRedirectLocation({
+      requestUrl: req.nextUrl,
+      requestPath: normalizedPath,
+      sourcePath: normalizedPath,
+      targetUrl: taxonomyRoutePolicy.redirect_destination,
+      matchType: 'exact',
+      preserveQuery: true
+    });
+    const destinationUrl = new URL(destination);
+    if (destinationUrl.toString() !== req.nextUrl.toString()) {
+      return withBaselineHeaders(req, NextResponse.redirect(destinationUrl, 301));
+    }
+  }
+  if (taxonomyRoutePolicy?.action === 'live_noindex') {
+    const response = withBaselineHeaders(req, NextResponse.next());
+    response.headers.set('x-robots-tag', 'noindex, follow');
+    return response;
+  }
 
   const deterministicEpisodeTarget = getDeterministicLegacyEpisodeTarget(normalizedPath);
   if (deterministicEpisodeTarget && deterministicEpisodeTarget !== normalizedPath) {

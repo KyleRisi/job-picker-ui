@@ -1,0 +1,141 @@
+{
+  "generated_at": "2026-03-15T13:25:54.242Z",
+  "gsc_window": {
+    "start": "2025-12-16",
+    "end": "2026-03-15"
+  },
+  "targets": [
+    {
+      "route": "/themes",
+      "rationale": "Family retired as non-primary taxonomy surface.",
+      "previous_behavior": "theme_index_page",
+      "gsc_recent_clicks": 0,
+      "gsc_recent_impressions": 0,
+      "internal_pageviews_180d": 0,
+      "internal_analytics_available": true,
+      "backlinks_available": false,
+      "decision": "flag_for_reconsideration",
+      "evidence": "Internal analytics pageviews: 0 (last 180d); Backlink evidence unavailable in workspace; conservative flag"
+    },
+    {
+      "route": "/themes/scandals",
+      "rationale": "Ambiguous successor; conservative retirement.",
+      "previous_behavior": "theme_hub_indexable",
+      "gsc_recent_clicks": 0,
+      "gsc_recent_impressions": 3,
+      "internal_pageviews_180d": 0,
+      "internal_analytics_available": true,
+      "backlinks_available": false,
+      "decision": "flag_for_reconsideration",
+      "evidence": "GSC 0 clicks / 3 impressions (recent window); Internal analytics pageviews: 0 (last 180d); Backlink evidence unavailable in workspace; conservative flag"
+    },
+    {
+      "route": "/themes/media-frenzy",
+      "rationale": "Ambiguous successor; conservative retirement.",
+      "previous_behavior": "theme_hub_indexable",
+      "gsc_recent_clicks": 0,
+      "gsc_recent_impressions": 0,
+      "internal_pageviews_180d": 0,
+      "internal_analytics_available": true,
+      "backlinks_available": false,
+      "decision": "flag_for_reconsideration",
+      "evidence": "Internal analytics pageviews: 0 (last 180d); Backlink evidence unavailable in workspace; conservative flag"
+    },
+    {
+      "route": "/themes/conspiracies-cover-ups",
+      "rationale": "Ambiguous successor; conservative retirement.",
+      "previous_behavior": "theme_hub_indexable",
+      "gsc_recent_clicks": 0,
+      "gsc_recent_impressions": 0,
+      "internal_pageviews_180d": 0,
+      "internal_analytics_available": true,
+      "backlinks_available": false,
+      "decision": "flag_for_reconsideration",
+      "evidence": "Internal analytics pageviews: 0 (last 180d); Backlink evidence unavailable in workspace; conservative flag"
+    },
+    {
+      "route": "/series",
+      "rationale": "Family retired as non-primary taxonomy surface.",
+      "previous_behavior": "series_index_page",
+      "gsc_recent_clicks": 0,
+      "gsc_recent_impressions": 0,
+      "internal_pageviews_180d": 0,
+      "internal_analytics_available": true,
+      "backlinks_available": false,
+      "decision": "flag_for_reconsideration",
+      "evidence": "Internal analytics pageviews: 0 (last 180d); Backlink evidence unavailable in workspace; conservative flag"
+    },
+    {
+      "route": "/series/princess-diana",
+      "rationale": "Ambiguous successor; conservative retirement.",
+      "previous_behavior": "series_hub_indexable",
+      "gsc_recent_clicks": 0,
+      "gsc_recent_impressions": 7,
+      "internal_pageviews_180d": 0,
+      "internal_analytics_available": true,
+      "backlinks_available": false,
+      "decision": "flag_for_reconsideration",
+      "evidence": "GSC 0 clicks / 7 impressions (recent window); Internal analytics pageviews: 0 (last 180d); Backlink evidence unavailable in workspace; conservative flag"
+    },
+    {
+      "route": "/series/titanic",
+      "rationale": "Ambiguous successor; conservative retirement.",
+      "previous_behavior": "series_hub_indexable",
+      "gsc_recent_clicks": 0,
+      "gsc_recent_impressions": 0,
+      "internal_pageviews_180d": 0,
+      "internal_analytics_available": true,
+      "backlinks_available": false,
+      "decision": "flag_for_reconsideration",
+      "evidence": "Internal analytics pageviews: 0 (last 180d); Backlink evidence unavailable in workspace; conservative flag"
+    },
+    {
+      "route": "/series/amanda-knox-meredith-kercher",
+      "rationale": "Ambiguous successor; conservative retirement.",
+      "previous_behavior": "series_hub_indexable",
+      "gsc_recent_clicks": 0,
+      "gsc_recent_impressions": 0,
+      "internal_pageviews_180d": 0,
+      "internal_analytics_available": true,
+      "backlinks_available": false,
+      "decision": "flag_for_reconsideration",
+      "evidence": "Internal analytics pageviews: 0 (last 180d); Backlink evidence unavailable in workspace; conservative flag"
+    },
+    {
+      "route": "/series/emanuela-orlandi",
+      "rationale": "Ambiguous successor; conservative retirement.",
+      "previous_behavior": "series_hub_indexable",
+      "gsc_recent_clicks": 0,
+      "gsc_recent_impressions": 4,
+      "internal_pageviews_180d": 0,
+      "internal_analytics_available": true,
+      "backlinks_available": false,
+      "decision": "flag_for_reconsideration",
+      "evidence": "GSC 0 clicks / 4 impressions (recent window); Internal analytics pageviews: 0 (last 180d); Backlink evidence unavailable in workspace; conservative flag"
+    },
+    {
+      "route": "/collections/american-cases",
+      "rationale": "Geo facet without clear canonical successor.",
+      "previous_behavior": "collection_hub_indexable",
+      "gsc_recent_clicks": 0,
+      "gsc_recent_impressions": 0,
+      "internal_pageviews_180d": 0,
+      "internal_analytics_available": true,
+      "backlinks_available": false,
+      "decision": "flag_for_reconsideration",
+      "evidence": "Internal analytics pageviews: 0 (last 180d); Backlink evidence unavailable in workspace; conservative flag"
+    },
+    {
+      "route": "/collections/international-cases",
+      "rationale": "Geo facet without clear canonical successor.",
+      "previous_behavior": "collection_hub_indexable",
+      "gsc_recent_clicks": 0,
+      "gsc_recent_impressions": 0,
+      "internal_pageviews_180d": 0,
+      "internal_analytics_available": true,
+      "backlinks_available": false,
+      "decision": "flag_for_reconsideration",
+      "evidence": "Internal analytics pageviews: 0 (last 180d); Backlink evidence unavailable in workspace; conservative flag"
+    }
+  ]
+}

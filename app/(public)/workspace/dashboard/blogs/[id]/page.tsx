@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getBlogPostAdminById, listBlogAuthors, listBlogPostsAdmin, listPodcastEpisodes } from '@/lib/blog/data';
 import { listActiveDiscoveryTerms } from '@/lib/episodes';
 import { WorkspaceBlogEditor } from '@/components/workspace/workspace-blog-editor';
+import { isApprovedCollectionSlug, isApprovedTopicSlug } from '@/lib/taxonomy-route-policy';
 
 export default async function BlogEditorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -28,10 +29,16 @@ export default async function BlogEditorPage({ params }: { params: Promise<{ id:
     .map((item) => ({ id: item.id, title: item.title }));
   const authors = (authorRows || []).map((author) => ({ id: author.id, name: author.name }));
   const taxonomyOptions = {
-    categories: discoveryTerms.filter((term) => term.termType === 'topic').map((term) => ({ id: term.id, name: term.name })),
-    topics: discoveryTerms.filter((term) => term.termType === 'topic').map((term) => ({ id: term.id, name: term.name })),
+    categories: discoveryTerms
+      .filter((term) => term.termType === 'topic' && isApprovedTopicSlug(term.slug))
+      .map((term) => ({ id: term.id, name: term.name })),
+    topics: discoveryTerms
+      .filter((term) => term.termType === 'topic' && isApprovedTopicSlug(term.slug))
+      .map((term) => ({ id: term.id, name: term.name })),
     themes: discoveryTerms.filter((term) => term.termType === 'theme').map((term) => ({ id: term.id, name: term.name })),
-    collections: discoveryTerms.filter((term) => term.termType === 'collection').map((term) => ({ id: term.id, name: term.name })),
+    collections: discoveryTerms
+      .filter((term) => term.termType === 'collection' && isApprovedCollectionSlug(term.slug))
+      .map((term) => ({ id: term.id, name: term.name })),
     series: discoveryTerms.filter((term) => term.termType === 'series').map((term) => ({ id: term.id, name: term.name }))
   };
 

@@ -1,29 +1,22 @@
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { BlogListingPage } from '@/components/blog/blog-listing-page';
-import { listTaxonomyArchive } from '@/lib/blog/data';
+import { ROBOTS_NOINDEX_NOFOLLOW } from '@/lib/seo';
+import { getTaxonomyRoutePolicy } from '@/lib/taxonomy-route-policy';
 
 export const revalidate = 300;
 
-export async function generateMetadata({ params }: { params: { categorySlug: string } }): Promise<Metadata> {
-  const archive = await listTaxonomyArchive('categories', params.categorySlug);
-  const name = archive?.term?.name || params.categorySlug;
+export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `Category: ${name}`,
-    alternates: { canonical: `/blog/category/${params.categorySlug}` }
+    title: 'Legacy Category Archive Retired',
+    robots: ROBOTS_NOINDEX_NOFOLLOW
   };
 }
 
-export default async function BlogCategoryPage({ params, searchParams }: { params: { categorySlug: string }; searchParams: { page?: string } }) {
-  const archive = await listTaxonomyArchive('categories', params.categorySlug, Number.parseInt(searchParams.page || '1', 10));
-  if (!archive) notFound();
-  return (
-    <BlogListingPage
-      title={archive.term.name}
-      description={archive.term.description || 'Posts in this category.'}
-      posts={archive.items}
-      pagination={archive.pagination}
-      basePath={`/blog/category/${archive.term.slug}`}
-    />
-  );
+export default function BlogCategoryPage({ params }: { params: { categorySlug: string } }) {
+  const route = `/blog/category/${params.categorySlug}`;
+  const policy = getTaxonomyRoutePolicy(route);
+  if (policy?.action === 'redirect_301' && policy.redirect_destination) {
+    permanentRedirect(policy.redirect_destination);
+  }
+  notFound();
 }

@@ -1,0 +1,80 @@
+{
+  "siteUrl": "sc-domain:thecompendiumpodcast.com",
+  "recentWindow": {
+    "start": "2025-12-16",
+    "end": "2026-03-15"
+  },
+  "priorWindow": {
+    "start": "2025-09-17",
+    "end": "2025-12-15"
+  },
+  "recentCount": 560,
+  "priorCount": 426,
+  "recentMatches": [
+    {
+      "url": "https://www.thecompendiumpodcast.com/series/princess-diana",
+      "path": "/series/princess-diana",
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 7
+    },
+    {
+      "url": "https://www.thecompendiumpodcast.com/series/emanuela-orlandi",
+      "path": "/series/emanuela-orlandi",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 7.5
+    },
+    {
+      "url": "https://www.thecompendiumpodcast.com/themes/scandals",
+      "path": "/themes/scandals",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 15
+    },
+    {
+      "url": "https://www.thecompendiumpodcast.com/themes/unsolved-mysteries",
+      "path": "/themes/unsolved-mysteries",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 7.666666666666667
+    },
+    {
+      "url": "https://www.thecompendiumpodcast.com/themes/kidnappings",
+      "path": "/themes/kidnappings",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "url": "https://www.thecompendiumpodcast.com/themes/cults",
+      "path": "/themes/cults",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 5
+    },
+    {
+      "url": "https://www.thecompendiumpodcast.com/themes/hoaxes",
+      "path": "/themes/hoaxes",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "url": "https://www.thecompendiumpodcast.com/themes/serial-killers",
+      "path": "/themes/serial-killers",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 9
+    }
+  ],
+  "priorMatches": []
+}

@@ -2,6 +2,7 @@ import { getResolvedEpisodes, listActiveDiscoveryTerms } from '@/lib/episodes';
 import { listBlogAuthors, listPublishedBlogPostsForSitemap } from '@/lib/blog/data';
 import { getJobsForPublic } from '@/lib/data';
 import { getPublicSiteUrl } from '@/lib/site-url';
+import { getApprovedCollectionSlugs, getApprovedTopicSlugs } from '@/lib/taxonomy-route-policy';
 
 export const revalidate = 300;
 
@@ -92,6 +93,8 @@ function buildSitemapXml(entries: SitemapEntry[]): string {
 
 async function getEntries(): Promise<SitemapEntry[]> {
   const siteUrl = getPublicSiteUrl();
+  const approvedTopicSlugs = new Set(getApprovedTopicSlugs());
+  const approvedCollectionSlugs = new Set(getApprovedCollectionSlugs());
 
   const stableStaticRoutes: SitemapEntry[] = [
     {
@@ -108,6 +111,16 @@ async function getEntries(): Promise<SitemapEntry[]> {
       url: `${siteUrl}/episodes`,
       changeFrequency: 'daily',
       priority: 0.85
+    },
+    {
+      url: `${siteUrl}/topics`,
+      changeFrequency: 'weekly',
+      priority: 0.8
+    },
+    {
+      url: `${siteUrl}/collections`,
+      changeFrequency: 'weekly',
+      priority: 0.7
     },
     {
       url: `${siteUrl}/blog`,
@@ -219,7 +232,12 @@ async function getEntries(): Promise<SitemapEntry[]> {
         priority: 0.4
       })),
       ...discoveryTerms
-        .filter((item) => item.path)
+        .filter((item) => {
+          if (!item.path) return false;
+          if (item.termType === 'topic') return approvedTopicSlugs.has(item.slug);
+          if (item.termType === 'collection') return approvedCollectionSlugs.has(item.slug);
+          return false;
+        })
         .map((item) => ({
           url: `${siteUrl}${item.path}`,
           lastModified: pickFirstIso(item.updatedAt),

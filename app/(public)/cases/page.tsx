@@ -1,15 +1,14 @@
 import type { Metadata } from 'next';
-import { DiscoveryTermIndexPage } from '@/components/discovery-term-index-page';
-import { listActiveDiscoveryTerms } from '@/lib/episodes';
+import { notFound } from 'next/navigation';
+import { ROBOTS_NOINDEX_NOFOLLOW } from '@/lib/seo';
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: 'Cases | The Compendium Podcast',
-  description: 'Browse every active Compendium case hub.'
+  title: 'Cases Archive Retired',
+  robots: ROBOTS_NOINDEX_NOFOLLOW
 };
 
-export default async function CasesIndexPage() {
-  const terms = (await listActiveDiscoveryTerms()).filter((term) => term.termType === 'case');
-  return <DiscoveryTermIndexPage routeKey="cases" terms={terms} />;
+export default function CasesIndexPage() {
+  notFound();
 }

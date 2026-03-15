@@ -13,6 +13,6 @@ export const metadata: Metadata = {
 };
 
 export default async function TopicsIndexPage() {
-  const terms = (await listActiveDiscoveryTerms()).filter((term) => term.termType === 'topic');
+  const terms = (await listActiveDiscoveryTerms()).filter((term) => term.termType === 'topic' && term.path);
   return <DiscoveryTermIndexPage routeKey="topics" terms={terms} />;
 }

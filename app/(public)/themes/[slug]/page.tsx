@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { DiscoveryHubPage } from '@/components/discovery-hub-page';
-import { getDiscoveryHubPage } from '@/lib/episodes';
+import { notFound, permanentRedirect } from 'next/navigation';
+import { ROBOTS_NOINDEX_NOFOLLOW } from '@/lib/seo';
+import { getTaxonomyRoutePolicy } from '@/lib/taxonomy-route-policy';
 
 export const revalidate = 300;
 
@@ -9,39 +9,18 @@ type Params = {
   slug: string;
 };
 
-type SearchParams = {
-  page?: string | string[];
-};
-
-export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const hub = await getDiscoveryHubPage('themes', params.slug);
-
-  if (!hub) {
-    return {
-      title: 'Theme Not Found | The Compendium Podcast',
-      robots: {
-        index: false,
-        follow: false
-      }
-    };
-  }
-
+export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `${hub.term.seoTitle || hub.term.name} | Themes | The Compendium Podcast`,
-    description: hub.term.metaDescription || hub.term.description || `Explore episodes in ${hub.term.name}.`,
-    alternates: {
-      canonical: `/themes/${params.slug}`
-    }
+    title: 'Theme Archive Retired',
+    robots: ROBOTS_NOINDEX_NOFOLLOW
   };
 }
 
-export default async function ThemeHubPage({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
-  const rawPage = Array.isArray(searchParams.page) ? searchParams.page[0] : searchParams.page;
-  const parsedPage = Number.parseInt(`${rawPage || '1'}`, 10);
-  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
-
-  const hub = await getDiscoveryHubPage('themes', params.slug, page);
-  if (!hub) notFound();
-
-  return <DiscoveryHubPage routeKey="themes" hub={hub} />;
+export default function ThemeHubPage({ params }: { params: Params }) {
+  const route = `/themes/${params.slug}`;
+  const policy = getTaxonomyRoutePolicy(route);
+  if (policy?.action === 'redirect_301' && policy.redirect_destination) {
+    permanentRedirect(policy.redirect_destination);
+  }
+  notFound();
 }

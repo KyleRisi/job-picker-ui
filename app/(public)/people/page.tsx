@@ -1,15 +1,14 @@
 import type { Metadata } from 'next';
-import { DiscoveryTermIndexPage } from '@/components/discovery-term-index-page';
-import { listActiveDiscoveryTerms } from '@/lib/episodes';
+import { notFound } from 'next/navigation';
+import { ROBOTS_NOINDEX_NOFOLLOW } from '@/lib/seo';
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: 'People | The Compendium Podcast',
-  description: 'Browse every active Compendium people hub.'
+  title: 'People Archive Retired',
+  robots: ROBOTS_NOINDEX_NOFOLLOW
 };
 
-export default async function PeopleIndexPage() {
-  const terms = (await listActiveDiscoveryTerms()).filter((term) => term.termType === 'entity' && term.entitySubtype === 'person');
-  return <DiscoveryTermIndexPage routeKey="people" terms={terms} />;
+export default function PeopleIndexPage() {
+  notFound();
 }

@@ -359,7 +359,13 @@ function byPublishedDate(order: SortOrder) {
   };
 }
 
-export function CompactEpisodeRow({ episode }: { episode: PodcastEpisode }) {
+export function CompactEpisodeRow({
+  episode,
+  excerptNoSnippet = false
+}: {
+  episode: PodcastEpisode;
+  excerptNoSnippet?: boolean;
+}) {
   const artworkButtonRef = useRef<HTMLButtonElement | null>(null);
   const router = useRouter();
   const { activeEpisode, isPlaying, playEpisode, togglePlayPause } = usePodcastPlayback();
@@ -475,7 +481,7 @@ export function CompactEpisodeRow({ episode }: { episode: PodcastEpisode }) {
               {episode.title}
             </Link>
           </h2>
-          <p className="mt-1.5 hidden line-clamp-2 text-xs leading-relaxed text-carnival-ink/75 sm:block sm:text-sm">
+          <p data-nosnippet={excerptNoSnippet ? '' : undefined} className="mt-1.5 hidden line-clamp-2 text-xs leading-relaxed text-carnival-ink/75 sm:block sm:text-sm">
             {toExcerpt(episode.description, 200)}
           </p>
         </div>

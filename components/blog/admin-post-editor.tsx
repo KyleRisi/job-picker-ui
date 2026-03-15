@@ -1006,9 +1006,31 @@ function htmlToEditorSeedMarkdown(value: string) {
   return normalized;
 }
 
+function splitEpisodeBodyBlocks(blocks: BlogContentBlock[]) {
+  const transcriptBlocks = blocks.filter((block) => block.type === 'transcript');
+  const nonTranscriptBlocks = blocks.filter((block) => block.type !== 'transcript');
+  return { transcriptBlocks, nonTranscriptBlocks };
+}
+
+function buildEpisodeSourceSeedDocument(payload: EpisodeEditorPayload): BlogContentBlock[] {
+  const sourceSeed = [
+    htmlToEditorSeedMarkdown(pickPreferredEpisodeSourceHtml(payload.source)),
+    payload.source?.description_plain || ''
+  ].find((value) => typeof value === 'string' && value.trim());
+
+  return sourceSeed ? markdownToBlogDocument(sourceSeed) : normalizeBlogDocument([]);
+}
+
 function getEpisodeInitialDocument(payload: EpisodeEditorPayload): BlogContentBlock[] {
   if (Array.isArray(payload.editorial?.body_json) && payload.editorial.body_json.length > 0) {
-    return normalizeBlogDocument(payload.editorial.body_json);
+    const normalizedEditorial = normalizeBlogDocument(payload.editorial.body_json);
+    const { transcriptBlocks, nonTranscriptBlocks } = splitEpisodeBodyBlocks(normalizedEditorial);
+    if (nonTranscriptBlocks.length > 0) return normalizedEditorial;
+
+    // Transcript-only structured docs should not hide the source story body in editor mode.
+    const sourceDocument = buildEpisodeSourceSeedDocument(payload);
+    if (sourceDocument.length) return [...sourceDocument, ...transcriptBlocks];
+    return normalizedEditorial;
   }
 
   if (typeof payload.editorial?.body_markdown === 'string' && payload.editorial.body_markdown.trim()) {
@@ -1019,17 +1041,12 @@ function getEpisodeInitialDocument(payload: EpisodeEditorPayload): BlogContentBl
     return markdownToBlogDocument(payload.episode.bodyMarkdown);
   }
 
-  const sourceSeed = [
-    htmlToEditorSeedMarkdown(pickPreferredEpisodeSourceHtml(payload.source)),
-    payload.source?.description_plain || ''
-  ].find((value) => typeof value === 'string' && value.trim());
-
-  return sourceSeed ? markdownToBlogDocument(sourceSeed) : normalizeBlogDocument([]);
+  return buildEpisodeSourceSeedDocument(payload);
 }
 
 function getEpisodeInitialEditorContent(payload: EpisodeEditorPayload): BlogContentBlock[] | string {
   if (Array.isArray(payload.editorial?.body_json) && payload.editorial.body_json.length > 0) {
-    return normalizeBlogDocument(payload.editorial.body_json);
+    return getEpisodeInitialDocument(payload);
   }
 
   if (typeof payload.editorial?.body_markdown === 'string' && payload.editorial.body_markdown.trim()) {

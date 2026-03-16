@@ -15,6 +15,7 @@ export type TaxonomyRoutePolicyEntry = {
 
 const APPROVED_TOPIC_SLUGS = Object.freeze([...rawPolicy.approved_topics]);
 const APPROVED_COLLECTION_SLUGS = Object.freeze([...rawPolicy.approved_collections]);
+const HIDDEN_TAXONOMY_CHIP_SLUGS = new Set(['british-cases']);
 const POLICY_ENTRIES: ReadonlyArray<TaxonomyRoutePolicyEntry> = Object.freeze(
   (rawPolicy.routes as TaxonomyRoutePolicyEntry[]).map((entry) => ({
     ...entry,
@@ -145,6 +146,7 @@ export function isTaxonomyPublicDisplayable(input: {
   path: string | null;
 }) {
   if (!isTaxonomyActive({ isActive: input.isActive })) return false;
+  if (HIDDEN_TAXONOMY_CHIP_SLUGS.has(normalizePath(`/${input.slug}`).slice(1))) return false;
   const resolved = resolveTaxonomyPublicPath({
     termType: input.termType,
     slug: input.slug,

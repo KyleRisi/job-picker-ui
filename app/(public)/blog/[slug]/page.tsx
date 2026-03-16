@@ -17,6 +17,13 @@ import { buildBlogPostBreadcrumbs } from '@/lib/episodes';
 import type { PodcastEpisode } from '@/lib/podcast-shared';
 import { getPublicSiteUrl } from '@/lib/site-url';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
+import {
+  compactJsonLd,
+  getPageEntityIds,
+  getSiteEntityIds,
+  resolveCanonicalForSchema,
+  toAbsoluteSchemaUrl
+} from '@/lib/schema-jsonld';
 
 export const revalidate = 300;
 
@@ -48,25 +55,23 @@ async function loadPost(slug: string, includeDraft: boolean) {
   };
 }
 
-function resolveBlogCanonicalValue(postSlug: string, canonicalUrl: string | null): string {
-  const fallbackPath = `/blog/${postSlug}`;
-  const raw = `${canonicalUrl || ''}`.trim();
-  if (!raw) return fallbackPath;
+function resolveBlogCanonical(postSlug: string, canonicalUrl: string | null, siteUrl: string) {
+  return resolveCanonicalForSchema({
+    candidateCanonical: canonicalUrl,
+    fallbackPath: `/blog/${postSlug}`,
+    siteUrl
+  });
+}
 
-  try {
-    const siteUrl = getPublicSiteUrl();
-    const parsed = new URL(raw, siteUrl);
-    if (!/^https?:$/i.test(parsed.protocol)) return fallbackPath;
-
-    const siteOrigin = new URL(siteUrl).origin;
-    if (parsed.origin === siteOrigin) {
-      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
-    }
-
-    return parsed.toString();
-  } catch {
-    return fallbackPath;
-  }
+function collectVisibleFaqEntries(document: BlogContentBlock[]) {
+  return document
+    .filter((block): block is Extract<BlogContentBlock, { type: 'faq' }> => block.type === 'faq')
+    .flatMap((block) => block.items)
+    .map((item) => ({
+      question: item.question.trim(),
+      answerText: richTextToPlainText(item.answer).trim()
+    }))
+    .filter((item) => item.question && item.answerText);
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
@@ -80,7 +85,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   }
   const { post } = loaded;
   const description = post.seo_description || post.excerpt || post.excerpt_auto || 'Read the latest article from The Compendium.';
-  const canonicalValue = resolveBlogCanonicalValue(post.slug, post.canonical_url);
+  const siteUrl = getPublicSiteUrl();
+  const canonical = resolveBlogCanonical(post.slug, post.canonical_url, siteUrl);
   const imageUrl = post.og_image
     ? getStoragePublicUrl(post.og_image.storage_path)
     : post.featured_image
@@ -89,7 +95,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return {
     title: post.seo_title || post.title,
     description,
-    alternates: { canonical: canonicalValue },
+    alternates: { canonical: canonical.metadataCanonical },
     robots: {
       index: !post.noindex,
       follow: !post.nofollow
@@ -97,7 +103,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     openGraph: {
       title: post.social_title || post.seo_title || post.title,
       description: post.social_description || description,
-      url: canonicalValue,
+      url: canonical.metadataCanonical,
       images: [
         {
           url: imageUrl,
@@ -153,38 +159,51 @@ export default async function BlogPostPage({ params }: { params: Params }) {
   const primaryEpisode = linkedEpisodes[0]?.episode || null;
   const relatedEpisodeCards: PodcastEpisode[] = hasPrimaryListenBlock ? linkedEpisodeCards.slice(1) : linkedEpisodeCards;
   const siteUrl = getPublicSiteUrl();
-  const canonicalValue = resolveBlogCanonicalValue(post.slug, post.canonical_url);
-  const canonicalUrl = new URL(canonicalValue, siteUrl).toString();
-  const jsonLd = {
+  const canonical = resolveBlogCanonical(post.slug, post.canonical_url, siteUrl);
+  if (canonical.offDomainCandidate) {
+    console.warn(`Rejected off-domain blog canonical override: ${canonical.offDomainCandidate}`);
+  }
+  const canonicalUrl = canonical.absoluteCanonicalUrl;
+  const pageEntityIds = getPageEntityIds(canonicalUrl);
+  const siteEntityIds = getSiteEntityIds(siteUrl);
+  const jsonLd = compactJsonLd({
     '@context': 'https://schema.org',
-    '@type': post.schema_type || 'BlogPosting',
+    '@id': pageEntityIds.blogPosting,
+    '@type': 'BlogPosting',
     headline: post.title,
-    description: post.seo_description || post.excerpt || post.excerpt_auto || '',
+    description: post.seo_description || post.excerpt || post.excerpt_auto || undefined,
     url: canonicalUrl,
     datePublished: post.published_at,
     dateModified: post.updated_at,
-    author: {
-      '@type': 'Person',
-      name: post.author?.name || 'Kyle',
-      url: `${siteUrl}/blog/author/${post.author?.slug || 'kyle'}`
-    },
-    image: post.featured_image ? getStoragePublicUrl(post.featured_image.storage_path) : `${siteUrl}/The Compendium Main.jpg`,
+    author: post.author?.name
+      ? {
+          '@type': 'Person',
+          name: post.author.name,
+          url: post.author.slug ? toAbsoluteSchemaUrl(`/blog/author/${post.author.slug}`, siteUrl) : undefined
+        }
+      : undefined,
+    image: toAbsoluteSchemaUrl(
+      post.featured_image ? getStoragePublicUrl(post.featured_image.storage_path) : '/The Compendium Main.jpg',
+      siteUrl
+    ),
     mainEntityOfPage: canonicalUrl,
     isPartOf: {
-      '@type': 'WebSite',
-      name: 'The Compendium Podcast',
-      url: siteUrl
+      '@id': siteEntityIds.website
     },
     about: primaryEpisode
       ? {
           '@type': 'PodcastEpisode',
           name: primaryEpisode.title,
-          url: `${siteUrl}/episodes/${primaryEpisode.slug}`
+          url: toAbsoluteSchemaUrl(`/episodes/${primaryEpisode.slug}`, siteUrl) || undefined
         }
       : undefined
-  };
+  });
   const breadcrumbItems = buildBlogPostBreadcrumbs(post);
-  const breadcrumbJsonLd = breadcrumbsToJsonLd(breadcrumbItems, siteUrl);
+  const breadcrumbJsonLd = compactJsonLd({
+    ...breadcrumbsToJsonLd(breadcrumbItems, siteUrl),
+    '@id': pageEntityIds.breadcrumb
+  });
+  const visibleFaqEntries = collectVisibleFaqEntries(normalizedDocument);
 
   const featuredImageUrl = post.featured_image ? getStoragePublicUrl(post.featured_image.storage_path) : null;
   const excerpt = post.excerpt || post.excerpt_auto;
@@ -200,23 +219,19 @@ export default async function BlogPostPage({ params }: { params: Params }) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       {(() => {
-        const faqItems = normalizedDocument
-          .filter((block): block is Extract<BlogContentBlock, { type: 'faq' }> => block.type === 'faq')
-          .flatMap((block) => block.items)
-          .filter((item) => item.question.trim());
-        if (!faqItems.length) return null;
-        const faqJsonLd = {
+        if (!visibleFaqEntries.length) return null;
+        const faqJsonLd = compactJsonLd({
           '@context': 'https://schema.org',
           '@type': 'FAQPage',
-          mainEntity: faqItems.map((item) => ({
+          mainEntity: visibleFaqEntries.map((item) => ({
             '@type': 'Question',
             name: item.question,
             acceptedAnswer: {
               '@type': 'Answer',
-              text: richTextToPlainText(item.answer)
+              text: item.answerText
             }
           }))
-        };
+        });
         return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />;
       })()}
 
@@ -307,7 +322,7 @@ export default async function BlogPostPage({ params }: { params: Params }) {
 
       <section className="relative mx-auto max-w-6xl -mt-4 space-y-8 px-4 text-white sm:-mt-6">
         <BlogContentRenderer
-          document={post.content_json}
+          document={normalizedDocument}
           assetMap={assetMap}
           linkedEpisodes={post.linked_episodes}
           relatedPosts={post.related_posts.map((item: any) => ({ id: item.id, slug: item.slug, title: item.title }))}

@@ -12,6 +12,7 @@ export function MainNav() {
   const youtubeMusicUrl = 'https://music.youtube.com/channel/UCQR5hWsxuu9wh7QvR60qmIw';
   const moreItems = [
     { href: '/connect', label: 'Connect', prefetch: true },
+    { href: '/connect/press-kit', label: 'Press Kit', prefetch: true },
     { href: '/meet-the-team', label: 'The Team', prefetch: true },
     { href: '/reviews', label: 'Reviews', prefetch: false },
     { href: '/blog', label: 'Blog', prefetch: false }

@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { DiscoveryHubPage } from '@/components/discovery-hub-page';
-import { getDiscoveryHubPage } from '@/lib/episodes';
+import { breadcrumbsToJsonLd } from '@/lib/breadcrumbs';
+import { buildHubBreadcrumbs, getDiscoveryHubPage } from '@/lib/episodes';
+import { compactJsonLd, getPageEntityIds, resolveCanonicalForSchema } from '@/lib/schema-jsonld';
+import { getPublicSiteUrl } from '@/lib/site-url';
 
 export const revalidate = 300;
 
@@ -26,11 +29,18 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     };
   }
 
+  const siteUrl = getPublicSiteUrl();
+  const canonical = resolveCanonicalForSchema({
+    candidateCanonical: hub.term.path || null,
+    fallbackPath: `/collections/${params.slug}`,
+    siteUrl
+  });
+
   return {
     title: `${hub.term.seoTitle || hub.term.name} | Collections | The Compendium Podcast`,
     description: hub.term.metaDescription || hub.term.description || `Explore episodes in ${hub.term.name}.`,
     alternates: {
-      canonical: `/collections/${params.slug}`
+      canonical: canonical.metadataCanonical
     }
   };
 }
@@ -43,5 +53,22 @@ export default async function CollectionHubPage({ params, searchParams }: { para
   const hub = await getDiscoveryHubPage('collections', params.slug, page);
   if (!hub) notFound();
 
-  return <DiscoveryHubPage routeKey="collections" hub={hub} />;
+  const siteUrl = getPublicSiteUrl();
+  const canonical = resolveCanonicalForSchema({
+    candidateCanonical: hub.term.path || null,
+    fallbackPath: `/collections/${params.slug}`,
+    siteUrl
+  });
+  const pageEntityIds = getPageEntityIds(canonical.absoluteCanonicalUrl);
+  const breadcrumbJsonLd = compactJsonLd({
+    ...breadcrumbsToJsonLd(buildHubBreadcrumbs('collections', hub.term), siteUrl),
+    '@id': pageEntityIds.breadcrumb
+  });
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <DiscoveryHubPage routeKey="collections" hub={hub} />
+    </>
+  );
 }

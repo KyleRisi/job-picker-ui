@@ -20,12 +20,31 @@ import { getPublicSiteUrl } from '@/lib/site-url';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
 import { isTaxonomyPublicDisplayable } from '@/lib/taxonomy-route-policy';
 import { resolveEpisodeSummary } from '@/lib/seo-page-copy';
+import {
+  compactJsonLd,
+  getPageEntityIds,
+  getSiteEntityIds,
+  resolveCanonicalForSchema,
+  toAbsoluteSchemaUrl
+} from '@/lib/schema-jsonld';
 
 export const revalidate = 900;
 
 type Params = {
   slug: string;
 };
+
+function normalizeSingleValue(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return `${value[0] || ''}`.trim();
+  return `${value || ''}`.trim();
+}
+
+function resolveEpisodeReturnHref(value: string | string[] | undefined): string {
+  const normalized = normalizeSingleValue(value);
+  if (!normalized) return '/episodes';
+  if (!normalized.startsWith('/episodes')) return '/episodes';
+  return normalized;
+}
 
 function getSpotifyEpisodeUrl(title: string): string {
   const query = encodeURIComponent(`${title} The Compendium Podcast`);
@@ -35,6 +54,14 @@ function getSpotifyEpisodeUrl(title: string): string {
 function getApplePodcastsEpisodeUrl(title: string): string {
   const query = encodeURIComponent(`${title} The Compendium Podcast`);
   return `https://podcasts.apple.com/us/search?term=${query}`;
+}
+
+function resolveEpisodeCanonical(episode: { canonicalUrl: string; slug: string }, siteUrl: string) {
+  return resolveCanonicalForSchema({
+    candidateCanonical: episode.canonicalUrl,
+    fallbackPath: `/episodes/${episode.slug}`,
+    siteUrl
+  });
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
@@ -50,13 +77,16 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     };
   }
 
+  const siteUrl = getPublicSiteUrl();
+  const canonical = resolveEpisodeCanonical(episode, siteUrl);
+
   return {
     title: {
       absolute: `${episode.seoTitle} | The Compendium Podcast`
     },
     description: episode.metaDescription || undefined,
     alternates: {
-      canonical: episode.canonicalUrl
+      canonical: canonical.metadataCanonical
     },
     robots: {
       index: !episode.noindex,
@@ -65,7 +95,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     openGraph: {
       title: episode.editorial?.socialTitle || episode.seoTitle,
       description: episode.editorial?.socialDescription || episode.metaDescription || undefined,
-      url: episode.canonicalUrl,
+      url: canonical.metadataCanonical,
       images: episode.heroImageUrl
         ? [
             {
@@ -86,7 +116,13 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   };
 }
 
-export default async function EpisodeDetailPage({ params }: { params: Params }) {
+export default async function EpisodeDetailPage({
+  params,
+  searchParams
+}: {
+  params: Params;
+  searchParams?: { returnTo?: string | string[] };
+}) {
   let episode = await getResolvedEpisodeBySlug(params.slug, { includeHidden: false });
 
   if (!episode) {
@@ -98,29 +134,39 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
   }
 
   const siteUrl = getPublicSiteUrl();
-  const canonicalUrl = `${siteUrl}${episode.canonicalUrl}`;
+  const canonical = resolveEpisodeCanonical(episode, siteUrl);
+  if (canonical.offDomainCandidate) {
+    console.warn(`Rejected off-domain episode canonical override: ${canonical.offDomainCandidate}`);
+  }
+  const pageEntityIds = getPageEntityIds(canonical.absoluteCanonicalUrl);
+  const siteEntityIds = getSiteEntityIds(siteUrl);
   const spotifyUrl = getSpotifyEpisodeUrl(episode.title);
   const applePodcastsUrl = getApplePodcastsEpisodeUrl(episode.title);
+  const returnToEpisodesHref = resolveEpisodeReturnHref(searchParams?.returnTo);
   const breadcrumbItems = buildEpisodeBreadcrumbs(episode);
-  const breadcrumbJsonLd = breadcrumbsToJsonLd(breadcrumbItems, siteUrl);
-  const episodeJsonLd = {
+  const breadcrumbJsonLd = compactJsonLd({
+    ...breadcrumbsToJsonLd(breadcrumbItems, siteUrl),
+    '@id': pageEntityIds.breadcrumb
+  });
+  const episodeJsonLd = compactJsonLd({
     '@context': 'https://schema.org',
+    '@id': pageEntityIds.podcastEpisode,
     '@type': 'PodcastEpisode',
-    url: canonicalUrl,
+    url: canonical.absoluteCanonicalUrl,
     name: episode.title,
     datePublished: episode.publishedAt,
-    description: episode.metaDescription,
-    associatedMedia: {
-      '@type': 'MediaObject',
-      contentUrl: episode.audioUrl
-    },
-    image: episode.heroImageUrl || `${siteUrl}/The Compendium Main.jpg`,
+    description: `${episode.metaDescription || ''}`.trim() || undefined,
+    associatedMedia: toAbsoluteSchemaUrl(episode.audioUrl, siteUrl)
+      ? {
+          '@type': 'MediaObject',
+          contentUrl: toAbsoluteSchemaUrl(episode.audioUrl, siteUrl)
+        }
+      : undefined,
+    image: toAbsoluteSchemaUrl(episode.heroImageUrl || '/The Compendium Main.jpg', siteUrl) || undefined,
     partOfSeries: {
-      '@type': 'PodcastSeries',
-      name: 'The Compendium Podcast',
-      url: siteUrl
+      '@id': siteEntityIds.podcastSeries
     }
-  };
+  });
 
   const structuredBody = Array.isArray(episode.bodyJson) ? episode.bodyJson : null;
   const structuredBodyWithoutTranscript = structuredBody
@@ -171,6 +217,12 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
     entitySubtype: term.entitySubtype,
     path: term.path
   }));
+  const resolveDiscoveryChipHref = (term: typeof publicDiscoveryChips[number]) => {
+    if (term.termType === 'topic') {
+      return `/episodes?topic=${encodeURIComponent(term.slug)}`;
+    }
+    return term.path as string;
+  };
   const episodeSummary = resolveEpisodeSummary(episode);
 
   return (
@@ -246,7 +298,7 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
             {publicDiscoveryChips.length ? (
               <div className="mt-4 flex flex-wrap gap-2">
                 {publicDiscoveryChips.map((term) => (
-                  <Link key={term.id} href={term.path as string} className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white/85 hover:bg-white/10">
+                  <Link key={term.id} href={resolveDiscoveryChipHref(term)} className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-white/85 hover:bg-white/10">
                     {term.name}
                   </Link>
                 ))}
@@ -343,7 +395,7 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
             </div>
             <div className="mt-6 flex justify-center">
               <Link
-                href="/episodes"
+                href={returnToEpisodesHref}
                 className="inline-flex h-10 items-center justify-center rounded-md bg-carnival-red px-6 text-sm font-semibold text-white transition hover:brightness-110"
               >
                 Browse all episodes

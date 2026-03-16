@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { EpisodesBrowser } from '@/components/episodes-browser';
 import { JoinPatreonCta } from '@/components/join-patreon-cta';
-import { getEpisodesLandingPageData, listActiveDiscoveryTerms } from '@/lib/episodes';
+import { getEpisodesLandingPageData } from '@/lib/episodes';
 import { getPodcastEpisodes, type PodcastEpisode } from '@/lib/podcast';
 import { getPublicSiteUrl } from '@/lib/site-url';
 import { compactJsonLd, getPageEntityIds, resolveCanonicalForSchema, toAbsoluteSchemaUrl } from '@/lib/schema-jsonld';
@@ -85,22 +85,8 @@ function titleCaseFromSlug(slug: string): string {
 }
 
 function buildTopicToggleOptions(
-  episodes: PodcastEpisode[],
-  topicTerms: Array<{ slug: string; name: string; sortOrder: number }>
+  episodes: PodcastEpisode[]
 ): Array<{ label: string; value: string | null }> {
-  const episodeTopicSlugs = new Set(
-    episodes.map((episode) => normalizeTopicFilter(episode.primaryTopicSlug || undefined)).filter((value): value is string => Boolean(value))
-  );
-
-  const termsFromDiscovery = topicTerms
-    .filter((term) => episodeTopicSlugs.has(term.slug))
-    .sort((left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name))
-    .map((term) => ({ label: term.name, value: term.slug }));
-
-  if (termsFromDiscovery.length) {
-    return [{ label: 'All episodes', value: null }, ...termsFromDiscovery];
-  }
-
   const fallbackTerms = new Map<string, string>();
   episodes.forEach((episode) => {
     const slug = normalizeTopicFilter(episode.primaryTopicSlug || undefined);
@@ -130,18 +116,6 @@ function toPreservedSearchParams({
   if (sort !== 'newest') nextParams.set('sort', sort);
   if (topic) nextParams.set('topic', topic);
   return nextParams.size ? nextParams : undefined;
-}
-
-function normalizeTopicTerms(
-  terms: Awaited<ReturnType<typeof listActiveDiscoveryTerms>>
-): Array<{ slug: string; name: string; sortOrder: number }> {
-  return terms
-    .filter((term) => term.termType === 'topic')
-    .map((term) => ({
-      slug: term.slug,
-      name: term.name,
-      sortOrder: term.sortOrder
-    }));
 }
 
 function validateTopicFilter(
@@ -176,13 +150,11 @@ export default async function EpisodesPage({ searchParams }: EpisodesPageProps) 
   });
 
   let episodes: PodcastEpisode[] = [];
-  let topicTerms: Array<{ slug: string; name: string; sortOrder: number }> = [];
   let hasFeedError = false;
 
   try {
-    const [landingData, activeTerms] = await Promise.all([getEpisodesLandingPageData(), listActiveDiscoveryTerms()]);
+    const landingData = await getEpisodesLandingPageData();
     episodes = landingData.episodes;
-    topicTerms = normalizeTopicTerms(activeTerms);
   } catch (error) {
     hasFeedError = true;
     console.error('Failed to load episode landing data:', error);
@@ -191,14 +163,9 @@ export default async function EpisodesPage({ searchParams }: EpisodesPageProps) 
     } catch (fallbackError) {
       console.error('Failed to load podcast episodes fallback:', fallbackError);
     }
-    try {
-      topicTerms = normalizeTopicTerms(await listActiveDiscoveryTerms());
-    } catch (topicTermsError) {
-      console.error('Failed to load active discovery topics fallback:', topicTermsError);
-    }
   }
 
-  const topicToggleOptions = buildTopicToggleOptions(episodes, topicTerms);
+  const topicToggleOptions = buildTopicToggleOptions(episodes);
   const topicFilter = validateTopicFilter(requestedTopicFilter, topicToggleOptions);
   const preservedSearchParams = toPreservedSearchParams({
     view: initialViewMode,

@@ -119,7 +119,6 @@ export function TopicHubLayout({ hub, featuredEpisodes, groupedSections, config 
                 episode={episode}
                 featured={false}
                 showInlinePlayer={config.showInlinePlayer}
-                detailCtaLabel={config.episodeCardCtaLabel}
                 minimalCard={config.minimalCard}
               />
             ))}
@@ -170,7 +169,6 @@ export function TopicHubLayout({ hub, featuredEpisodes, groupedSections, config 
                         episode={episode}
                         featured={false}
                         showInlinePlayer={config.showInlinePlayer}
-                        detailCtaLabel={config.episodeCardCtaLabel}
                         minimalCard={config.minimalCard}
                       />
                     ))}
@@ -199,7 +197,6 @@ export function TopicHubLayout({ hub, featuredEpisodes, groupedSections, config 
                         episode={episode}
                         featured={false}
                         showInlinePlayer={config.showInlinePlayer}
-                        detailCtaLabel={config.episodeCardCtaLabel}
                         minimalCard={config.minimalCard}
                       />
                     ))}
@@ -230,7 +227,6 @@ export function TopicHubLayout({ hub, featuredEpisodes, groupedSections, config 
                     episode={episode}
                     featured={false}
                     showInlinePlayer={config.showInlinePlayer}
-                    detailCtaLabel={config.episodeCardCtaLabel}
                     minimalCard={config.minimalCard}
                   />
                 ))}

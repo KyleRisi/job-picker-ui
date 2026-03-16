@@ -106,8 +106,38 @@ function htmlToEditorSeedMarkdown(value: string) {
   return normalizeOrphanBulletLines(normalized);
 }
 
-export default async function EpisodeEditorPage({ params }: { params: Promise<{ slug: string }> }) {
+function normalizeSingleValue(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return `${value[0] || ''}`.trim();
+  return `${value || ''}`.trim();
+}
+
+function resolveWorkspaceEpisodesReturnTo(value: string | string[] | undefined): string {
+  const normalized = normalizeSingleValue(value);
+  if (!normalized) return '/workspace/dashboard/episodes';
+
+  let candidate = normalized;
+  try {
+    candidate = decodeURIComponent(normalized);
+  } catch {
+    candidate = normalized;
+  }
+
+  if (!candidate.startsWith('/workspace/dashboard/episodes')) {
+    return '/workspace/dashboard/episodes';
+  }
+  return candidate;
+}
+
+export default async function EpisodeEditorPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams?: { returnTo?: string | string[] } | Promise<{ returnTo?: string | string[] }>;
+}) {
   const { slug } = await params;
+  const resolvedSearchParams = searchParams ? await Promise.resolve(searchParams) : undefined;
+  const backHrefOverride = resolveWorkspaceEpisodesReturnTo(resolvedSearchParams?.returnTo);
   const [episode, episodeRows, postRows, discoveryTerms, authorRows] = await Promise.all([
     getResolvedEpisodeBySlug(slug, { includeHidden: true }),
     listPodcastEpisodes({ includeHidden: true }),
@@ -233,6 +263,7 @@ export default async function EpisodeEditorPage({ params }: { params: Promise<{ 
       relatedPosts={relatedPosts}
       authors={authorRows.map((author) => ({ id: author.id, name: author.name }))}
       taxonomyOptions={taxonomyOptions}
+      backHrefOverride={backHrefOverride}
     />
   );
 }

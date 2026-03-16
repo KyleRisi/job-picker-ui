@@ -2196,7 +2196,8 @@ export function WorkspaceBlogEditor({
   authors,
   taxonomyOptions,
   mode = 'blog',
-  episodeId
+  episodeId,
+  backHrefOverride
 }: {
   post: BlogPost;
   episodes: WorkspaceEpisodeOption[];
@@ -2204,6 +2205,7 @@ export function WorkspaceBlogEditor({
   authors: WorkspaceAuthorOption[];
   mode?: 'blog' | 'episode';
   episodeId?: string;
+  backHrefOverride?: string;
   taxonomyOptions: {
     categories: WorkspaceTermOption[];
     series: WorkspaceTermOption[];
@@ -2214,7 +2216,7 @@ export function WorkspaceBlogEditor({
 }) {
   const isEpisodeMode = mode === 'episode';
   const router = useRouter();
-  const backHref = isEpisodeMode ? '/workspace/dashboard/episodes' : '/workspace/dashboard/blogs';
+  const backHref = backHrefOverride || (isEpisodeMode ? '/workspace/dashboard/episodes' : '/workspace/dashboard/blogs');
   const draftStorageKey = `${isEpisodeMode ? WORKSPACE_EPISODE_DRAFT_STORAGE_PREFIX : WORKSPACE_DRAFT_STORAGE_PREFIX}${episodeId || post.id}`;
   const postAny = post as any;
   const episodeSourceLastSyncedAt = useMemo(

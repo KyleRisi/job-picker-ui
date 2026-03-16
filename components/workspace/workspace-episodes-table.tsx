@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { type MouseEvent as ReactMouseEvent, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { type PodcastEpisode, formatEpisodeDate } from '@/lib/podcast-shared';
 
 type SortMode = 'newest' | 'oldest' | 'title';
@@ -11,6 +11,7 @@ type ColumnKey =
   | 'id'
   | 'slug'
   | 'title'
+  | 'primaryTopic'
   | 'seasonNumber'
   | 'episodeNumber'
   | 'publishedAt'
@@ -43,6 +44,7 @@ const ACTIONS_COLUMN_WIDTH = 132;
 const DEFAULT_VISIBLE_COLUMNS: EditableColumnKey[] = [
   'artworkUrl',
   'episodeNumber',
+  'primaryTopic',
   'title',
   'publishedAt',
   'duration',
@@ -61,6 +63,22 @@ function compactValue(value: string, maxLength = 90): string {
   return `${normalized.slice(0, maxLength).trimEnd()}...`;
 }
 
+function normalizeSortMode(value: string | null): SortMode {
+  if (value === 'oldest' || value === 'title') return value;
+  return 'newest';
+}
+
+function normalizeYearFilter(value: string | null): string {
+  const normalized = `${value || ''}`.trim();
+  return normalized || 'all';
+}
+
+function normalizePage(value: string | null): number {
+  const parsed = Number.parseInt(`${value || ''}`, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return 1;
+  return parsed;
+}
+
 const ALL_COLUMNS: ColumnDefinition[] = [
   {
     key: 'title',
@@ -73,6 +91,29 @@ const ALL_COLUMNS: ColumnDefinition[] = [
         {episode.title}
       </p>
     )
+  },
+  {
+    key: 'primaryTopic',
+    label: 'Primary topic',
+    width: 220,
+    headClassName: 'whitespace-nowrap',
+    cellClassName: 'whitespace-nowrap text-slate-700',
+    render: (episode) => {
+      const topicName = episode.primaryTopicName || '-';
+      if (!episode.primaryTopicPath) return topicName;
+      return (
+        <a
+          href={episode.primaryTopicPath}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex text-sky-700 hover:underline"
+          onClick={(event) => event.stopPropagation()}
+          onMouseDown={(event) => event.stopPropagation()}
+        >
+          {topicName}
+        </a>
+      );
+    }
   },
   {
     key: 'episodeNumber',
@@ -285,10 +326,12 @@ function persistTableConfig(columns: EditableColumnKey[], widths: Record<ColumnK
 
 export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[] }) {
   const router = useRouter();
-  const [query, setQuery] = useState('');
-  const [yearFilter, setYearFilter] = useState('all');
-  const [sortMode, setSortMode] = useState<SortMode>('newest');
-  const [page, setPage] = useState(1);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(() => `${searchParams.get('q') || ''}`.trim());
+  const [yearFilter, setYearFilter] = useState(() => normalizeYearFilter(searchParams.get('year')));
+  const [sortMode, setSortMode] = useState<SortMode>(() => normalizeSortMode(searchParams.get('sort')));
+  const [page, setPage] = useState(() => normalizePage(searchParams.get('page')));
   const [visibleColumns, setVisibleColumns] = useState<EditableColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
   const [columnWidths, setColumnWidths] = useState<Record<ColumnKey, number>>(DEFAULT_COLUMN_WIDTHS);
   const [columnEditorOpen, setColumnEditorOpen] = useState(false);
@@ -404,6 +447,7 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
 
       return (
         episode.title.toLowerCase().includes(normalizedQuery) ||
+        `${episode.primaryTopicName || ''}`.toLowerCase().includes(normalizedQuery) ||
         episode.slug.toLowerCase().includes(normalizedQuery) ||
         `${episode.episodeNumber ?? ''}`.includes(normalizedQuery)
       );
@@ -435,6 +479,30 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
       setPage(totalPages);
     }
   }, [page, totalPages]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    const normalizedQuery = query.trim();
+    if (normalizedQuery) params.set('q', normalizedQuery);
+    else params.delete('q');
+
+    if (yearFilter && yearFilter !== 'all') params.set('year', yearFilter);
+    else params.delete('year');
+
+    if (sortMode !== 'newest') params.set('sort', sortMode);
+    else params.delete('sort');
+
+    if (page > 1) params.set('page', `${page}`);
+    else params.delete('page');
+
+    const nextQueryString = params.toString();
+    const currentQueryString = searchParams.toString();
+    if (nextQueryString === currentQueryString) return;
+
+    const nextHref = nextQueryString ? `${pathname}?${nextQueryString}` : pathname;
+    router.replace(nextHref, { scroll: false });
+  }, [pathname, page, query, router, searchParams, sortMode, yearFilter]);
 
   const pagedEpisodes = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
@@ -482,6 +550,17 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
     const sum = renderedColumnDefinitions.reduce((acc, column) => acc + column.width, 0);
     return Math.max(980, sum);
   }, [renderedColumnDefinitions]);
+
+  const currentListHref = useMemo(() => {
+    const params = new URLSearchParams();
+    const normalizedQuery = query.trim();
+    if (normalizedQuery) params.set('q', normalizedQuery);
+    if (yearFilter && yearFilter !== 'all') params.set('year', yearFilter);
+    if (sortMode !== 'newest') params.set('sort', sortMode);
+    if (page > 1) params.set('page', `${page}`);
+    const queryString = params.toString();
+    return queryString ? `${pathname}?${queryString}` : pathname;
+  }, [page, pathname, query, sortMode, yearFilter]);
 
   function toggleDraftColumn(columnKey: EditableColumnKey) {
     setDraftColumns((current) => {
@@ -676,7 +755,7 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
 
           <tbody>
             {pagedEpisodes.map((episode) => {
-              const detailHref = `/workspace/dashboard/episodes/${episode.slug}`;
+              const detailHref = `/workspace/dashboard/episodes/${episode.slug}?returnTo=${encodeURIComponent(currentListHref)}`;
 
               return (
                 <tr

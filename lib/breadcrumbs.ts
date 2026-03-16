@@ -3,14 +3,15 @@ export type BreadcrumbItem = {
   href?: string | null;
 };
 
+import { toAbsoluteSchemaUrl } from '@/lib/schema-jsonld';
+
 export function breadcrumbsToJsonLd(items: BreadcrumbItem[], siteUrl: string) {
-  const base = new URL(siteUrl);
   return {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: items.map((item, index) => {
       const href = item.href || '/';
-      const url = href.startsWith('http://') || href.startsWith('https://') ? href : new URL(href, base).toString();
+      const url = toAbsoluteSchemaUrl(href, siteUrl) || toAbsoluteSchemaUrl('/', siteUrl) || siteUrl;
       return {
         '@type': 'ListItem',
         position: index + 1,

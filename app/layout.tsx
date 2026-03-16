@@ -4,6 +4,7 @@ import { Poppins } from 'next/font/google';
 import { PodcastPlaybackProvider } from '@/components/podcast-playback-provider';
 import { AppShell } from '@/components/app-shell';
 import { getPublicSiteUrl } from '@/lib/site-url';
+import { compactJsonLd, getSiteEntityIds, toAbsoluteSchemaUrl } from '@/lib/schema-jsonld';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -63,14 +64,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const siteUrl = getPublicSiteUrl();
+  const siteEntityIds = getSiteEntityIds(siteUrl);
+  const searchTarget = toAbsoluteSchemaUrl('/blog/search?q={search_term_string}', siteUrl);
+  const siteLogo = toAbsoluteSchemaUrl('/The Compendium Main.jpg', siteUrl);
   const siteJsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
       {
+        '@id': siteEntityIds.organization,
         '@type': 'Organization',
         name: 'The Compendium Podcast',
         url: siteUrl,
-        logo: `${siteUrl}/The Compendium Main.jpg`,
+        logo: siteLogo,
         sameAs: [
           'https://www.patreon.com/cw/TheCompendiumPodcast',
           'https://www.instagram.com/thecompendiumpodcast/',
@@ -80,14 +85,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ]
       },
       {
+        '@id': siteEntityIds.website,
         '@type': 'WebSite',
         name: 'The Compendium Podcast',
         url: siteUrl,
-        potentialAction: {
-          '@type': 'SearchAction',
-          target: `${siteUrl}/blog/search?q={search_term_string}`,
-          'query-input': 'required name=search_term_string'
-        }
+        potentialAction: searchTarget
+          ? {
+              '@type': 'SearchAction',
+              target: searchTarget,
+              'query-input': 'required name=search_term_string'
+            }
+          : undefined
       }
     ]
   };
@@ -95,7 +103,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={poppins.className}>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(compactJsonLd(siteJsonLd)) }} />
         <PodcastPlaybackProvider>
           <AppShell>{children}</AppShell>
         </PodcastPlaybackProvider>

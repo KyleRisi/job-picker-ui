@@ -3,10 +3,12 @@ import Link from 'next/link';
 import { getEpisodesLandingPageData } from '@/lib/episodes';
 import type { PodcastEpisode } from '@/lib/podcast';
 import { EpisodesBrowser } from '@/components/episodes-browser';
+import { EpisodeDiscoveryRail } from '@/components/episode-discovery-rail';
 import type { Metadata } from 'next';
 import { getVisibleReviews, getVisibleReviewsCount } from '@/lib/reviews';
 import { getPublicSiteUrl } from '@/lib/site-url';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
+import { compactJsonLd, getSiteEntityIds, toAbsoluteSchemaUrl } from '@/lib/schema-jsonld';
 
 export const metadata: Metadata = {
   title: {
@@ -37,26 +39,36 @@ import { ReviewsSection } from '@/components/reviews-section';
 
 const SPOTIFY_URL = 'https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ';
 const APPLE_PODCASTS_URL = 'https://podcasts.apple.com/gb/podcast/the-compendium-an-assembly-of-fascinating-things/id1676817109';
+const DISABLED_HOME_RAIL_KEYS = new Set(['recent', 'true-crime', 'history', 'incredible-people']);
 
 
 /* ─── Podcast JSON-LD (SEO) ─── */
 function PodcastJsonLd({ episodes }: { episodes: PodcastEpisode[] }) {
   const siteUrl = getPublicSiteUrl();
-  const jsonLd = {
+  const siteEntityIds = getSiteEntityIds(siteUrl);
+  const imageUrl = toAbsoluteSchemaUrl('/The%20Compendium%20Main.jpg', siteUrl);
+  const jsonLd = compactJsonLd({
     '@context': 'https://schema.org',
+    '@id': siteEntityIds.podcastSeries,
     '@type': 'PodcastSeries',
     name: 'The Compendium Podcast',
     description:
       'A weekly variety podcast that gives you everything you need to know on a topic to help stand your ground at a social gathering. True crime, historical events, and incredible people.',
     url: siteUrl,
-    image: `${siteUrl}/The%20Compendium%20Main.jpg`,
+    image: imageUrl,
+    publisher: {
+      '@id': siteEntityIds.organization
+    },
+    isPartOf: {
+      '@id': siteEntityIds.website
+    },
     author: [
       { '@type': 'Person', name: 'Kyle Risi' },
       { '@type': 'Person', name: 'Adam Cox' }
     ],
     numberOfEpisodes: episodes.length,
     webFeed: 'https://feeds.simplecast.com/Sci7Fqgp'
-  };
+  });
   return (
     <script
       type="application/ld+json"
@@ -68,6 +80,7 @@ function PodcastJsonLd({ episodes }: { episodes: PodcastEpisode[] }) {
 /* ─── Page ─── */
 export default async function HomePage() {
   let episodes: PodcastEpisode[] = [];
+  let rails: Array<{ key: string; title: string; href: string; episodes: PodcastEpisode[] }> = [];
   let reviews = [];
   let reviewCount = 0;
   try {
@@ -77,6 +90,7 @@ export default async function HomePage() {
       getVisibleReviewsCount()
     ]);
     episodes = landingData.episodes;
+    rails = landingData.rails.filter((rail) => !DISABLED_HOME_RAIL_KEYS.has(rail.key));
     reviews = loadedReviews;
     reviewCount = loadedReviewCount;
   } catch (error) {
@@ -168,6 +182,14 @@ export default async function HomePage() {
          ════════════════════════════════════════════════ */}
       {episodes.length > 0 ? (
         <section className="pb-0 pt-12 md:pb-0 md:pt-16">
+          {rails.length ? (
+            <div className="mb-10 space-y-10">
+              {rails.map((rail) => (
+                <EpisodeDiscoveryRail key={rail.key} title={rail.title} href={rail.href} episodes={rail.episodes} />
+              ))}
+            </div>
+          ) : null}
+
           <EpisodesBrowser
             episodes={episodes}
             showSearch={false}

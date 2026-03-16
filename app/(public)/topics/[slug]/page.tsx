@@ -1,7 +1,17 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { DiscoveryHubPage } from '@/components/discovery-hub-page';
-import { getDiscoveryHubPage } from '@/lib/episodes';
+import { TrueCrimeTopicHub } from '@/components/true-crime-topic-hub';
+import { breadcrumbsToJsonLd } from '@/lib/breadcrumbs';
+import { buildHubBreadcrumbs, getDiscoveryHubPage, getResolvedEpisodes } from '@/lib/episodes';
+import { compactJsonLd, getPageEntityIds, resolveCanonicalForSchema } from '@/lib/schema-jsonld';
+import { getPublicSiteUrl } from '@/lib/site-url';
+import { getTopicHubConfig } from '@/lib/topic-hub/topic-hub-config';
+import {
+  buildTrueCrimeEditorialGroups,
+  buildTrueCrimeFeaturedSelection,
+  getTrueCrimeTopicEpisodes
+} from '@/lib/true-crime-topic';
 
 export const revalidate = 300;
 
@@ -15,6 +25,7 @@ type SearchParams = {
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const hub = await getDiscoveryHubPage('topics', params.slug);
+  const topicHubConfig = getTopicHubConfig(params.slug);
 
   if (!hub) {
     return {
@@ -26,11 +37,30 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     };
   }
 
+  const siteUrl = getPublicSiteUrl();
+  const canonical = resolveCanonicalForSchema({
+    candidateCanonical: hub.term.path || null,
+    fallbackPath: `/topics/${params.slug}`,
+    siteUrl
+  });
+
+  if (topicHubConfig?.seoOverride) {
+    return {
+      title: {
+        absolute: topicHubConfig.seoOverride.titleAbsolute
+      },
+      description: topicHubConfig.seoOverride.description,
+      alternates: {
+        canonical: canonical.metadataCanonical
+      }
+    };
+  }
+
   return {
     title: `${hub.term.seoTitle || hub.term.name} | Topics | The Compendium Podcast`,
     description: hub.term.metaDescription || hub.term.description || `Explore episodes in ${hub.term.name}.`,
     alternates: {
-      canonical: `/topics/${params.slug}`
+      canonical: canonical.metadataCanonical
     }
   };
 }
@@ -43,5 +73,42 @@ export default async function TopicHubPage({ params, searchParams }: { params: P
   const hub = await getDiscoveryHubPage('topics', params.slug, page);
   if (!hub) notFound();
 
-  return <DiscoveryHubPage routeKey="topics" hub={hub} />;
+  const siteUrl = getPublicSiteUrl();
+  const canonical = resolveCanonicalForSchema({
+    candidateCanonical: hub.term.path || null,
+    fallbackPath: `/topics/${params.slug}`,
+    siteUrl
+  });
+  const pageEntityIds = getPageEntityIds(canonical.absoluteCanonicalUrl);
+  const breadcrumbJsonLd = compactJsonLd({
+    ...breadcrumbsToJsonLd(buildHubBreadcrumbs('topics', hub.term), siteUrl),
+    '@id': pageEntityIds.breadcrumb
+  });
+
+  if (params.slug === 'true-crime') {
+    const allEpisodes = await getResolvedEpisodes({
+      includeHidden: false,
+      descriptionMaxLength: 220
+    });
+    const trueCrimeEpisodes = getTrueCrimeTopicEpisodes(allEpisodes);
+    const featuredEpisodes = buildTrueCrimeFeaturedSelection(trueCrimeEpisodes);
+    const groupedSections = buildTrueCrimeEditorialGroups({
+      episodes: trueCrimeEpisodes,
+      featuredEpisodeIds: new Set(featuredEpisodes.map((episode) => episode.id))
+    });
+
+    return (
+      <>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+        <TrueCrimeTopicHub hub={hub} featuredEpisodes={featuredEpisodes} groupedSections={groupedSections} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <DiscoveryHubPage routeKey="topics" hub={hub} />
+    </>
+  );
 }

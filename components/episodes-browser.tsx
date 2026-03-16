@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -133,22 +133,41 @@ export function EpisodeCard({
   featured,
   featuredDesktopTextLarger = false,
   taxonomyChips,
-  showInlinePlayer = true
+  showInlinePlayer = true,
+  detailHref,
+  detailCtaLabel = 'View Episode',
+  minimalCard = false
 }: {
   episode: PodcastEpisode;
   featured: boolean;
   featuredDesktopTextLarger?: boolean;
-  taxonomyChips?: Array<{ id: string; name: string; path: string | null; publicDisplayable?: boolean }>;
+  taxonomyChips?: Array<{
+    id: string;
+    name: string;
+    path: string | null;
+    publicDisplayable?: boolean;
+    termType?: string;
+    slug?: string;
+  }>;
   showInlinePlayer?: boolean;
+  detailHref?: string;
+  detailCtaLabel?: string;
+  minimalCard?: boolean;
 }) {
   const excerpt = toExcerpt(episode.description, featured ? 480 : 220);
-  const detailHref = `/episodes/${episode.slug}`;
+  const resolvedDetailHref = detailHref || `/episodes/${episode.slug}`;
   const spotifyEpisodeUrl = getSpotifyEpisodeUrl(episode.title);
   const applePodcastsEpisodeUrl = getApplePodcastsEpisodeUrl(episode.title);
   const visibleTaxonomyChips = useMemo(
     () => (taxonomyChips || []).filter((chip) => chip.publicDisplayable && chip.path),
     [taxonomyChips]
   );
+  const taxonomyChipHref = (chip: { termType?: string; slug?: string; path: string | null }) => {
+    if (chip.termType === 'topic' && chip.slug) {
+      return `/episodes?topic=${encodeURIComponent(chip.slug)}`;
+    }
+    return chip.path as string;
+  };
 
   return (
     <article
@@ -160,7 +179,7 @@ export function EpisodeCard({
       <div className={featured ? 'flex flex-col gap-0 sm:flex-row sm:items-stretch' : 'flex h-full flex-col'}>
         <div className={featured ? 'aspect-square w-full sm:w-[360px] lg:w-[420px] sm:flex-none sm:self-stretch' : 'aspect-square'}>
           {episode.artworkUrl ? (
-            <Link href={detailHref} className="relative block h-full w-full">
+            <Link href={resolvedDetailHref} className="relative block h-full w-full">
               {featured ? (
                 <>
                   <div className="absolute inset-0 overflow-hidden bg-black">
@@ -194,7 +213,7 @@ export function EpisodeCard({
             </Link>
           ) : (
             <Link
-              href={detailHref}
+              href={resolvedDetailHref}
               className="flex h-full w-full items-center justify-center bg-carnival-ink/10 px-6 text-center text-sm font-semibold text-carnival-ink/70"
             >
               Episode artwork unavailable
@@ -230,26 +249,30 @@ export function EpisodeCard({
                 ? featuredDesktopTextLarger
                   ? 'text-[1.2rem] md:text-[1.85rem] lg:text-[2.1rem]'
                   : 'text-[1.2rem]'
-                : 'min-h-[3.2rem] text-[1.2rem]'
+                : minimalCard
+                  ? 'text-[1.2rem]'
+                  : 'min-h-[3.2rem] text-[1.2rem]'
             }`}
           >
-            <Link href={detailHref} className="!text-carnival-ink !no-underline transition hover:!text-carnival-red">
+            <Link href={resolvedDetailHref} className="!text-carnival-ink !no-underline transition hover:!text-carnival-red">
               <span>{episode.title}</span>
             </Link>
           </h2>
-          <p
-            className={`mt-3 text-carnival-ink/80 ${
-              featured
-                ? featuredDesktopTextLarger
-                  ? 'text-[0.8rem] leading-5 line-clamp-5 whitespace-normal md:text-[1rem] md:leading-7 lg:text-[1.125rem]'
-                  : 'text-[0.8rem] leading-5 line-clamp-5 whitespace-normal'
-                : 'min-h-[6rem] text-[0.85rem] leading-6 line-clamp-4 whitespace-normal'
-            }`}
-          >
-            <Link href={detailHref} className="!text-inherit !no-underline transition hover:!text-carnival-red">
-              {excerpt}
-            </Link>
-          </p>
+          {!minimalCard ? (
+            <p
+              className={`mt-3 text-carnival-ink/80 ${
+                featured
+                  ? featuredDesktopTextLarger
+                    ? 'text-[0.8rem] leading-5 line-clamp-5 whitespace-normal md:text-[1rem] md:leading-7 lg:text-[1.125rem]'
+                    : 'text-[0.8rem] leading-5 line-clamp-5 whitespace-normal'
+                  : 'min-h-[6rem] text-[0.85rem] leading-6 line-clamp-4 whitespace-normal'
+              }`}
+            >
+              <Link href={resolvedDetailHref} className="!text-inherit !no-underline transition hover:!text-carnival-red">
+                {excerpt}
+              </Link>
+            </p>
+          ) : null}
 
           {featured ? (
             <>
@@ -258,7 +281,7 @@ export function EpisodeCard({
                   {visibleTaxonomyChips.map((chip) => (
                     <Link
                       key={chip.id}
-                      href={chip.path as string}
+                      href={taxonomyChipHref(chip)}
                       className="rounded-full border border-carnival-ink/20 px-3 py-1 text-[11px] font-semibold text-carnival-ink/75 transition hover:border-carnival-red hover:text-carnival-red"
                     >
                       {chip.name}
@@ -300,19 +323,19 @@ export function EpisodeCard({
               <CardAudioPlayer episode={episode} />
             ) : (
               <Link
-                href={detailHref}
-                className="inline-flex w-full items-center justify-center rounded-full bg-carnival-ink px-4 py-2 text-sm font-black text-white transition hover:bg-carnival-red"
+                href={resolvedDetailHref}
+                className="mx-auto flex w-fit items-center justify-center rounded-full bg-carnival-red px-5 py-2.5 text-sm font-black uppercase tracking-[0.08em] text-white transition hover:brightness-110"
               >
-                View Episode
+                {detailCtaLabel}
               </Link>
             )}
 
-            {!featured && visibleTaxonomyChips.length ? (
+            {!featured && !minimalCard && visibleTaxonomyChips.length ? (
               <div className="hidden lg:flex flex-wrap items-center gap-2 text-xs font-bold text-carnival-ink/70">
                 {visibleTaxonomyChips.map((chip) => (
                   <Link
                     key={chip.id}
-                    href={chip.path as string}
+                    href={taxonomyChipHref(chip)}
                     className="rounded-full border border-carnival-ink/20 px-3 py-1 text-[11px] font-semibold text-carnival-ink/75 transition hover:border-carnival-red hover:text-carnival-red"
                   >
                     {chip.name}
@@ -361,17 +384,19 @@ function byPublishedDate(order: SortOrder) {
 
 export function CompactEpisodeRow({
   episode,
-  excerptNoSnippet = false
+  excerptNoSnippet = false,
+  detailHref
 }: {
   episode: PodcastEpisode;
   excerptNoSnippet?: boolean;
+  detailHref?: string;
 }) {
   const artworkButtonRef = useRef<HTMLButtonElement | null>(null);
   const router = useRouter();
   const { activeEpisode, isPlaying, playEpisode, togglePlayPause } = usePodcastPlayback();
   const isActive = activeEpisode?.slug === episode.slug;
   const playing = isActive && isPlaying;
-  const detailHref = `/episodes/${episode.slug}`;
+  const resolvedDetailHref = detailHref || `/episodes/${episode.slug}`;
 
   const togglePlay = async (sourceElement?: HTMLElement | null) => {
     if (!isActive) {
@@ -390,7 +415,7 @@ export function CompactEpisodeRow({
   };
 
   const openDetails = () => {
-    router.push(detailHref);
+    router.push(resolvedDetailHref);
   };
 
   return (
@@ -477,7 +502,7 @@ export function CompactEpisodeRow({
             <p className="hidden text-right text-xs font-semibold uppercase tracking-wide text-carnival-ink/60 sm:block">{episodeDateLabel(episode)}</p>
           </div>
           <h2 className="mt-1 text-sm font-bold leading-snug text-carnival-ink min-[450px]:text-lg sm:text-xl">
-            <Link href={detailHref} className="transition hover:text-carnival-red">
+            <Link href={resolvedDetailHref} className="transition hover:text-carnival-red">
               {episode.title}
             </Link>
           </h2>
@@ -492,12 +517,12 @@ export function CompactEpisodeRow({
 
 function SortOrderToggle({ order, onChange }: { order: SortOrder; onChange: (o: SortOrder) => void }) {
   return (
-    <div className="flex items-center gap-1 rounded-lg border border-carnival-ink/15 bg-white p-1" role="radiogroup" aria-label="Sort episodes">
+    <div className="flex h-[50px] items-center gap-1 rounded-xl border-2 border-carnival-ink/20 bg-white p-1" role="radiogroup" aria-label="Sort episodes">
       <button
         type="button"
         role="radio"
         aria-checked={order === 'oldest'}
-        className={`flex h-7 items-center rounded-md px-3 text-xs font-black uppercase tracking-wide transition ${
+        className={`flex h-[42px] items-center rounded-lg px-4 text-[11px] font-black uppercase tracking-wide transition ${
           order === 'oldest' ? 'bg-carnival-ink text-white' : 'text-carnival-ink/60 hover:text-carnival-ink'
         }`}
         onClick={() => onChange('oldest')}
@@ -508,7 +533,7 @@ function SortOrderToggle({ order, onChange }: { order: SortOrder; onChange: (o: 
         type="button"
         role="radio"
         aria-checked={order === 'newest'}
-        className={`flex h-7 items-center rounded-md px-3 text-xs font-black uppercase tracking-wide transition ${
+        className={`flex h-[42px] items-center rounded-lg px-4 text-[11px] font-black uppercase tracking-wide transition ${
           order === 'newest' ? 'bg-carnival-ink text-white' : 'text-carnival-ink/60 hover:text-carnival-ink'
         }`}
         onClick={() => onChange('newest')}
@@ -538,7 +563,9 @@ export function EpisodesBrowser({
   sectionTitle,
   pagination,
   basePath = '/episodes',
-  preservedSearchParams
+  preservedSearchParams,
+  topicFilter,
+  topicToggleOptions = []
 }: {
   episodes: PodcastEpisode[];
   searchEpisodes?: PodcastEpisode[];
@@ -556,19 +583,34 @@ export function EpisodesBrowser({
   initialSortOrder?: SortOrder;
   sectionId?: string;
   sectionTitle?: string;
-  pagination?: { page: number; totalPages: number };
+  pagination?: { page: number; totalPages: number; pageSize?: number };
   basePath?: string;
   preservedSearchParams?: URLSearchParams;
+  topicFilter?: string | null;
+  topicToggleOptions?: Array<{ label: string; value: string | null }>;
 }) {
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(initialCount);
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode || 'grid');
   const [sortOrder, setSortOrder] = useState<SortOrder>(initialSortOrder);
   const [viewModeReady, setViewModeReady] = useState(false);
+  const [topicDropdownOpen, setTopicDropdownOpen] = useState(false);
+  const topicDropdownRef = useRef<HTMLDivElement | null>(null);
   const lastTrackedSearchRef = useRef('');
 
   const handleSortOrderChange = (nextOrder: SortOrder) => {
     if (nextOrder === sortOrder) return;
+    if (pagination) {
+      const params = new URLSearchParams(preservedSearchParams?.toString() || '');
+      params.delete('page');
+      if (nextOrder === 'newest') params.delete('sort');
+      else params.set('sort', nextOrder);
+      const query = params.toString();
+      const href = `${basePath}${query ? `?${query}` : ''}`;
+      router.replace(href, { scroll: false });
+      return;
+    }
     if (typeof window === 'undefined') {
       setSortOrder(nextOrder);
       return;
@@ -584,7 +626,7 @@ export function EpisodesBrowser({
     });
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (initialViewMode) {
       setViewMode(initialViewMode);
       setViewModeReady(true);
@@ -658,7 +700,16 @@ export function EpisodesBrowser({
   }, [filteredEpisodes, normalizedQuery, showFeaturedEpisode]);
 
   const featuredTaxonomyChips = useMemo(() => {
-    if (!showFeaturedTaxonomyChips || !featuredEpisode) return [] as Array<{ id: string; name: string; path: string | null; publicDisplayable?: boolean }>;
+    if (!showFeaturedTaxonomyChips || !featuredEpisode) {
+      return [] as Array<{
+        id: string;
+        name: string;
+        path: string | null;
+        publicDisplayable?: boolean;
+        termType?: string;
+        slug?: string;
+      }>;
+    }
     const terms = (featuredEpisode as PodcastEpisode & {
       discoveryTerms?: Array<{
         id: string;
@@ -670,11 +721,22 @@ export function EpisodesBrowser({
         entitySubtype: string | null;
       }>;
     }).discoveryTerms;
-    if (!Array.isArray(terms) || !terms.length) return [] as Array<{ id: string; name: string; path: string | null; publicDisplayable?: boolean }>;
+    if (!Array.isArray(terms) || !terms.length) {
+      return [] as Array<{
+        id: string;
+        name: string;
+        path: string | null;
+        publicDisplayable?: boolean;
+        termType?: string;
+        slug?: string;
+      }>;
+    }
     return terms.slice(0, 6).map((term) => ({
       id: term.id,
       name: term.name,
       path: term.path,
+      termType: term.termType,
+      slug: term.slug,
       publicDisplayable: isTaxonomyPublicDisplayable({
         isActive: term.isActive,
         termType: term.termType,
@@ -689,10 +751,15 @@ export function EpisodesBrowser({
     ? filteredEpisodes.filter((episode) => episode.slug !== featuredEpisode.slug)
     : filteredEpisodes;
   const isSearching = !!normalizedQuery;
+  const pagedStandardEpisodes = useMemo(() => {
+    if (!pagination?.pageSize) return allStandardEpisodes;
+    const start = Math.max(0, (pagination.page - 1) * pagination.pageSize);
+    return allStandardEpisodes.slice(start, start + pagination.pageSize);
+  }, [allStandardEpisodes, pagination?.page, pagination?.pageSize]);
   const standardEpisodes = isSearching
     ? allStandardEpisodes
     : pagination
-      ? allStandardEpisodes
+      ? pagedStandardEpisodes
       : allStandardEpisodes.slice(0, visibleCount);
   const listHash = sectionId ? `#${sectionId}` : undefined;
   const nextPageHref = pagination && pagination.page < pagination.totalPages
@@ -700,22 +767,142 @@ export function EpisodesBrowser({
     : null;
   const hasMore = !isSearching && (pagination ? Boolean(nextPageHref) : visibleCount < allStandardEpisodes.length);
   const hrefForPage = (page: number) => pageHref(basePath, page, preservedSearchParams, listHash);
+  const hrefForTopic = (topic: string | null) => {
+    const params = new URLSearchParams(preservedSearchParams?.toString() || '');
+    params.delete('page');
+    if (topic) params.set('topic', topic);
+    else params.delete('topic');
+    const query = params.toString();
+    return `${basePath}${query ? `?${query}` : ''}`;
+  };
+  const activeTopicOption =
+    topicToggleOptions.find((option) => option.value === topicFilter) ||
+    topicToggleOptions.find((option) => option.value === null) ||
+    topicToggleOptions[0] ||
+    null;
 
-  const searchPanel = (
-    <LiveSearchInput
-      id="episode-search"
-      value={query}
-      onChange={setQuery}
-      placeholder="Search episodes"
-      ariaLabel="Search episodes"
-    />
+  const handleTopicFilterSelect = (nextTopicValue: string | null) => {
+    setTopicDropdownOpen(false);
+    const href = hrefForTopic(nextTopicValue);
+    router.replace(href, { scroll: false });
+  };
+  const currentListHref = pagination ? hrefForPage(pagination.page) : pageHref(basePath, 1, preservedSearchParams, listHash);
+  const episodeDetailHref = (episodeSlug: string) => {
+    if (!currentListHref || currentListHref === '/episodes') return `/episodes/${episodeSlug}`;
+    const params = new URLSearchParams();
+    params.set('returnTo', currentListHref);
+    return `/episodes/${episodeSlug}?${params.toString()}`;
+  };
+
+  const sortAndViewControls = (
+    <div
+      className={
+        mobileSortLeft
+          ? `flex w-full items-center ${showSortToggle ? 'justify-between' : 'justify-end'} min-[820px]:ml-auto min-[820px]:w-auto min-[820px]:justify-end min-[820px]:gap-2`
+          : 'ml-auto flex items-center gap-2'
+      }
+    >
+      {showSortToggle ? <SortOrderToggle order={sortOrder} onChange={handleSortOrderChange} /> : null}
+      <ViewModeToggle mode={viewMode} onChange={setViewMode} />
+    </div>
   );
+  const topicFilterControl = topicToggleOptions.length ? (
+    <div className="flex w-full items-center gap-2 min-[820px]:w-[18rem] min-[820px]:shrink-0">
+      <div ref={topicDropdownRef} className="relative min-w-0 flex-1">
+        <button
+          type="button"
+          onClick={() => setTopicDropdownOpen((open) => !open)}
+          className="flex h-[50px] w-full items-center justify-between gap-2 rounded-xl border-2 border-carnival-ink/20 bg-white px-3 py-2 text-left shadow-sm outline-none transition hover:border-carnival-ink/35 focus-visible:border-carnival-gold focus-visible:ring-4 focus-visible:ring-carnival-gold/45"
+          aria-haspopup="listbox"
+          aria-expanded={topicDropdownOpen}
+          aria-label="Filter episodes by topic"
+        >
+          {activeTopicOption ? (
+            <span
+              className={`inline-flex min-w-0 items-center truncate rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-wide ${
+                activeTopicOption.value
+                  ? 'bg-carnival-red text-white'
+                  : 'bg-carnival-ink/10 text-carnival-ink/70'
+              }`}
+            >
+              {activeTopicOption.label}
+            </span>
+          ) : null}
+          <span
+            aria-hidden="true"
+            className={`ml-auto inline-flex text-carnival-ink/55 transition-transform ${topicDropdownOpen ? 'rotate-180' : ''}`}
+          >
+            <svg viewBox="0 0 12 8" className="h-2.5 w-2.5 fill-current">
+              <path d="M6 8 0 0h12L6 8Z" />
+            </svg>
+          </span>
+        </button>
+        {topicDropdownOpen ? (
+          <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-carnival-ink/15 bg-white shadow-[0_14px_30px_rgba(0,0,0,0.12)]">
+            <ul role="listbox" aria-label="Episode topic filters" className="max-h-72 overflow-y-auto p-1">
+              {topicToggleOptions.map((option) => {
+                const isActive = option.value === null ? !topicFilter : topicFilter === option.value;
+                return (
+                  <li key={option.value || 'all'} role="option" aria-selected={isActive}>
+                    <button
+                      type="button"
+                      onClick={() => handleTopicFilterSelect(option.value)}
+                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold transition ${
+                        isActive
+                          ? 'bg-carnival-red text-white'
+                          : 'text-carnival-ink/85 hover:bg-carnival-ink/5'
+                      }`}
+                    >
+                      <span>{option.label}</span>
+                      {isActive ? <span className="text-xs font-black">✓</span> : null}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  ) : null;
+  const showControlPanel = showSearch || Boolean(topicFilterControl);
+  const searchPanel = (
+    <div className="flex flex-col gap-2 min-[820px]:flex-row min-[820px]:items-center">
+      {topicFilterControl}
+      {showSearch ? (
+        <LiveSearchInput
+          id="episode-search"
+          value={query}
+          onChange={setQuery}
+          placeholder="Search episodes"
+          ariaLabel="Search episodes"
+          className="min-[820px]:flex-1"
+        />
+      ) : null}
+      {sortAndViewControls}
+    </div>
+  );
+  useEffect(() => {
+    if (!topicDropdownOpen) return;
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!topicDropdownRef.current?.contains(event.target as Node)) setTopicDropdownOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setTopicDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [topicDropdownOpen]);
 
   return (
     <section className="space-y-6" aria-label="All podcast episodes">
       {filteredEpisodes.length === 0 ? (
         <>
-          {showSearch ? searchPanel : null}
+          {showControlPanel ? searchPanel : null}
           <p className="rounded-xl border border-carnival-ink/15 bg-white p-6 text-center font-semibold text-carnival-ink/75">
             No episodes matched that search.
           </p>
@@ -729,12 +916,13 @@ export function EpisodesBrowser({
                 featured
                 featuredDesktopTextLarger={featuredDesktopTextLarger}
                 taxonomyChips={featuredTaxonomyChips}
+                detailHref={episodeDetailHref(featuredEpisode.slug)}
               />
             </FeaturedEpisodeShowcase>
           ) : null}
 
           <section id={sectionId} className="space-y-3 scroll-mt-24" aria-label="Episode list">
-            <div className="flex flex-col gap-3 pt-6 min-[480px]:flex-row min-[480px]:items-center min-[480px]:justify-between">
+            <div className="pt-6">
               {normalizedQuery ? (
                 <p className="text-sm font-bold text-carnival-ink/60">
                   {filteredEpisodes.length} result{filteredEpisodes.length !== 1 ? 's' : ''}
@@ -743,38 +931,27 @@ export function EpisodesBrowser({
                 <h3 className="text-xl font-black text-carnival-ink">{sectionTitle}</h3>
               ) : featuredEpisode ? (
                 <h3 className="text-xl font-black text-carnival-ink">Recent Episodes</h3>
-              ) : (
-                <p className="text-sm font-bold text-carnival-ink/60">
-                  {filteredEpisodes.length} result{filteredEpisodes.length !== 1 ? 's' : ''}
-                </p>
-              )}
-              <div
-                className={
-                  mobileSortLeft
-                    ? 'flex w-full items-center justify-between gap-2 min-[480px]:ml-auto min-[480px]:w-auto min-[480px]:justify-end'
-                    : 'ml-auto flex w-full items-center justify-end gap-2 min-[480px]:w-auto'
-                }
-              >
-                {showSortToggle ? <SortOrderToggle order={sortOrder} onChange={handleSortOrderChange} /> : null}
-                <ViewModeToggle mode={viewMode} onChange={setViewMode} />
-              </div>
+              ) : null}
             </div>
-            {showSearch ? searchPanel : null}
+            {showControlPanel ? searchPanel : null}
 
-            {viewMode === 'grid' ? (
+            {!viewModeReady ? (
+              <div className="h-24 rounded-xl border border-carnival-ink/10 bg-white/70" aria-hidden="true" />
+            ) : viewMode === 'grid' ? (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {standardEpisodes.map((episode) => (
                   <EpisodeCard
                     key={episode.slug}
                     episode={episode}
                     featured={false}
+                    detailHref={episodeDetailHref(episode.slug)}
                   />
                 ))}
               </div>
             ) : (
               <div className="space-y-4">
                 {standardEpisodes.map((episode) => (
-                  <CompactEpisodeRow key={episode.slug} episode={episode} />
+                  <CompactEpisodeRow key={episode.slug} episode={episode} detailHref={episodeDetailHref(episode.slug)} />
                 ))}
               </div>
             )}

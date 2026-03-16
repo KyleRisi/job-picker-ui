@@ -4,8 +4,38 @@ import { listActiveDiscoveryTerms } from '@/lib/episodes';
 import { WorkspaceBlogEditor } from '@/components/workspace/workspace-blog-editor';
 import { isApprovedCollectionSlug, isApprovedTopicSlug } from '@/lib/taxonomy-route-policy';
 
-export default async function BlogEditorPage({ params }: { params: Promise<{ id: string }> }) {
+function normalizeSingleValue(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return `${value[0] || ''}`.trim();
+  return `${value || ''}`.trim();
+}
+
+function resolveWorkspaceBlogsReturnTo(value: string | string[] | undefined): string {
+  const normalized = normalizeSingleValue(value);
+  if (!normalized) return '/workspace/dashboard/blogs';
+
+  let candidate = normalized;
+  try {
+    candidate = decodeURIComponent(normalized);
+  } catch {
+    candidate = normalized;
+  }
+
+  if (!candidate.startsWith('/workspace/dashboard/blogs')) {
+    return '/workspace/dashboard/blogs';
+  }
+  return candidate;
+}
+
+export default async function BlogEditorPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: { returnTo?: string | string[] } | Promise<{ returnTo?: string | string[] }>;
+}) {
   const { id } = await params;
+  const resolvedSearchParams = searchParams ? await Promise.resolve(searchParams) : undefined;
+  const backHrefOverride = resolveWorkspaceBlogsReturnTo(resolvedSearchParams?.returnTo);
   const [post, episodeRows, postRows, authorRows, discoveryTerms] = await Promise.all([
     getBlogPostAdminById(id),
     listPodcastEpisodes({ includeHidden: true }),
@@ -49,6 +79,7 @@ export default async function BlogEditorPage({ params }: { params: Promise<{ id:
       relatedPosts={relatedPosts}
       authors={authors}
       taxonomyOptions={taxonomyOptions}
+      backHrefOverride={backHrefOverride}
     />
   );
 }

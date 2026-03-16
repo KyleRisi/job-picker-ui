@@ -1,7 +1,7 @@
 'use client';
 
 import { type MouseEvent as ReactMouseEvent, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { listBlogPostsAdmin } from '@/lib/blog/data';
 
 type WorkspaceBlogPost = Awaited<ReturnType<typeof listBlogPostsAdmin>>['items'][number];
@@ -73,6 +73,22 @@ function compactValue(value: string, maxLength = 90): string {
   if (!normalized) return '-';
   if (normalized.length <= maxLength) return normalized;
   return `${normalized.slice(0, maxLength).trimEnd()}...`;
+}
+
+function normalizeSortMode(value: string | null): SortMode {
+  if (value === 'oldest' || value === 'title') return value;
+  return 'newest';
+}
+
+function normalizeYearFilter(value: string | null): string {
+  const normalized = `${value || ''}`.trim();
+  return normalized || 'all';
+}
+
+function normalizePage(value: string | null): number {
+  const parsed = Number.parseInt(`${value || ''}`, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return 1;
+  return parsed;
 }
 
 function StatusPill({ status }: { status: string }) {
@@ -231,15 +247,7 @@ const ALL_COLUMNS: ColumnDefinition[] = [
     width: 100,
     headClassName: 'whitespace-nowrap',
     cellClassName: 'whitespace-nowrap text-slate-700',
-    render: (post) => (
-      <span
-        className="inline-flex text-sky-700 hover:underline"
-        onClick={(event) => event.stopPropagation()}
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <a href={`/workspace/dashboard/blogs/${post.id}`}>Open</a>
-      </span>
-    )
+    render: () => 'Open'
   }
 ];
 
@@ -314,10 +322,12 @@ function persistTableConfig(columns: ColumnKey[], widths: Record<ColumnKey, numb
 
 export function WorkspaceBlogsTable({ posts }: { posts: WorkspaceBlogPost[] }) {
   const router = useRouter();
-  const [query, setQuery] = useState('');
-  const [yearFilter, setYearFilter] = useState('all');
-  const [sortMode, setSortMode] = useState<SortMode>('newest');
-  const [page, setPage] = useState(1);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(() => `${searchParams.get('q') || ''}`.trim());
+  const [yearFilter, setYearFilter] = useState(() => normalizeYearFilter(searchParams.get('year')));
+  const [sortMode, setSortMode] = useState<SortMode>(() => normalizeSortMode(searchParams.get('sort')));
+  const [page, setPage] = useState(() => normalizePage(searchParams.get('page')));
   const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
   const [columnWidths, setColumnWidths] = useState<Record<ColumnKey, number>>(DEFAULT_COLUMN_WIDTHS);
   const [columnEditorOpen, setColumnEditorOpen] = useState(false);
@@ -468,6 +478,30 @@ export function WorkspaceBlogsTable({ posts }: { posts: WorkspaceBlogPost[] }) {
     }
   }, [page, totalPages]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    const normalizedQuery = query.trim();
+    if (normalizedQuery) params.set('q', normalizedQuery);
+    else params.delete('q');
+
+    if (yearFilter && yearFilter !== 'all') params.set('year', yearFilter);
+    else params.delete('year');
+
+    if (sortMode !== 'newest') params.set('sort', sortMode);
+    else params.delete('sort');
+
+    if (page > 1) params.set('page', `${page}`);
+    else params.delete('page');
+
+    const nextQueryString = params.toString();
+    const currentQueryString = searchParams.toString();
+    if (nextQueryString === currentQueryString) return;
+
+    const nextHref = nextQueryString ? `${pathname}?${nextQueryString}` : pathname;
+    router.replace(nextHref, { scroll: false });
+  }, [pathname, page, query, router, searchParams, sortMode, yearFilter]);
+
   const pagedPosts = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE;
     return filteredPosts.slice(start, start + PAGE_SIZE);
@@ -500,6 +534,17 @@ export function WorkspaceBlogsTable({ posts }: { posts: WorkspaceBlogPost[] }) {
     const sum = visibleColumnDefinitions.reduce((acc, column) => acc + column.width, 0);
     return Math.max(980, sum);
   }, [visibleColumnDefinitions]);
+
+  const currentListHref = useMemo(() => {
+    const params = new URLSearchParams();
+    const normalizedQuery = query.trim();
+    if (normalizedQuery) params.set('q', normalizedQuery);
+    if (yearFilter && yearFilter !== 'all') params.set('year', yearFilter);
+    if (sortMode !== 'newest') params.set('sort', sortMode);
+    if (page > 1) params.set('page', `${page}`);
+    const queryString = params.toString();
+    return queryString ? `${pathname}?${queryString}` : pathname;
+  }, [page, pathname, query, sortMode, yearFilter]);
 
   function toggleDraftColumn(columnKey: ColumnKey) {
     setDraftColumns((current) => {
@@ -691,7 +736,7 @@ export function WorkspaceBlogsTable({ posts }: { posts: WorkspaceBlogPost[] }) {
 
           <tbody>
             {pagedPosts.map((post) => {
-              const detailHref = `/workspace/dashboard/blogs/${post.id}`;
+              const detailHref = `/workspace/dashboard/blogs/${post.id}?returnTo=${encodeURIComponent(currentListHref)}`;
 
               return (
                 <tr
@@ -709,7 +754,15 @@ export function WorkspaceBlogsTable({ posts }: { posts: WorkspaceBlogPost[] }) {
                 >
                   {visibleColumnDefinitions.map((column) => (
                     <td key={`${post.id}:${column.key}`} className={`align-middle px-3 py-2 ${column.cellClassName || 'text-slate-700'}`}>
-                      {column.render(post)}
+                      {column.key === 'edit' ? (
+                        <span
+                          className="inline-flex text-sky-700 hover:underline"
+                          onClick={(event) => event.stopPropagation()}
+                          onMouseDown={(event) => event.stopPropagation()}
+                        >
+                          <a href={detailHref}>Open</a>
+                        </span>
+                      ) : column.render(post)}
                     </td>
                   ))}
                 </tr>

@@ -173,6 +173,7 @@ export default async function BlogPostPage({ params }: { params: Params }) {
     isPartOf: {
       '@type': 'WebSite',
       name: 'The Compendium Podcast',
+      alternateName: 'The Compendium: An Assembly of Fascinating Things',
       url: siteUrl
     },
     about: primaryEpisode

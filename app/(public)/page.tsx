@@ -46,6 +46,7 @@ function PodcastJsonLd({ episodes }: { episodes: PodcastEpisode[] }) {
     '@context': 'https://schema.org',
     '@type': 'PodcastSeries',
     name: 'The Compendium Podcast',
+    alternateName: 'The Compendium: An Assembly of Fascinating Things',
     description:
       'A weekly variety podcast that gives you everything you need to know on a topic to help stand your ground at a social gathering. True crime, historical events, and incredible people.',
     url: siteUrl,

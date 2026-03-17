@@ -118,6 +118,7 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
     partOfSeries: {
       '@type': 'PodcastSeries',
       name: 'The Compendium Podcast',
+      alternateName: 'The Compendium: An Assembly of Fascinating Things',
       url: siteUrl
     }
   };
@@ -172,6 +173,7 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
     path: term.path
   }));
   const episodeSummary = resolveEpisodeSummary(episode);
+  const episodeBodyTextClass = structuredBody && structuredBodyWithoutTranscript.length ? 'text-lg leading-8' : 'text-base leading-relaxed';
 
   return (
     <section className="-mb-8 space-y-0">
@@ -287,15 +289,13 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
 
       {episodeSummary ? (
         <section className="-mx-4 bg-white px-5 pt-5 sm:mx-0 sm:px-6 sm:pt-6">
-          <h2 className="text-xl font-black text-carnival-ink">Episode Summary</h2>
-          <p className="mt-3 text-base leading-relaxed text-carnival-ink/90">{episodeSummary}</p>
+          <p className={episodeBodyTextClass + ' text-carnival-ink/90'}>{episodeSummary}</p>
         </section>
       ) : null}
 
       <article className="-mx-4 bg-white px-5 py-5 sm:mx-0 sm:px-6 sm:py-6">
-        <h2 className="text-xl font-black text-carnival-ink">Episode Story</h2>
         {structuredBody && structuredBodyWithoutTranscript.length ? (
-          <div className="mt-4">
+          <div>
             <BlogContentRenderer
               document={structuredBody}
               assetMap={assetMap}

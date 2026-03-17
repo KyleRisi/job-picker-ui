@@ -12,6 +12,10 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getPublicSiteUrl()),
+  applicationName: 'The Compendium Podcast',
+  appleWebApp: {
+    title: 'The Compendium Podcast'
+  },
   title: {
     default: 'The Compendium Podcast',
     template: '%s | The Compendium Podcast'
@@ -69,6 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {
         '@type': 'Organization',
         name: 'The Compendium Podcast',
+        alternateName: 'The Compendium: An Assembly of Fascinating Things',
         url: siteUrl,
         logo: `${siteUrl}/The Compendium Main.jpg`,
         sameAs: [
@@ -82,6 +87,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {
         '@type': 'WebSite',
         name: 'The Compendium Podcast',
+        alternateName: 'The Compendium: An Assembly of Fascinating Things',
         url: siteUrl,
         potentialAction: {
           '@type': 'SearchAction',

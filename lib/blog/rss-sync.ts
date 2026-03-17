@@ -49,11 +49,15 @@ type RssEpisode = {
   rss_guid: string;
   title: string;
   slug: string;
+  episode_number: number | null;
+  season_number: number | null;
+  duration_seconds: number | null;
   description_plain: string;
   description_html: string;
   published_at: string | null;
   audio_url: string;
   artwork_url: string | null;
+  source_url: string | null;
   transcript: string;
   show_notes: string;
   last_synced_at: string;
@@ -66,8 +70,50 @@ type SyncPodcastEpisodesOptions = {
   episodeId?: string;
 };
 
+function toSafeNumber(value: string): number | null {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return null;
+  return parsed;
+}
+
+function resolveEpisodeNumber(item: Record<string, unknown>, title: string): number | null {
+  const fromTag = toSafeNumber(getText(item['itunes:episode']));
+  if (fromTag !== null) return fromTag;
+
+  const match = title.match(/\b(?:episode|ep)\s*#?\s*(\d+)\b/i);
+  if (!match?.[1]) return null;
+  return toSafeNumber(match[1]);
+}
+
+function resolveSeasonNumber(item: Record<string, unknown>, title: string): number | null {
+  const fromTag = toSafeNumber(getText(item['itunes:season']));
+  if (fromTag !== null) return fromTag;
+
+  const match = title.match(/\bseason\s*#?\s*(\d+)\b/i);
+  if (!match?.[1]) return null;
+  return toSafeNumber(match[1]);
+}
+
+function resolveDurationSeconds(item: Record<string, unknown>): number | null {
+  const raw = getText(item['itunes:duration']);
+  if (!raw) return null;
+  if (/^\d+$/.test(raw)) return Number.parseInt(raw, 10);
+
+  const parts = raw
+    .split(':')
+    .map((part) => Number.parseInt(part, 10))
+    .filter((part) => Number.isFinite(part));
+  if (!parts.length) return null;
+  if (parts.length === 3) return (parts[0] * 60 * 60) + (parts[1] * 60) + parts[2];
+  if (parts.length === 2) return (parts[0] * 60) + parts[1];
+  return parts[0] || null;
+}
+
 function parseFeedItem(item: Record<string, unknown>, usedSlugs: Set<string>): RssEpisode {
   const title = getText(item.title) || 'Untitled episode';
+  const episodeNumber = resolveEpisodeNumber(item, title);
+  const seasonNumber = resolveSeasonNumber(item, title);
+  const durationSeconds = resolveDurationSeconds(item);
   const guid = getText(item.guid) || getText((item.enclosure as { url?: unknown } | undefined)?.url) || title;
   const htmlDescription = decodeEntities(getText(item['content:encoded']) || getText(item.description));
   const plainDescription = htmlToPlainText(htmlDescription);
@@ -79,6 +125,7 @@ function parseFeedItem(item: Record<string, unknown>, usedSlugs: Set<string>): R
     null;
   const transcript = getText(item.transcript);
   const showNotes = getText(item['content:encoded']) || getText(item.description);
+  const sourceUrl = getText(item.link) || null;
   const publishedAtRaw = getText(item.pubDate);
   const publishedAt = publishedAtRaw ? new Date(publishedAtRaw).toISOString() : null;
   let slug = slugifyBlogText(title);
@@ -90,11 +137,15 @@ function parseFeedItem(item: Record<string, unknown>, usedSlugs: Set<string>): R
     rss_guid: guid,
     title,
     slug,
+    episode_number: episodeNumber,
+    season_number: seasonNumber,
+    duration_seconds: durationSeconds,
     description_plain: plainDescription,
     description_html: htmlDescription,
     published_at: publishedAt,
     audio_url: audioUrl,
     artwork_url: artworkUrl,
+    source_url: sourceUrl,
     transcript,
     show_notes: showNotes,
     last_synced_at: new Date().toISOString()
@@ -115,6 +166,10 @@ function buildExistingEpisodeUpdatePayload(episode: RssEpisode, mode: EpisodeRss
       published_at: episode.published_at,
       audio_url: episode.audio_url,
       artwork_url: episode.artwork_url,
+      source_url: episode.source_url,
+      episode_number: episode.episode_number,
+      season_number: episode.season_number,
+      duration_seconds: episode.duration_seconds,
       last_synced_at: episode.last_synced_at
     };
   }
@@ -123,6 +178,10 @@ function buildExistingEpisodeUpdatePayload(episode: RssEpisode, mode: EpisodeRss
     published_at: episode.published_at,
     audio_url: episode.audio_url,
     artwork_url: episode.artwork_url,
+    source_url: episode.source_url,
+    episode_number: episode.episode_number,
+    season_number: episode.season_number,
+    duration_seconds: episode.duration_seconds,
     last_synced_at: episode.last_synced_at
   };
 }

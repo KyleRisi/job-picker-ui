@@ -241,7 +241,7 @@ export async function sendReferenceRecoveryEmail(input: {
     <p><a href="${input.manageLink}">Manage your role</a></p>
   `;
 
-  return sendEmail(input.to, 'Compendium Circus HR reference recovery', html);
+  return sendEmail(input.to, 'The Compendium Podcast reference recovery', html);
 }
 
 export async function sendEmailChangeConfirmation(input: {
@@ -255,7 +255,7 @@ export async function sendEmailChangeConfirmation(input: {
     <p><a href="${input.confirmLink}">Confirm email change</a></p>
   `;
 
-  return sendEmail(input.to, 'Confirm your Compendium Circus HR email change', html);
+  return sendEmail(input.to, 'Confirm your email change for The Compendium Podcast', html);
 }
 
 export async function sendNewReviewNotificationEmail(input: {

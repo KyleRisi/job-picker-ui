@@ -30,7 +30,10 @@ export function initMixpanel() {
       persistence: 'localStorage',
       autocapture: true,
       record_sessions_percent: 100,
-      record_mask_text_selector: '',
+      record_mask_all_text: false,
+      record_mask_all_inputs: false,
+      record_mask_text_selector:
+        'input[type="password"], input[name*="password" i], input[name*="secret" i], input[name*="token" i], input[name*="key" i], textarea[name*="secret" i], textarea[name*="token" i], textarea[name*="key" i], [data-mixpanel-mask="true"]',
       ...(MIXPANEL_API_HOST ? { api_host: MIXPANEL_API_HOST } : {})
     });
     initialized = true;

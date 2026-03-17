@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { usePathname } from 'next/navigation';
 import { initMixpanel, trackMixpanel } from '@/lib/mixpanel-browser';
 
 function currentUserId(): string | null {
@@ -10,8 +9,6 @@ function currentUserId(): string | null {
 
 export function MixpanelProvider() {
   const initializedRef = useRef(false);
-  const pathname = usePathname();
-  const lastTrackedPathRef = useRef('');
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -54,21 +51,6 @@ export function MixpanelProvider() {
       window.removeEventListener('unhandledrejection', onUnhandledRejection);
     };
   }, []);
-
-  useEffect(() => {
-    if (!initializedRef.current) return;
-    if (typeof window === 'undefined') return;
-
-    const routeKey = `${pathname}${window.location.search || ''}`;
-    if (!routeKey || routeKey === lastTrackedPathRef.current) return;
-    lastTrackedPathRef.current = routeKey;
-
-    trackMixpanel('Page View', {
-      page_url: window.location.href,
-      page_title: document.title,
-      user_id: currentUserId()
-    });
-  }, [pathname]);
 
   return null;
 }

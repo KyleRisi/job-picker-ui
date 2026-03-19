@@ -228,6 +228,8 @@ export default async function BlogPostPage({ params }: { params: Params }) {
               src={featuredImageUrl}
               alt={post.featured_image?.alt_text_default || post.title}
               fill
+              priority
+              fetchPriority="high"
               quality={68}
               sizes="100vw"
               className="object-cover object-center md:object-[50%_25%]"

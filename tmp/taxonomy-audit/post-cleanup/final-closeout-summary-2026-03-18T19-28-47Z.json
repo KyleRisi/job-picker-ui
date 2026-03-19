@@ -1,0 +1,33 @@
+{
+  "generated_at": "2026-03-18T19:31:51.066Z",
+  "policy": {
+    "supported_podcast_alias": "/podcast/the-compendium-of-fascinating-things/episode/:slug",
+    "historical_podcast_slug_variants": "policy_unsupported_legacy_alias"
+  },
+  "current_totals": {
+    "active_redirect_rows": 76,
+    "unified_visible_rows": 144
+  },
+  "reporting_outcomes": {
+    "unsupported_historical_podcast_slugs": 48,
+    "non_podcast_broken_deletions_needing_action": 14
+  },
+  "non_podcast_action_required_paths": [
+    "/about",
+    "/blog/propagation-test-2026-03-07t20-52-21-374z",
+    "/blog/slug-redirect-check-2026-03-07t21-06-28-972z",
+    "/episodes/oceangate-titan-disaster-a-billionaires-dive-into-hubris-history-and-horror",
+    "/episodes/patty-hearst-from-kidnapped-heiress-to-americas-most-wanted-fugitive",
+    "/episodes/the-acali-experiment-science-sex-and-santiago-genovess-bizarre-human-behaviour-study",
+    "/episodes/the-curse-of-the-cecil-americas-most-dangerous-hotel",
+    "/home2",
+    "/podcast/the-compendium-of-fascinating-things",
+    "/podcast/the-compendium-of-fascinating-things-patreon",
+    "/podcast/the-compendium-of-fascinating-things/season/2",
+    "/video/milli-vanilli-the-real-story-behind-greatest-lip-sync-scandal-in-music-history",
+    "/video/the-1989-oscars-a-night-hollywood-wants-you-to-forget",
+    "/video/who-shot-jill-dando-the-mystery-behind-her-infamous-murder"
+  ],
+  "project_complete_under_chosen_policy": false,
+  "completion_rationale": "Podcast historical slug variants are now policy-classified as unsupported legacy aliases, but 14 non-podcast broken deletions remain actionable."
+}

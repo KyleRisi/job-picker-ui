@@ -178,21 +178,23 @@ export async function middleware(req: NextRequest) {
     return response;
   }
 
-  const deterministicEpisodeTarget = getDeterministicLegacyEpisodeTarget(normalizedPath);
-  if (deterministicEpisodeTarget && deterministicEpisodeTarget !== normalizedPath) {
-    const destination = buildRedirectLocation({
-      requestUrl: req.nextUrl,
-      requestPath: normalizedPath,
-      sourcePath: normalizedPath,
-      targetUrl: deterministicEpisodeTarget,
-      matchType: 'exact',
-      preserveQuery: true
-    });
-    return withBaselineHeaders(req, NextResponse.redirect(new URL(destination), 301));
-  }
-
   const match = await resolveRedirect(req, normalizedPath);
-  if (!match) return withBaselineHeaders(req, NextResponse.next());
+  if (!match) {
+    const deterministicEpisodeTarget = getDeterministicLegacyEpisodeTarget(normalizedPath);
+    if (deterministicEpisodeTarget && deterministicEpisodeTarget !== normalizedPath) {
+      const destination = buildRedirectLocation({
+        requestUrl: req.nextUrl,
+        requestPath: normalizedPath,
+        sourcePath: normalizedPath,
+        targetUrl: deterministicEpisodeTarget,
+        matchType: 'exact',
+        preserveQuery: true
+      });
+      return withBaselineHeaders(req, NextResponse.redirect(new URL(destination), 301));
+    }
+
+    return withBaselineHeaders(req, NextResponse.next());
+  }
   if (match.status_code === 410) {
     return withBaselineHeaders(req, new NextResponse('Gone', { status: 410 }));
   }

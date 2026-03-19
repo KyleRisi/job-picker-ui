@@ -4,17 +4,22 @@ import { type MouseEvent as ReactMouseEvent, useCallback, useEffect, useMemo, us
 
 type RedirectItem = {
   id: string;
-  source_path: string;
-  target_url: string;
-  status_code: 301 | 302 | 307 | 308;
+  source: string;
+  target: string | null;
+  status_code: 301 | 302 | 307 | 308 | 410;
+  owner_layer: string;
+  source_type: string;
+  editable: boolean;
+  rule_type: string;
+  notes_reason: string;
+  active: boolean;
+  backing_type: 'table_backed' | 'system_generated';
+  backing_ref: string;
+  read_only_reason: string | null;
   match_type: 'exact' | 'prefix';
-  is_active: boolean;
-  priority: number;
-  notes: string;
-  source_type?: string;
-  source_ref?: string | null;
-  created_at: string;
-  updated_at: string;
+  priority: number | null;
+  created_at: string | null;
+  updated_at: string | null;
 };
 
 type RedirectsResponse = {
@@ -37,10 +42,11 @@ type FormState = {
   notes: string;
 };
 
-type ColumnKey = 'source' | 'target' | 'status' | 'match' | 'active' | 'priority' | 'updated' | 'actions';
+type ColumnKey = 'select' | 'view' | 'source' | 'target' | 'status' | 'owner' | 'editable' | 'backing' | 'match' | 'active' | 'priority' | 'updated' | 'actions';
 type ResizeState = { key: ColumnKey; startX: number; startWidth: number } | null;
 
 const REDIRECT_STATUS_CODES: Array<301 | 302 | 307 | 308> = [301, 302, 307, 308];
+const REDIRECT_FILTER_STATUS_CODES: Array<301 | 302 | 307 | 308 | 410> = [301, 302, 307, 308, 410];
 const REDIRECT_MATCH_TYPES: Array<'exact' | 'prefix'> = ['exact', 'prefix'];
 
 const DEFAULT_FORM: FormState = {
@@ -58,9 +64,14 @@ const REDIRECT_VISIBLE_COLUMNS_STORAGE_KEY = 'workspace_redirects_visible_column
 const MIN_COLUMN_WIDTH = 100;
 const MAX_COLUMN_WIDTH = 1200;
 const DEFAULT_COLUMN_WIDTHS: Record<ColumnKey, number> = {
+  select: 90,
+  view: 100,
   source: 260,
   target: 360,
   status: 120,
+  owner: 170,
+  editable: 120,
+  backing: 160,
   match: 120,
   active: 120,
   priority: 110,
@@ -68,9 +79,14 @@ const DEFAULT_COLUMN_WIDTHS: Record<ColumnKey, number> = {
   actions: 120
 };
 const ALL_COLUMNS: Array<{ key: ColumnKey; label: string }> = [
+  { key: 'select', label: 'Select' },
+  { key: 'view', label: 'View' },
   { key: 'source', label: 'Source' },
   { key: 'target', label: 'Target' },
   { key: 'status', label: 'Status' },
+  { key: 'owner', label: 'Owner' },
+  { key: 'editable', label: 'Editable' },
+  { key: 'backing', label: 'Backing' },
   { key: 'match', label: 'Match' },
   { key: 'active', label: 'Active' },
   { key: 'priority', label: 'Priority' },
@@ -114,10 +130,25 @@ function validateTargetUrl(value: string): string {
   return '';
 }
 
-function formatDate(value: string) {
+function formatDate(value: string | null) {
+  if (!value) return '-';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '-';
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function toViewUrl(source: string): string {
+  if (/^https?:\/\//i.test(source)) return source;
+  if (typeof window === 'undefined') return source;
+  try {
+    return new URL(source, window.location.origin).toString();
+  } catch {
+    return source;
+  }
+}
+
+function isTableBackedEditable(item: RedirectItem): boolean {
+  return item.editable && item.backing_type === 'table_backed';
 }
 
 export function WorkspaceRedirectsTable() {
@@ -125,7 +156,7 @@ export function WorkspaceRedirectsTable() {
   const [query, setQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'true' | 'false'>('all');
   const [matchTypeFilter, setMatchTypeFilter] = useState<'all' | 'exact' | 'prefix'>('all');
-  const [statusCodeFilter, setStatusCodeFilter] = useState<'all' | '301' | '302' | '307' | '308'>('all');
+  const [statusCodeFilter, setStatusCodeFilter] = useState<'all' | '301' | '302' | '307' | '308' | '410'>('all');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -144,6 +175,8 @@ export function WorkspaceRedirectsTable() {
   const [isImporting, setIsImporting] = useState(false);
   const [importMode, setImportMode] = useState<'upsert' | 'replace'>('upsert');
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const [columnWidths, setColumnWidths] = useState<Record<ColumnKey, number>>(DEFAULT_COLUMN_WIDTHS);
   const [resizing, setResizing] = useState<ResizeState>(null);
@@ -172,6 +205,9 @@ export function WorkspaceRedirectsTable() {
     if (!normalized) return EDITABLE_COLUMNS;
     return EDITABLE_COLUMNS.filter((column) => column.label.toLowerCase().includes(normalized));
   }, [columnSearch]);
+  const selectableVisibleIds = useMemo(() => items.filter(isTableBackedEditable).map((item) => item.id), [items]);
+  const selectedCount = selectedIds.size;
+  const allVisibleSelected = selectableVisibleIds.length > 0 && selectableVisibleIds.every((id) => selectedIds.has(id));
 
   useEffect(() => {
     try {
@@ -208,8 +244,14 @@ export function WorkspaceRedirectsTable() {
         (key): key is Exclude<ColumnKey, 'actions'> => EDITABLE_COLUMNS.some((column) => column.key === key)
       );
       if (!valid.length) return;
-      setVisibleColumns(valid);
-      setDraftColumns(valid);
+
+      const requiredColumns: Array<Exclude<ColumnKey, 'actions'>> = ['select', 'view'];
+      const withRequired = [
+        ...requiredColumns,
+        ...valid.filter((key) => !requiredColumns.includes(key))
+      ] as Array<Exclude<ColumnKey, 'actions'>>;
+      setVisibleColumns(withRequired);
+      setDraftColumns(withRequired);
     } catch {
       // Ignore storage parse failures.
     } finally {
@@ -272,7 +314,7 @@ export function WorkspaceRedirectsTable() {
       if (matchTypeFilter !== 'all') params.set('match_type', matchTypeFilter);
       if (statusCodeFilter !== 'all') params.set('status_code', statusCodeFilter);
 
-      const response = await fetch(`/api/admin/redirects?${params.toString()}`, { cache: 'no-store' });
+      const response = await fetch(`/api/admin/redirects/unified?${params.toString()}`, { cache: 'no-store' });
       const data = (await response.json().catch(() => ({}))) as RedirectsResponse | { error?: string };
       if (!response.ok) throw new Error((data as { error?: string }).error || 'Failed to load redirects.');
       const payload = data as RedirectsResponse;
@@ -343,13 +385,75 @@ export function WorkspaceRedirectsTable() {
     setColumnEditorOpen(false);
   }
 
+  function toggleSelection(id: string, checked: boolean) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAllVisible(checked: boolean) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      for (const id of selectableVisibleIds) {
+        if (checked) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  }
+
   function renderCell(item: RedirectItem, column: ColumnKey) {
-    if (column === 'source') return <span className="font-mono text-xs text-slate-700">{item.source_path}</span>;
-    if (column === 'target') return <span className="text-slate-700">{item.target_url}</span>;
+    if (column === 'select') {
+      const disabled = !isTableBackedEditable(item);
+      return (
+        <input
+          type="checkbox"
+          checked={selectedIds.has(item.id)}
+          disabled={disabled}
+          onChange={(event) => {
+            const checked = event.currentTarget.checked;
+            toggleSelection(item.id, checked);
+          }}
+          className="h-4 w-4 rounded border-slate-300"
+          aria-label={`Select ${item.source}`}
+        />
+      );
+    }
+    if (column === 'view') {
+      const viewUrl = toViewUrl(item.source);
+      return (
+        <a
+          href={viewUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+        >
+          View
+        </a>
+      );
+    }
+    if (column === 'source') return <span className="font-mono text-xs text-slate-700">{item.source}</span>;
+    if (column === 'target') return <span className="text-slate-700">{item.target || '-'}</span>;
     if (column === 'status') return <span className="text-slate-700">{item.status_code}</span>;
+    if (column === 'owner') return <span className="text-slate-700">{item.owner_layer}</span>;
+    if (column === 'editable') {
+      return item.editable ? (
+        <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-emerald-800">
+          Editable
+        </span>
+      ) : (
+        <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-800">
+          Read-only
+        </span>
+      );
+    }
+    if (column === 'backing') return <span className="text-slate-700">{item.backing_type}</span>;
     if (column === 'match') return <span className="text-slate-700">{item.match_type}</span>;
     if (column === 'active') {
-      return item.is_active ? (
+      return item.active ? (
         <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-emerald-800">
           Active
         </span>
@@ -359,8 +463,17 @@ export function WorkspaceRedirectsTable() {
         </span>
       );
     }
-    if (column === 'priority') return <span className="text-slate-700">{item.priority}</span>;
+    if (column === 'priority') return <span className="text-slate-700">{item.priority ?? '-'}</span>;
     if (column === 'updated') return <span className="text-slate-700">{formatDate(item.updated_at)}</span>;
+
+    if (!item.editable || item.backing_type !== 'table_backed') {
+      return (
+        <span className="text-xs font-semibold text-slate-500" title={item.read_only_reason || 'Read-only system rule.'}>
+          Read-only
+        </span>
+      );
+    }
+
     return (
       <button
         type="button"
@@ -468,6 +581,11 @@ export function WorkspaceRedirectsTable() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data?.error || 'Failed to delete redirect.');
       setMessage('Redirect deleted.');
+      setSelectedIds((current) => {
+        const next = new Set(current);
+        next.delete(editingItem.id);
+        return next;
+      });
       closeEdit();
       await load();
     } catch (deleteError) {
@@ -500,16 +618,56 @@ export function WorkspaceRedirectsTable() {
     }
   }
 
+  async function deleteSelectedRedirects() {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    const confirmed = window.confirm('Are you sure?');
+    if (!confirmed) return;
+
+    setIsBulkDeleting(true);
+    setError('');
+    setMessage('');
+
+    const failedIds: string[] = [];
+    for (const id of ids) {
+      try {
+        const response = await fetch(`/api/admin/redirects/${id}`, { method: 'DELETE' });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data?.error || 'Failed to delete redirect.');
+      } catch {
+        failedIds.push(id);
+      }
+    }
+
+    if (!failedIds.length) {
+      setMessage(`${ids.length} redirects deleted.`);
+      setSelectedIds(new Set());
+      await load();
+      setIsBulkDeleting(false);
+      return;
+    }
+
+    const deletedCount = ids.length - failedIds.length;
+    if (deletedCount > 0) {
+      setMessage(`${deletedCount} redirects deleted.`);
+    }
+    setError(`Failed to delete ${failedIds.length} selected redirect(s).`);
+    setSelectedIds(new Set(failedIds));
+    await load();
+    setIsBulkDeleting(false);
+  }
+
   function openEdit(item: RedirectItem) {
+    if (!item.editable || item.backing_type !== 'table_backed') return;
     setEditingItem(item);
     setForm({
-      source_path: item.source_path,
-      target_url: item.target_url,
+      source_path: item.source,
+      target_url: item.target || '',
       status_code: `${item.status_code}` as FormState['status_code'],
       match_type: item.match_type,
-      is_active: item.is_active,
-      priority: `${item.priority}`,
-      notes: item.notes || ''
+      is_active: item.active,
+      priority: `${item.priority ?? 100}`,
+      notes: item.notes_reason || ''
     });
     setEditOpen(true);
   }
@@ -586,11 +744,11 @@ export function WorkspaceRedirectsTable() {
             <span className="relative inline-block">
               <select
                 value={statusCodeFilter}
-                onChange={(event) => setStatusCodeFilter(event.currentTarget.value as 'all' | '301' | '302' | '307' | '308')}
+                onChange={(event) => setStatusCodeFilter(event.currentTarget.value as 'all' | '301' | '302' | '307' | '308' | '410')}
                 className="h-8 min-w-[8rem] appearance-none rounded-md border border-slate-300 px-2 py-1 pr-7 text-xs"
               >
                 <option value="all">All</option>
-                {REDIRECT_STATUS_CODES.map((value) => (
+                {REDIRECT_FILTER_STATUS_CODES.map((value) => (
                   <option key={value} value={value}>
                     {value}
                   </option>
@@ -602,13 +760,23 @@ export function WorkspaceRedirectsTable() {
             </span>
           </label>
         </div>
-        <button
-          type="button"
-          onClick={openColumnEditor}
-          className="inline-flex h-8 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-        >
-          Edit columns
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void deleteSelectedRedirects()}
+            disabled={!selectedCount || isBulkDeleting}
+            className="inline-flex h-8 items-center justify-center rounded-md border border-rose-300 bg-white px-3 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isBulkDeleting ? 'Deleting...' : `Delete All${selectedCount ? ` (${selectedCount})` : ''}`}
+          </button>
+          <button
+            type="button"
+            onClick={openColumnEditor}
+            className="inline-flex h-8 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Edit columns
+          </button>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-md border border-slate-300 bg-white">
@@ -624,6 +792,26 @@ export function WorkspaceRedirectsTable() {
               {renderedColumns.map((column) => {
                 const label = ALL_COLUMNS.find((item) => item.key === column)?.label || column;
                 const isFixed = column === FIXED_COLUMN;
+                if (column === 'select') {
+                  return (
+                    <th
+                      key={column}
+                      className="relative border-l border-slate-300 px-3 py-2 font-semibold"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={allVisibleSelected}
+                        disabled={!selectableVisibleIds.length}
+                        onChange={(event) => {
+                          const checked = event.currentTarget.checked;
+                          toggleSelectAllVisible(checked);
+                        }}
+                        className="h-4 w-4 rounded border-slate-300"
+                        aria-label="Select all visible redirects"
+                      />
+                    </th>
+                  );
+                }
                 return (
                   <th
                     key={column}
@@ -721,7 +909,10 @@ export function WorkspaceRedirectsTable() {
                 <span className="font-medium">Source path</span>
                 <input
                   value={form.source_path}
-                  onChange={(event) => setForm((current) => ({ ...current, source_path: event.currentTarget.value }))}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value;
+                    setForm((current) => ({ ...current, source_path: value }));
+                  }}
                   onBlur={(event) => {
                     const raw = event.currentTarget.value.trim();
                     if (!raw || raw.startsWith('/')) return;
@@ -737,7 +928,10 @@ export function WorkspaceRedirectsTable() {
                 <span className="font-medium">Target URL</span>
                 <input
                   value={form.target_url}
-                  onChange={(event) => setForm((current) => ({ ...current, target_url: event.currentTarget.value }))}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value;
+                    setForm((current) => ({ ...current, target_url: value }));
+                  }}
                   placeholder="/new-path or https://..."
                   className="h-10 rounded-md border border-slate-300 px-3"
                 />
@@ -748,7 +942,10 @@ export function WorkspaceRedirectsTable() {
                 <span className="font-medium">Match type</span>
                 <select
                   value={form.match_type}
-                  onChange={(event) => setForm((current) => ({ ...current, match_type: event.currentTarget.value as 'exact' | 'prefix' }))}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value as 'exact' | 'prefix';
+                    setForm((current) => ({ ...current, match_type: value }));
+                  }}
                   className="h-10 rounded-md border border-slate-300 px-3"
                 >
                   {REDIRECT_MATCH_TYPES.map((value) => (
@@ -763,7 +960,10 @@ export function WorkspaceRedirectsTable() {
                 <span className="font-medium">Status code</span>
                 <select
                   value={form.status_code}
-                  onChange={(event) => setForm((current) => ({ ...current, status_code: event.currentTarget.value as FormState['status_code'] }))}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value as FormState['status_code'];
+                    setForm((current) => ({ ...current, status_code: value }));
+                  }}
                   className="h-10 rounded-md border border-slate-300 px-3"
                 >
                   {REDIRECT_STATUS_CODES.map((value) => (
@@ -780,7 +980,10 @@ export function WorkspaceRedirectsTable() {
                   type="number"
                   min={0}
                   value={form.priority}
-                  onChange={(event) => setForm((current) => ({ ...current, priority: event.currentTarget.value }))}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value;
+                    setForm((current) => ({ ...current, priority: value }));
+                  }}
                   className="h-10 rounded-md border border-slate-300 px-3"
                 />
               </label>
@@ -789,7 +992,10 @@ export function WorkspaceRedirectsTable() {
                 <input
                   type="checkbox"
                   checked={form.is_active}
-                  onChange={(event) => setForm((current) => ({ ...current, is_active: event.currentTarget.checked }))}
+                  onChange={(event) => {
+                    const checked = event.currentTarget.checked;
+                    setForm((current) => ({ ...current, is_active: checked }));
+                  }}
                   className="h-4 w-4 rounded border-slate-300"
                 />
                 Active
@@ -799,7 +1005,10 @@ export function WorkspaceRedirectsTable() {
                 <span className="font-medium">Notes</span>
                 <textarea
                   value={form.notes}
-                  onChange={(event) => setForm((current) => ({ ...current, notes: event.currentTarget.value }))}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value;
+                    setForm((current) => ({ ...current, notes: value }));
+                  }}
                   rows={3}
                   placeholder="Optional notes"
                   className="rounded-md border border-slate-300 px-3 py-2"

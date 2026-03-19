@@ -1,0 +1,44 @@
+{
+  "summary": {
+    "generated_at": "2026-03-18T18:27:20.884Z",
+    "candidates_count": 2,
+    "to_restore_count": 2,
+    "restored_count": 2,
+    "skipped_already_present_count": 0,
+    "unresolved_count": 0,
+    "outputs": {
+      "restored_rows_csv": "tmp/taxonomy-audit/post-cleanup/restored-rows-2026-03-18T18-27-20Z.csv",
+      "restored_rows_json": "tmp/taxonomy-audit/post-cleanup/restored-rows-2026-03-18T18-27-20Z.json"
+    },
+    "skipped_already_present": [],
+    "unresolved": []
+  },
+  "restored_rows": [
+    {
+      "id": "e9aebdbc-8b4b-4403-8d21-c4c7d6d66ba6",
+      "source_path": "/podcast/the-compendium-of-fascinating-things/episode/blood-brothers-the-lyle-and-erik-menendez-story",
+      "target_url": "/episodes/the-lindbergh-baby-the-kidnapping-of-americas-most-beloved-baby",
+      "status_code": 301,
+      "match_type": "exact",
+      "is_active": true,
+      "priority": 100,
+      "source_type": "manual",
+      "source_ref": null,
+      "created_at": "2026-03-18T18:27:21.107672+00:00",
+      "updated_at": "2026-03-18T18:27:21.107672+00:00"
+    },
+    {
+      "id": "0310f94a-c944-4226-b54c-68e63c68e6f9",
+      "source_path": "/podcast/the-compendium-of-fascinating-things/episode/the-lindbergh-baby-the-kidnapping-of-americas-most-beloved-baby",
+      "target_url": "/episodes/baby-jessica-the-girl-who-fell-down-a-well-and-changed-news-forever",
+      "status_code": 301,
+      "match_type": "exact",
+      "is_active": true,
+      "priority": 100,
+      "source_type": "manual",
+      "source_ref": null,
+      "created_at": "2026-03-18T18:27:21.107672+00:00",
+      "updated_at": "2026-03-18T18:27:21.107672+00:00"
+    }
+  ]
+}

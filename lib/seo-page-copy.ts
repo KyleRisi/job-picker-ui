@@ -2,11 +2,11 @@ import type { DiscoveryHubPage, ResolvedPodcastEpisode } from '@/lib/podcast-sha
 
 const HUB_INDEX_COPY: Record<'topics' | 'collections', { title: string; description: string }> = {
   topics: {
-    title: 'Podcast Topics: True Crime, History, Mysteries | The Compendium Podcast',
+    title: 'Podcast Topics: True Crime, History, Mysteries',
     description: 'Explore The Compendium Podcast by topic, including true crime, history, mysteries, scams, survival stories, and more.'
   },
   collections: {
-    title: 'Podcast Collections: Curated Story Archives | The Compendium Podcast',
+    title: 'Podcast Collections: Curated Story Archives',
     description: 'Browse curated Compendium collections that group connected stories, cases, and long-running narrative threads.'
   }
 };

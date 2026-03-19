@@ -14,6 +14,12 @@
   status = 301
   force = true
 
+[[redirects]]
+  from = "https://jobpicker.thecompendiumpodcast.com/*"
+  to = "/:splat"
+  status = 410
+  force = true
+
 [[headers]]
   for = "/_next/static/*"
   [headers.values]
@@ -37,7 +43,7 @@
     "Referrer-Policy" = "strict-origin-when-cross-origin"
     "X-Frame-Options" = "DENY"
     "Permissions-Policy" = "camera=(), microphone=(), geolocation=()"
-    "Content-Security-Policy-Report-Only" = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests"
+    "Content-Security-Policy-Report-Only" = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; frame-src 'self' https://app.netlify.com; upgrade-insecure-requests"
 
 [dev]
   command = "npm run dev"

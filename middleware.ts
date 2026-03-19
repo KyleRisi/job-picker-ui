@@ -16,7 +16,7 @@ type CacheEntry = {
   item: ResolveItem;
 };
 
-const LOOKUP_TIMEOUT_MS = 1200;
+const LOOKUP_TIMEOUT_MS = 350;
 const CACHE_TTL_MS = 30_000;
 const cache = new Map<string, CacheEntry>();
 const NETLIFY_DEPLOY_PREVIEW_HOST_RE = /^deploy-preview-\d+--.+\.netlify\.app$/;
@@ -26,7 +26,7 @@ const SECURITY_HEADERS: Record<string, string> = {
   'x-frame-options': 'DENY',
   'permissions-policy': 'camera=(), microphone=(), geolocation=()',
   'content-security-policy-report-only':
-    "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'"
+    "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; frame-src 'self' https://app.netlify.com"
 };
 
 function shouldNoindexHost(req: NextRequest): boolean {
@@ -152,6 +152,7 @@ export async function middleware(req: NextRequest) {
   if (method !== 'GET' && method !== 'HEAD') return withBaselineHeaders(req, NextResponse.next());
 
   const normalizedPath = normalizePath(req.nextUrl.pathname);
+  if (normalizedPath === '/') return withBaselineHeaders(req, NextResponse.next());
   if (shouldSkipRedirectLookup(normalizedPath)) return withBaselineHeaders(req, NextResponse.next());
 
   const taxonomyRoutePolicy = getTaxonomyRoutePolicy(normalizedPath);
@@ -178,21 +179,23 @@ export async function middleware(req: NextRequest) {
     return response;
   }
 
-  const deterministicEpisodeTarget = getDeterministicLegacyEpisodeTarget(normalizedPath);
-  if (deterministicEpisodeTarget && deterministicEpisodeTarget !== normalizedPath) {
-    const destination = buildRedirectLocation({
-      requestUrl: req.nextUrl,
-      requestPath: normalizedPath,
-      sourcePath: normalizedPath,
-      targetUrl: deterministicEpisodeTarget,
-      matchType: 'exact',
-      preserveQuery: true
-    });
-    return withBaselineHeaders(req, NextResponse.redirect(new URL(destination), 301));
-  }
-
   const match = await resolveRedirect(req, normalizedPath);
-  if (!match) return withBaselineHeaders(req, NextResponse.next());
+  if (!match) {
+    const deterministicEpisodeTarget = getDeterministicLegacyEpisodeTarget(normalizedPath);
+    if (deterministicEpisodeTarget && deterministicEpisodeTarget !== normalizedPath) {
+      const destination = buildRedirectLocation({
+        requestUrl: req.nextUrl,
+        requestPath: normalizedPath,
+        sourcePath: normalizedPath,
+        targetUrl: deterministicEpisodeTarget,
+        matchType: 'exact',
+        preserveQuery: true
+      });
+      return withBaselineHeaders(req, NextResponse.redirect(new URL(destination), 301));
+    }
+
+    return withBaselineHeaders(req, NextResponse.next());
+  }
   if (match.status_code === 410) {
     return withBaselineHeaders(req, new NextResponse('Gone', { status: 410 }));
   }

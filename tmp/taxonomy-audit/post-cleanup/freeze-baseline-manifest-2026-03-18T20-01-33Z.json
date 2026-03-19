@@ -1,0 +1,11 @@
+{
+  "generated_at": "2026-03-18T20:01:33.534Z",
+  "table_count": 90,
+  "unified_count": 158,
+  "files": {
+    "table_json": "tmp/taxonomy-audit/post-cleanup/live-active-redirects-baseline-2026-03-18T20-01-33Z.json",
+    "table_csv": "tmp/taxonomy-audit/post-cleanup/live-active-redirects-baseline-2026-03-18T20-01-33Z.csv",
+    "unified_json": "tmp/taxonomy-audit/post-cleanup/unified-redirects-baseline-2026-03-18T20-01-33Z.json",
+    "unified_csv": "tmp/taxonomy-audit/post-cleanup/unified-redirects-baseline-2026-03-18T20-01-33Z.csv"
+  }
+}

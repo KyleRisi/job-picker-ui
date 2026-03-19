@@ -1,0 +1,69 @@
+{
+  "generated_at": "2026-03-18T20:01:21.840Z",
+  "snapshot": {
+    "current_json": "tmp/taxonomy-audit/post-cleanup/live-active-redirects-2026-03-18T19-57-10Z.json",
+    "current_csv": "tmp/taxonomy-audit/post-cleanup/live-active-redirects-2026-03-18T19-57-10Z.csv",
+    "pre_snapshot": "tmp/taxonomy-audit/live-active-redirects.json",
+    "pre_count": 230,
+    "current_count": 90
+  },
+  "totals": {
+    "rows_deleted": 140,
+    "deleted_source_paths": 140,
+    "deleted_resolve_correct": 96,
+    "deleted_broken": 0,
+    "deleted_suspicious": 0,
+    "deleted_policy_unsupported_legacy_aliases": 44
+  },
+  "high_risk": {
+    "deleted_podcast_rows": 140,
+    "deleted_podcast_policy_unsupported_legacy_aliases": 44,
+    "deleted_podcast_broken_or_suspicious": 0,
+    "non_podcast_action_required_count": 0,
+    "non_podcast_action_required_sample": [],
+    "remaining_podcast_exception_rows": 0,
+    "canonical_checks": [
+      {
+        "requested_url": "http://thecompendiumpodcast.com/",
+        "full_chain": "301 http://thecompendiumpodcast.com/ | 301 https://thecompendiumpodcast.com/ | 200 https://www.thecompendiumpodcast.com/",
+        "final_url": "https://www.thecompendiumpodcast.com/",
+        "final_status": 200
+      },
+      {
+        "requested_url": "https://thecompendiumpodcast.com/",
+        "full_chain": "301 https://thecompendiumpodcast.com/ | 200 https://www.thecompendiumpodcast.com/",
+        "final_url": "https://www.thecompendiumpodcast.com/",
+        "final_status": 200
+      },
+      {
+        "requested_url": "http://www.thecompendiumpodcast.com/",
+        "full_chain": "301 http://www.thecompendiumpodcast.com/ | 200 https://www.thecompendiumpodcast.com/",
+        "final_url": "https://www.thecompendiumpodcast.com/",
+        "final_status": 200
+      },
+      {
+        "requested_url": "https://www.thecompendiumpodcast.com/",
+        "full_chain": "200 https://www.thecompendiumpodcast.com/",
+        "final_url": "https://www.thecompendiumpodcast.com/",
+        "final_status": 200
+      }
+    ],
+    "legacy_blog_checks": [
+      {
+        "source_path": "/blog/jennifer-fairgate",
+        "full_chain": "404 https://www.thecompendiumpodcast.com/blog/jennifer-fairgate",
+        "final_url": "https://www.thecompendiumpodcast.com/blog/jennifer-fairgate",
+        "final_status": 404
+      },
+      {
+        "source_path": "/blog/emanuela-orlandi",
+        "full_chain": "404 https://www.thecompendiumpodcast.com/blog/emanuela-orlandi",
+        "final_url": "https://www.thecompendiumpodcast.com/blog/emanuela-orlandi",
+        "final_status": 404
+      }
+    ]
+  },
+  "outputs": {
+    "deleted_chain_checks_csv": "tmp/taxonomy-audit/post-cleanup/deleted-source-chain-checks-2026-03-18T19-57-10Z.csv"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "podcast_total": 134,
+  "duplicates": 90,
+  "exceptions": 44,
+  "reason_counts": {
+    "destination differs from simple pattern": 8,
+    "slug correction": 28,
+    "canonical content remap": 8
+  }
+}

@@ -1,0 +1,3 @@
+id,source_path,target_url,status_code,match_type,is_active,priority,source_type,source_ref,created_at,updated_at
+e9aebdbc-8b4b-4403-8d21-c4c7d6d66ba6,/podcast/the-compendium-of-fascinating-things/episode/blood-brothers-the-lyle-and-erik-menendez-story,/episodes/the-lindbergh-baby-the-kidnapping-of-americas-most-beloved-baby,301,exact,true,100,manual,,2026-03-18T18:27:21.107672+00:00,2026-03-18T18:27:21.107672+00:00
+0310f94a-c944-4226-b54c-68e63c68e6f9,/podcast/the-compendium-of-fascinating-things/episode/the-lindbergh-baby-the-kidnapping-of-americas-most-beloved-baby,/episodes/baby-jessica-the-girl-who-fell-down-a-well-and-changed-news-forever,301,exact,true,100,manual,,2026-03-18T18:27:21.107672+00:00,2026-03-18T18:27:21.107672+00:00

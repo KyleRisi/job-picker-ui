@@ -1,0 +1,71 @@
+{
+  "generated_at": "2026-03-18T17:32:27.245Z",
+  "total_active_rows": 230,
+  "source_types_present": [
+    "blog_slug",
+    "manual",
+    "taxonomy_route_policy"
+  ],
+  "group_summary": {
+    "taxonomy_archive": {
+      "active_row_count": 62,
+      "count_410": 24,
+      "count_302_307": 0,
+      "prefix_rule_count": 0,
+      "suspicious_duplicates_count": 0,
+      "suspicious_duplicates": [],
+      "conflicting_source_path_entries_count": 0,
+      "conflicting_source_path_entries": [],
+      "exact_prefix_overlaps_count": 0,
+      "exact_prefix_overlaps": []
+    },
+    "blog_slug": {
+      "active_row_count": 2,
+      "count_410": 0,
+      "count_302_307": 0,
+      "prefix_rule_count": 0,
+      "suspicious_duplicates_count": 0,
+      "suspicious_duplicates": [],
+      "conflicting_source_path_entries_count": 0,
+      "conflicting_source_path_entries": [],
+      "exact_prefix_overlaps_count": 0,
+      "exact_prefix_overlaps": []
+    },
+    "blog_import": {
+      "active_row_count": 0,
+      "count_410": 0,
+      "count_302_307": 0,
+      "prefix_rule_count": 0,
+      "suspicious_duplicates_count": 0,
+      "suspicious_duplicates": [],
+      "conflicting_source_path_entries_count": 0,
+      "conflicting_source_path_entries": [],
+      "exact_prefix_overlaps_count": 0,
+      "exact_prefix_overlaps": []
+    },
+    "manual/editorial": {
+      "active_row_count": 166,
+      "count_410": 0,
+      "count_302_307": 0,
+      "prefix_rule_count": 0,
+      "suspicious_duplicates_count": 0,
+      "suspicious_duplicates": [],
+      "conflicting_source_path_entries_count": 0,
+      "conflicting_source_path_entries": [],
+      "exact_prefix_overlaps_count": 0,
+      "exact_prefix_overlaps": []
+    },
+    "unknown/other": {
+      "active_row_count": 0,
+      "count_410": 0,
+      "count_302_307": 0,
+      "prefix_rule_count": 0,
+      "suspicious_duplicates_count": 0,
+      "suspicious_duplicates": [],
+      "conflicting_source_path_entries_count": 0,
+      "conflicting_source_path_entries": [],
+      "exact_prefix_overlaps_count": 0,
+      "exact_prefix_overlaps": []
+    }
+  }
+}

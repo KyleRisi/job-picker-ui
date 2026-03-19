@@ -112,21 +112,6 @@ const nextConfig = {
         source: '/admin/:path+',
         destination: '/workspace/dashboard',
         permanent: false
-      },
-      {
-        source: '/episodes/episode-:episodeNumber(\\d+)-:slug*',
-        destination: '/episodes/:slug*',
-        permanent: true
-      },
-      {
-        source: '/episode/:slug*',
-        destination: '/episodes/:slug*',
-        permanent: true
-      },
-      {
-        source: '/podcast/the-compendium-of-fascinating-things/episode/:slug*',
-        destination: '/episodes/:slug*',
-        permanent: true
       }
     ];
   },

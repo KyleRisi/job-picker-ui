@@ -195,7 +195,6 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
                 fill
                 sizes="(max-width: 639px) 280px, (max-width: 1023px) 320px, 360px"
                 className="object-cover"
-                unoptimized
                 priority
                 fetchPriority="high"
               />

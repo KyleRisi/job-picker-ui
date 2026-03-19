@@ -90,7 +90,6 @@ export function MainNav() {
             height={60}
             className="h-auto w-[130px] md:w-[200px] object-contain"
             sizes="(max-width: 768px) 130px, 200px"
-            priority
           />
         </Link>
 

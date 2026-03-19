@@ -1,4 +1,5 @@
 import fallbackReviewsData from '@/lib/reviews-data.json';
+import { unstable_cache } from 'next/cache';
 import { createSupabaseAdminClient } from '@/lib/supabase';
 
 export type ReviewSource = 'apple' | 'website' | 'manual' | 'scraped';
@@ -53,24 +54,54 @@ function getFallbackPublicReviews(limit?: number): PublicReview[] {
 }
 
 export async function getVisibleReviews(limit?: number): Promise<PublicReview[]> {
-  const supabase = createSupabaseAdminClient();
-  let query = supabase
-    .from('reviews')
-    .select('id,title,body,rating,author,country,source,status,received_at')
-    .eq('status', 'visible')
-    .order('received_at', { ascending: false });
-
-  if (typeof limit === 'number') {
-    query = query.limit(limit);
-  }
-
-  const { data, error } = await query;
-  if (error || !data?.length) {
-    return getFallbackPublicReviews(limit);
-  }
-
-  return (data as ReviewRow[]).map(toPublicReview);
+  return getVisibleReviewsCached(limit ?? null);
 }
+
+const getVisibleReviewsCached = unstable_cache(
+  async (limit: number | null): Promise<PublicReview[]> => {
+    const supabase = createSupabaseAdminClient();
+    let query = supabase
+      .from('reviews')
+      .select('id,title,body,rating,author,country,source,status,received_at')
+      .eq('status', 'visible')
+      .order('received_at', { ascending: false });
+
+    if (typeof limit === 'number') {
+      query = query.limit(limit);
+    }
+
+    const { data, error } = await query;
+    if (error || !data?.length) {
+      return getFallbackPublicReviews(typeof limit === 'number' ? limit : undefined);
+    }
+
+    return (data as ReviewRow[]).map(toPublicReview);
+  },
+  ['reviews-visible-v1'],
+  { revalidate: 300, tags: ['reviews'] }
+);
+
+export async function getVisibleReviewsCount(): Promise<number> {
+  return getVisibleReviewsCountCached();
+}
+
+const getVisibleReviewsCountCached = unstable_cache(
+  async (): Promise<number> => {
+    const supabase = createSupabaseAdminClient();
+    const { count, error } = await supabase
+      .from('reviews')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'visible');
+
+    if (error || typeof count !== 'number') {
+      return getFallbackPublicReviews().length;
+    }
+
+    return count;
+  },
+  ['reviews-visible-count-v1'],
+  { revalidate: 300, tags: ['reviews'] }
+);
 
 export async function getVisibleReviewsPage(
   page = 1,
@@ -79,6 +110,7 @@ export async function getVisibleReviewsPage(
   reviews: PublicReview[];
   pagination: { page: number; totalPages: number; total: number; pageSize: number };
 }> {
+  const supabase = createSupabaseAdminClient();
   const normalizedPageSize = Number.isFinite(pageSize) && pageSize > 0 ? Math.floor(pageSize) : 12;
   const requestedPage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
   const total = await getVisibleReviewsCount();
@@ -122,20 +154,6 @@ export async function getVisibleReviewsPage(
       pageSize: normalizedPageSize
     }
   };
-}
-
-export async function getVisibleReviewsCount(): Promise<number> {
-  const supabase = createSupabaseAdminClient();
-  const { count, error } = await supabase
-    .from('reviews')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'visible');
-
-  if (error || typeof count !== 'number') {
-    return getFallbackPublicReviews().length;
-  }
-
-  return count;
 }
 
 export async function createWebsiteReview(input: {

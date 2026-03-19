@@ -149,9 +149,7 @@ export function shouldSkipRedirectLookup(pathname: string): boolean {
     pathname.startsWith('/api') ||
     pathname.startsWith('/admin') ||
     pathname.startsWith('/_next') ||
-    pathname.startsWith('/auth') ||
-    pathname.startsWith('/episodes/') ||
-    pathname.startsWith('/blog/')
+    pathname.startsWith('/auth')
   ) {
     return true;
   }

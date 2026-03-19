@@ -110,7 +110,6 @@ export async function getVisibleReviewsPage(
   reviews: PublicReview[];
   pagination: { page: number; totalPages: number; total: number; pageSize: number };
 }> {
-  const supabase = createSupabaseAdminClient();
   const normalizedPageSize = Number.isFinite(pageSize) && pageSize > 0 ? Math.floor(pageSize) : 12;
   const requestedPage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
   const total = await getVisibleReviewsCount();

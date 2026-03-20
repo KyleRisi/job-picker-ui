@@ -363,17 +363,21 @@ async function getPodcastEpisodesFromDatabase(
     const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase
       .from('podcast_episodes')
-      .select('*')
+      .select('*, podcast_episode_editorial(web_title)')
       .eq('is_visible', true)
       .eq('is_archived', false)
       .order('published_at', { ascending: false });
     if (error) return null;
     if (!data || data.length === 0) return null;
 
-    const episodes = data.map((episode) => ({
-      id: episode.id,
-      slug: episode.slug,
-      title: episode.title,
+    const episodes = data.map((episode) => {
+      const editorial = Array.isArray(episode.podcast_episode_editorial)
+        ? episode.podcast_episode_editorial[0]
+        : episode.podcast_episode_editorial;
+      return {
+        id: episode.id,
+        slug: episode.slug,
+        title: editorial?.web_title || episode.title,
       seasonNumber: episode.season_number ?? null,
       episodeNumber: episode.episode_number ?? null,
       publishedAt: episode.published_at || new Date(0).toISOString(),
@@ -383,7 +387,8 @@ async function getPodcastEpisodesFromDatabase(
       artworkUrl: episode.artwork_url,
       duration: formatDurationFromSeconds(episode.duration_seconds),
       sourceUrl: episode.source_url || null
-    }));
+    };
+    });
 
     if (typeof options.limit === 'number' && Number.isFinite(options.limit) && options.limit > 0) {
       return episodes.slice(0, options.limit);

@@ -111,6 +111,7 @@ function revalidateEpisodePaths(slug: string) {
   if (!value) return;
   revalidatePath(`/episodes/${value}`);
   revalidatePath(`/workspace/dashboard/episodes/${value}`);
+  revalidatePath('/workspace/dashboard/episodes');
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {

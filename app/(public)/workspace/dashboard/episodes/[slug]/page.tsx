@@ -180,7 +180,7 @@ export default async function EpisodeEditorPage({ params }: { params: Promise<{ 
     revisions: [],
     seo_title: editorial?.seoTitle || episode.seoTitle || null,
     seo_description: editorial?.metaDescription || null,
-    focus_keyword: null,
+    focus_keyword: editorial?.focusKeyword || null,
     canonical_url: editorial?.canonicalUrlOverride || episode.canonicalUrl || null,
     noindex: episode.noindex,
     nofollow: episode.nofollow,

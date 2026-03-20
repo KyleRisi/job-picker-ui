@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { type PodcastEpisode, formatEpisodeDate } from '@/lib/podcast-shared';
 
 type SortMode = 'newest' | 'oldest' | 'title';
@@ -22,10 +23,34 @@ export function AdminEpisodesTable({
   episodes: PodcastEpisode[];
   onFilteredCountChange?: (count: number) => void;
 }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [query, setQuery] = useState('');
   const [yearFilter, setYearFilter] = useState('all');
   const [sortMode, setSortMode] = useState<SortMode>('newest');
-  const [page, setPage] = useState(1);
+
+  const pageFromUrl = Number(searchParams.get('page')) || 1;
+  const [page, setPageLocal] = useState(pageFromUrl);
+
+  const setPage = useCallback(
+    (next: number | ((prev: number) => number)) => {
+      setPageLocal((prev) => {
+        const resolved = typeof next === 'function' ? next(prev) : next;
+        const params = new URLSearchParams(searchParams.toString());
+        if (resolved <= 1) {
+          params.delete('page');
+        } else {
+          params.set('page', String(resolved));
+        }
+        const qs = params.toString();
+        router.replace(`${pathname}${qs ? `?${qs}` : ''}`, { scroll: false });
+        return resolved;
+      });
+    },
+    [searchParams, router, pathname]
+  );
 
   const years = useMemo(() => {
     const unique = new Set<string>();

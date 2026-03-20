@@ -1,6 +1,6 @@
 import { XMLParser } from 'fast-xml-parser';
 import { unstable_cache } from 'next/cache';
-import { formatEpisodeDate, type PodcastEpisode } from './podcast-shared';
+import { formatEpisodeDate, hasTranscriptContent, type PodcastEpisode } from './podcast-shared';
 export type { PodcastEpisode } from './podcast-shared';
 
 const DEFAULT_PODCAST_RSS_FEED_URL = 'https://feeds.simplecast.com/Sci7Fqgp';
@@ -18,6 +18,7 @@ const xmlParser = new XMLParser({
 
 type GetPodcastEpisodesOptions = {
   includeDescriptionHtml?: boolean;
+  includeEditorialMeta?: boolean;
   descriptionMaxLength?: number | null;
   limit?: number | null;
 };
@@ -355,35 +356,174 @@ const getCachedParsedPodcastFeed = unstable_cache(fetchAndParsePodcastFeed, ['po
   revalidate: PODCAST_FEED_REVALIDATE_SECONDS
 });
 
+async function loadPrimaryTopicsForEpisodes(
+  supabase: ReturnType<typeof import('./supabase').createSupabaseAdminClient>,
+  episodeIds: string[]
+): Promise<Map<string, { name: string; slug: string; path: string | null }>> {
+  const map = new Map<string, { name: string; slug: string; path: string | null }>();
+  if (!episodeIds.length) return map;
+
+  // Load ALL discovery term links (not just is_primary) ordered by sort_order,
+  // matching the editor which picks the first topic-type term by sort_order.
+  const { data: links, error: linksError } = await supabase
+    .from('episode_discovery_terms')
+    .select('episode_id, term_id')
+    .in('episode_id', episodeIds)
+    .order('sort_order', { ascending: true });
+
+  if (linksError || !links?.length) return map;
+
+  const termIds = [...new Set(links.map((l) => l.term_id as string))];
+  const { data: terms, error: termsError } = await supabase
+    .from('discovery_terms')
+    .select('id, name, slug, term_type')
+    .in('id', termIds)
+    .eq('term_type', 'topic')
+    .eq('is_active', true);
+
+  if (termsError || !terms?.length) return map;
+
+  const topicTermIds = new Set(terms.map((t) => t.id as string));
+  const termsById = new Map(terms.map((t) => [t.id as string, t]));
+
+  // For each episode, take the first link whose term is a topic (by sort_order).
+  for (const link of links) {
+    const eid = link.episode_id as string;
+    if (map.has(eid)) continue; // already found the first topic for this episode
+    if (!topicTermIds.has(link.term_id as string)) continue;
+    const term = termsById.get(link.term_id as string)!;
+    map.set(eid, {
+      name: term.name as string,
+      slug: term.slug as string,
+      path: `/topics/${term.slug as string}`
+    });
+  }
+  return map;
+}
+
+async function loadHasRelatedEpisodes(
+  supabase: ReturnType<typeof import('./supabase').createSupabaseAdminClient>,
+  episodeIds: string[]
+): Promise<Set<string>> {
+  const result = new Set<string>();
+  if (!episodeIds.length) return result;
+
+  const { data, error } = await supabase
+    .from('episode_relationships')
+    .select('source_episode_id')
+    .in('source_episode_id', episodeIds);
+
+  if (error || !data?.length) return result;
+  for (const row of data) {
+    result.add(row.source_episode_id as string);
+  }
+  return result;
+}
+
 async function getPodcastEpisodesFromDatabase(
   options: GetPodcastEpisodesOptions = {}
 ): Promise<PodcastEpisode[] | null> {
   try {
     const { createSupabaseAdminClient } = await import('./supabase');
     const supabase = createSupabaseAdminClient();
+
+    const editorialSelect = options.includeEditorialMeta
+      ? 'podcast_episode_editorial(web_title, seo_title, meta_description, body_json, excerpt, author_id, focus_keyword)'
+      : 'podcast_episode_editorial(web_title)';
+
     const { data, error } = await supabase
       .from('podcast_episodes')
-      .select('*')
+      .select(`*, ${editorialSelect}`)
       .eq('is_visible', true)
       .eq('is_archived', false)
       .order('published_at', { ascending: false });
     if (error) return null;
     if (!data || data.length === 0) return null;
 
-    const episodes = data.map((episode) => ({
-      id: episode.id,
-      slug: episode.slug,
-      title: episode.title,
-      seasonNumber: episode.season_number ?? null,
-      episodeNumber: episode.episode_number ?? null,
-      publishedAt: episode.published_at || new Date(0).toISOString(),
-      description: truncateText(episode.description_plain, options.descriptionMaxLength ?? DEFAULT_LIST_DESCRIPTION_MAX_LENGTH),
-      descriptionHtml: options.includeDescriptionHtml ? toSafeHtml(episode.description_html) : '',
-      audioUrl: episode.audio_url,
-      artworkUrl: episode.artwork_url,
-      duration: formatDurationFromSeconds(episode.duration_seconds),
-      sourceUrl: episode.source_url || null
-    }));
+    // When editorial meta is requested, load primary topics and related episode presence in one batch.
+    let primaryTopicMap = new Map<string, { name: string; slug: string; path: string | null }>();
+    let hasRelatedEpisodeSet = new Set<string>();
+    let blogContent: Awaited<typeof import('./blog/content')> | null = null;
+    let hasAnyAuthors = false;
+    if (options.includeEditorialMeta) {
+      const ids = data.map((e) => e.id as string);
+      const [topicMap, relatedSet, content, authorCountResult] = await Promise.all([
+        loadPrimaryTopicsForEpisodes(supabase, ids),
+        loadHasRelatedEpisodes(supabase, ids),
+        import('./blog/content'),
+        supabase.from('blog_authors').select('id', { count: 'exact', head: true }).eq('is_archived', false)
+      ]);
+      primaryTopicMap = topicMap;
+      hasRelatedEpisodeSet = relatedSet;
+      blogContent = content;
+      hasAnyAuthors = (authorCountResult.count ?? 0) > 0;
+    }
+
+    const episodes: PodcastEpisode[] = data.map((episode) => {
+      const editorial = Array.isArray(episode.podcast_episode_editorial)
+        ? episode.podcast_episode_editorial[0]
+        : episode.podcast_episode_editorial;
+
+      const base: PodcastEpisode = {
+        id: episode.id,
+        slug: episode.slug,
+        title: editorial?.web_title || episode.title,
+        seasonNumber: episode.season_number ?? null,
+        episodeNumber: episode.episode_number ?? null,
+        publishedAt: episode.published_at || new Date(0).toISOString(),
+        description: truncateText(episode.description_plain, options.descriptionMaxLength ?? DEFAULT_LIST_DESCRIPTION_MAX_LENGTH),
+        descriptionHtml: options.includeDescriptionHtml ? toSafeHtml(episode.description_html) : '',
+        audioUrl: episode.audio_url,
+        artworkUrl: episode.artwork_url,
+        duration: formatDurationFromSeconds(episode.duration_seconds),
+        sourceUrl: episode.source_url || null
+      };
+
+      if (options.includeEditorialMeta) {
+        base.seoTitle = editorial?.seo_title ?? null;
+        base.metaDescription = editorial?.meta_description ?? null;
+        base.hasTranscript = hasTranscriptContent(editorial?.body_json);
+        const topic = primaryTopicMap.get(episode.id as string);
+        if (topic) {
+          base.primaryTopicName = topic.name;
+          base.primaryTopicSlug = topic.slug;
+          base.primaryTopicPath = topic.path;
+        }
+
+        // Compute SEO score using the same document hydration the editor uses:
+        // if the editorial body has no non-transcript blocks, fall back to a
+        // document built from the source RSS description so the score matches.
+        const rawBodyJson: unknown[] = Array.isArray(editorial?.body_json) ? editorial.body_json : [];
+        const nonTranscriptBlocks = rawBodyJson.filter((b: any) => b?.type !== 'transcript');
+        const transcriptBlocks = rawBodyJson.filter((b: any) => b?.type === 'transcript');
+        let hydratedBodyJson: unknown[] = rawBodyJson;
+        if (nonTranscriptBlocks.length === 0) {
+          const sourcePlain = (episode.description_html || episode.description_plain || '').trim();
+          if (sourcePlain) {
+            const sourceDoc = blogContent!.markdownToBlogDocument(sourcePlain);
+            hydratedBodyJson = sourceDoc.length > 0
+              ? [...sourceDoc, ...transcriptBlocks]
+              : rawBodyJson;
+          }
+        }
+        const document = blogContent!.normalizeBlogDocument(hydratedBodyJson);
+        const seoResult = blogContent!.buildSeoChecklist({
+          title: base.title,
+          seoTitle: editorial?.seo_title || null,
+          seoDescription: editorial?.meta_description || null,
+          focusKeyword: (editorial?.focus_keyword as string) || null,
+          canonicalUrl: null,
+          document,
+          excerpt: editorial?.excerpt || null,
+          hasAuthor: Boolean(editorial?.author_id) || hasAnyAuthors,
+          hasPrimaryCategory: Boolean(topic),
+          hasLinkedEpisode: hasRelatedEpisodeSet.has(episode.id as string)
+        });
+        base.seoScore = seoResult.score;
+      }
+
+      return base;
+    });
 
     if (typeof options.limit === 'number' && Number.isFinite(options.limit) && options.limit > 0) {
       return episodes.slice(0, options.limit);

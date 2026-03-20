@@ -2920,6 +2920,7 @@ export function WorkspaceBlogEditor({
       heroImageStoragePath: heroStoragePath,
       seoTitle: seoTitle.trim() || null,
       metaDescription: seoDescription.trim() || null,
+      focusKeyword: focusKeyword.trim() || null,
       canonicalUrlOverride: canonicalUrl.trim() || null,
       socialTitle: socialTitle.trim() || null,
       socialDescription: socialDescription.trim() || null,

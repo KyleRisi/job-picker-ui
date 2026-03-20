@@ -5,7 +5,37 @@ import { type MouseEvent as ReactMouseEvent, type ReactNode, useEffect, useLayou
 import { useRouter } from 'next/navigation';
 import { type PodcastEpisode, formatEpisodeDate } from '@/lib/podcast-shared';
 
-type SortMode = 'newest' | 'oldest' | 'title';
+type SortDirection = 'asc' | 'desc';
+type SortState = { column: ColumnKey; direction: SortDirection };
+
+const SORTABLE_COLUMNS = new Set<ColumnKey>([
+  'title',
+  'episodeNumber',
+  'publishedAt',
+  'duration',
+  'seasonNumber',
+  'primaryTopic',
+  'seoTitleLen',
+  'metaDescLen',
+  'seoScore',
+  'hasTranscript'
+]);
+
+function getSortValue(episode: PodcastEpisode, column: ColumnKey): string | number {
+  switch (column) {
+    case 'title': return episode.title.toLowerCase();
+    case 'episodeNumber': return episode.episodeNumber ?? -1;
+    case 'publishedAt': return toDateMs(episode.publishedAt);
+    case 'duration': return episode.duration || '';
+    case 'seasonNumber': return episode.seasonNumber ?? -1;
+    case 'primaryTopic': return (episode.primaryTopicName || '').toLowerCase();
+    case 'seoTitleLen': return (episode.seoTitle || '').trim().length;
+    case 'metaDescLen': return (episode.metaDescription || '').trim().length;
+    case 'seoScore': return episode.seoScore ?? 0;
+    case 'hasTranscript': return episode.hasTranscript ? 1 : 0;
+    default: return 0;
+  }
+}
 
 type ColumnKey =
   | 'id'
@@ -20,6 +50,11 @@ type ColumnKey =
   | 'sourceUrl'
   | 'description'
   | 'descriptionHtml'
+  | 'primaryTopic'
+  | 'seoTitleLen'
+  | 'metaDescLen'
+  | 'seoScore'
+  | 'hasTranscript'
   | 'actions';
 
 type EditableColumnKey = Exclude<ColumnKey, 'actions'>;
@@ -36,6 +71,7 @@ type EditableColumnDefinition = Omit<ColumnDefinition, 'key'> & { key: EditableC
 
 const PAGE_SIZE = 25;
 const WORKSPACE_EPISODES_COLUMNS_KEY = 'workspace_episodes_visible_columns';
+const WORKSPACE_EPISODES_PAGE_KEY = 'workspace_episodes_page';
 const MIN_COLUMN_WIDTH = 80;
 const MAX_COLUMN_WIDTH = 1200;
 const FIXED_COLUMN: ColumnKey = 'actions';
@@ -187,6 +223,62 @@ const ALL_COLUMNS: ColumnDefinition[] = [
     render: (episode) => <span title={episode.descriptionHtml}>{compactValue(episode.descriptionHtml, 120)}</span>
   },
   {
+    key: 'primaryTopic',
+    label: 'Primary Topic',
+    width: 180,
+    headClassName: 'whitespace-nowrap',
+    cellClassName: 'whitespace-nowrap text-slate-700',
+    render: (episode) => episode.primaryTopicName ? <span title={episode.primaryTopicName}>{compactValue(episode.primaryTopicName, 28)}</span> : <span className="text-slate-400">&ndash;</span>
+  },
+  {
+    key: 'seoTitleLen',
+    label: 'SEO Title Len',
+    width: 130,
+    headClassName: 'whitespace-nowrap text-center',
+    cellClassName: 'whitespace-nowrap text-center text-slate-700',
+    render: (episode) => {
+      const val = (episode.seoTitle || '').trim();
+      if (!val) return <span className="text-slate-400">&ndash;</span>;
+      const len = val.length;
+      const color = len >= 50 && len <= 60 ? 'text-emerald-600' : 'text-amber-600';
+      return <span className={color}>{len}</span>;
+    }
+  },
+  {
+    key: 'metaDescLen',
+    label: 'Meta Desc Len',
+    width: 140,
+    headClassName: 'whitespace-nowrap text-center',
+    cellClassName: 'whitespace-nowrap text-center text-slate-700',
+    render: (episode) => {
+      const val = (episode.metaDescription || '').trim();
+      if (!val) return <span className="text-slate-400">&ndash;</span>;
+      const len = val.length;
+      const color = len >= 140 && len <= 158 ? 'text-emerald-600' : 'text-amber-600';
+      return <span className={color}>{len}</span>;
+    }
+  },
+  {
+    key: 'seoScore',
+    label: 'SEO Score',
+    width: 120,
+    headClassName: 'whitespace-nowrap text-center',
+    cellClassName: 'whitespace-nowrap text-center text-slate-700',
+    render: (episode) => {
+      const score = episode.seoScore ?? 0;
+      const color = score >= 80 ? 'text-emerald-600' : score >= 40 ? 'text-amber-600' : 'text-rose-600';
+      return <span className={`font-medium ${color}`}>{score}</span>;
+    }
+  },
+  {
+    key: 'hasTranscript',
+    label: 'Transcript',
+    width: 110,
+    headClassName: 'whitespace-nowrap',
+    cellClassName: 'whitespace-nowrap text-center text-slate-700',
+    render: (episode) => episode.hasTranscript ? <span className="text-emerald-600">✓</span> : <span className="text-slate-400">&ndash;</span>
+  },
+  {
     key: 'actions',
     label: 'Actions',
     width: ACTIONS_COLUMN_WIDTH,
@@ -269,13 +361,23 @@ function toColumnWidths(value?: Partial<Record<ColumnKey, number>>): Record<Colu
   };
 }
 
-function persistTableConfig(columns: EditableColumnKey[], widths: Record<ColumnKey, number>) {
+function toPersistedSort(value: unknown): SortState | null {
+  if (!value || typeof value !== 'object') return null;
+  const { column, direction } = value as Record<string, unknown>;
+  if (typeof column !== 'string' || typeof direction !== 'string') return null;
+  if (!SORTABLE_COLUMNS.has(column as ColumnKey)) return null;
+  if (direction !== 'asc' && direction !== 'desc') return null;
+  return { column: column as ColumnKey, direction: direction as SortDirection };
+}
+
+function persistTableConfig(columns: EditableColumnKey[], widths: Record<ColumnKey, number>, sort: SortState) {
   try {
     window.localStorage.setItem(
       WORKSPACE_EPISODES_COLUMNS_KEY,
       JSON.stringify({
         columns,
-        widths
+        widths,
+        sort
       })
     );
   } catch {
@@ -287,8 +389,16 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [yearFilter, setYearFilter] = useState('all');
-  const [sortMode, setSortMode] = useState<SortMode>('newest');
-  const [page, setPage] = useState(1);
+  const [sort, setSort] = useState<SortState>({ column: 'publishedAt', direction: 'desc' });
+  const [page, setPageRaw] = useState(1);
+
+  const setPage = (next: number | ((prev: number) => number)) => {
+    setPageRaw((prev) => {
+      const resolved = typeof next === 'function' ? next(prev) : next;
+      try { window.sessionStorage.setItem(WORKSPACE_EPISODES_PAGE_KEY, String(resolved)); } catch {}
+      return resolved;
+    });
+  };
   const [visibleColumns, setVisibleColumns] = useState<EditableColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
   const [columnWidths, setColumnWidths] = useState<Record<ColumnKey, number>>(DEFAULT_COLUMN_WIDTHS);
   const [columnEditorOpen, setColumnEditorOpen] = useState(false);
@@ -302,6 +412,14 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
   const columnsRef = useRef(visibleColumns);
 
   useLayoutEffect(() => {
+    try {
+      const storedPage = window.sessionStorage.getItem(WORKSPACE_EPISODES_PAGE_KEY);
+      if (storedPage) {
+        const parsed = Number(storedPage);
+        if (parsed >= 1) setPageRaw(parsed);
+      }
+    } catch {}
+
     try {
       const raw = window.localStorage.getItem(WORKSPACE_EPISODES_COLUMNS_KEY);
       if (!raw) return;
@@ -318,12 +436,14 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
 
       const restoredColumns = toPersistedColumns((parsed as { columns?: unknown }).columns);
       const restoredWidths = toPersistedWidths((parsed as { widths?: unknown }).widths);
+      const restoredSort = toPersistedSort((parsed as { sort?: unknown }).sort);
 
       if (restoredColumns.length) {
         setVisibleColumns(restoredColumns);
         setDraftColumns(restoredColumns);
       }
       setColumnWidths(toColumnWidths(restoredWidths));
+      if (restoredSort) setSort(restoredSort);
     } catch {
       // Ignore storage parse errors and keep defaults.
     } finally {
@@ -333,8 +453,8 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
 
   useEffect(() => {
     if (!configRestored) return;
-    persistTableConfig(visibleColumns, columnWidths);
-  }, [visibleColumns, columnWidths, configRestored]);
+    persistTableConfig(visibleColumns, columnWidths, sort);
+  }, [visibleColumns, columnWidths, sort, configRestored]);
 
   useEffect(() => {
     widthsRef.current = columnWidths;
@@ -361,7 +481,7 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
     };
 
     const onMouseUp = () => {
-      persistTableConfig(columnsRef.current, widthsRef.current);
+      persistTableConfig(columnsRef.current, widthsRef.current, sort);
       setResizing(null);
     };
 
@@ -410,23 +530,20 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
     });
 
     const sorted = [...filtered];
-
-    if (sortMode === 'title') {
-      sorted.sort((a, b) => a.title.localeCompare(b.title));
-      return sorted;
-    }
+    const { column, direction } = sort;
+    const multiplier = direction === 'asc' ? 1 : -1;
 
     sorted.sort((a, b) => {
-      if (sortMode === 'oldest') return toDateMs(a.publishedAt) - toDateMs(b.publishedAt);
-      return toDateMs(b.publishedAt) - toDateMs(a.publishedAt);
+      const aVal = getSortValue(a, column);
+      const bVal = getSortValue(b, column);
+      if (typeof aVal === 'string' && typeof bVal === 'string') return multiplier * aVal.localeCompare(bVal);
+      return multiplier * ((aVal as number) - (bVal as number));
     });
 
     return sorted;
-  }, [episodes, query, sortMode, yearFilter]);
+  }, [episodes, query, sort, yearFilter]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [query, yearFilter, sortMode]);
+
 
   const totalPages = Math.max(1, Math.ceil(filteredEpisodes.length / PAGE_SIZE));
 
@@ -504,7 +621,7 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
     if (!normalized.length) return;
 
     setVisibleColumns(normalized);
-    persistTableConfig(normalized, columnWidths);
+    persistTableConfig(normalized, columnWidths, sort);
     setColumnEditorOpen(false);
   }
 
@@ -564,14 +681,14 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
             <span className="relative inline-block">
               <input
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => { setQuery(event.target.value); setPage(1); }}
                 placeholder="Title, slug, or episode #"
                 className="h-8 w-72 rounded-md border border-slate-300 px-2 py-1 pr-7 text-xs"
               />
               {query ? (
                 <button
                   type="button"
-                  onClick={() => setQuery('')}
+                  onClick={() => { setQuery(''); setPage(1); }}
                   className="absolute right-1.5 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded text-slate-400 hover:text-slate-700"
                   aria-label="Clear search"
                 >
@@ -588,7 +705,7 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
             <span className="relative inline-block">
               <select
                 value={yearFilter}
-                onChange={(event) => setYearFilter(event.target.value)}
+                onChange={(event) => { setYearFilter(event.target.value); setPage(1); }}
                 className="h-8 w-auto min-w-[8rem] appearance-none rounded-md border border-slate-300 px-2 py-1 pr-7 text-xs"
               >
                 <option value="all">All years</option>
@@ -608,27 +725,7 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
             </span>
           </label>
 
-          <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-            <span>Sort</span>
-            <span className="relative inline-block">
-              <select
-                value={sortMode}
-                onChange={(event) => setSortMode(event.target.value as SortMode)}
-                className="h-8 w-auto min-w-[10rem] appearance-none rounded-md border border-slate-300 px-2 py-1 pr-7 text-xs"
-              >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-                <option value="title">Title A-Z</option>
-              </select>
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 10 6"
-                className="pointer-events-none absolute right-2 top-1/2 h-[0.5rem] w-[0.5rem] -translate-y-1/2 fill-slate-600"
-              >
-                <path d="M5 6L0 0h10L5 6z" />
-              </svg>
-            </span>
-          </label>
+
         </div>
 
         <button
@@ -655,10 +752,24 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
                 return (
                   <th
                     key={column.key}
-                    className={`relative border-l border-slate-300 py-2 font-semibold ${column.headClassName || ''} ${isFixed ? 'sticky right-0 z-20 bg-slate-100 px-2 text-left shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.25)]' : 'px-3'}`}
+                    className={`relative border-l border-slate-300 py-2 font-semibold ${column.headClassName || ''} ${isFixed ? 'sticky right-0 z-20 bg-slate-100 px-2 text-left shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.25)]' : 'px-3'} ${SORTABLE_COLUMNS.has(column.key) ? 'cursor-pointer select-none' : ''}`}
                     style={{ borderLeftWidth: '0.5px' }}
+                    onClick={SORTABLE_COLUMNS.has(column.key) ? () => {
+                      setSort((prev) => prev.column === column.key
+                        ? { column: column.key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+                        : { column: column.key, direction: 'asc' }
+                      );
+                      setPage(1);
+                    } : undefined}
                   >
-                  <span className="pr-2">{column.label}</span>
+                  <span className="inline-flex items-center gap-1 pr-2">
+                    {column.label}
+                    {SORTABLE_COLUMNS.has(column.key) ? (
+                      <svg aria-hidden="true" viewBox="0 0 8 14" className={`h-3 w-2 shrink-0 ${sort.column === column.key ? 'fill-slate-800' : 'fill-slate-400'}`}>
+                        <path d={sort.column === column.key && sort.direction === 'desc' ? 'M4 10l4-5H0z' : sort.column === column.key && sort.direction === 'asc' ? 'M4 4L0 9h8z' : 'M4 0l4 5H0zM4 14l4-5H0z'} />
+                      </svg>
+                    ) : null}
+                  </span>
                   <button
                     type="button"
                     onMouseDown={(event) => startColumnResize(column.key, event)}

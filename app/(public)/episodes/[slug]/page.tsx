@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
   return {
     title: {
-      absolute: `${episode.seoTitle} | The Compendium Podcast`
+      absolute: episode.seoTitle
     },
     description: episode.metaDescription || undefined,
     alternates: {

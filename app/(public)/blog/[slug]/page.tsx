@@ -87,7 +87,9 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
       ? getStoragePublicUrl(post.featured_image.storage_path)
       : '/The Compendium Main.jpg';
   return {
-    title: post.seo_title || post.title,
+    title: {
+      absolute: post.seo_title || post.title
+    },
     description,
     alternates: { canonical: canonicalValue },
     robots: {

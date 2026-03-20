@@ -13,7 +13,7 @@ export default async function WorkspaceEpisodesPage() {
   let feedError = '';
 
   try {
-    episodes = await getPodcastEpisodes({ descriptionMaxLength: 520 });
+    episodes = await getPodcastEpisodes({ descriptionMaxLength: 520, includeEditorialMeta: true });
   } catch (error) {
     feedError = 'Could not load episodes from the RSS feed right now.';
     console.error('Workspace episodes feed failed to load:', error);

@@ -5,6 +5,10 @@ export type PodcastEpisode = {
   primaryTopicName?: string | null;
   primaryTopicPath?: string | null;
   primaryTopicSlug?: string | null;
+  seoTitle?: string | null;
+  metaDescription?: string | null;
+  seoScore?: number | null;
+  hasTranscript?: boolean;
   seasonNumber: number | null;
   episodeNumber: number | null;
   publishedAt: string;
@@ -82,6 +86,7 @@ export type EpisodeEditorialSnapshot = {
   isVisible: boolean;
   isArchived: boolean;
   editorialNotes: string | null;
+  focusKeyword: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 };
@@ -169,4 +174,16 @@ export function formatEpisodeDate(isoDate: string): string {
     month: 'long',
     year: 'numeric'
   }).format(parsed);
+}
+
+export function hasTranscriptContent(bodyJson: unknown): boolean {
+  if (!Array.isArray(bodyJson)) return false;
+  const block = bodyJson.find(
+    (b: Record<string, unknown>) => b && typeof b === 'object' && b.type === 'transcript'
+  );
+  if (!block || !Array.isArray(block.content)) return false;
+  return block.content.some(
+    (node: Record<string, unknown>) =>
+      node && node.type === 'text' && typeof node.text === 'string' && node.text.trim().length > 0
+  );
 }

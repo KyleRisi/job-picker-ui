@@ -20,6 +20,11 @@ type ColumnKey =
   | 'sourceUrl'
   | 'description'
   | 'descriptionHtml'
+  | 'primaryTopic'
+  | 'seoTitleLen'
+  | 'metaDescLen'
+  | 'seoScore'
+  | 'hasTranscript'
   | 'actions';
 
 type EditableColumnKey = Exclude<ColumnKey, 'actions'>;
@@ -36,6 +41,7 @@ type EditableColumnDefinition = Omit<ColumnDefinition, 'key'> & { key: EditableC
 
 const PAGE_SIZE = 25;
 const WORKSPACE_EPISODES_COLUMNS_KEY = 'workspace_episodes_visible_columns';
+const WORKSPACE_EPISODES_PAGE_KEY = 'workspace_episodes_page';
 const MIN_COLUMN_WIDTH = 80;
 const MAX_COLUMN_WIDTH = 1200;
 const FIXED_COLUMN: ColumnKey = 'actions';
@@ -187,6 +193,62 @@ const ALL_COLUMNS: ColumnDefinition[] = [
     render: (episode) => <span title={episode.descriptionHtml}>{compactValue(episode.descriptionHtml, 120)}</span>
   },
   {
+    key: 'primaryTopic',
+    label: 'Primary Topic',
+    width: 180,
+    headClassName: 'whitespace-nowrap',
+    cellClassName: 'whitespace-nowrap text-slate-700',
+    render: (episode) => episode.primaryTopicName ? <span title={episode.primaryTopicName}>{compactValue(episode.primaryTopicName, 28)}</span> : <span className="text-slate-400">&ndash;</span>
+  },
+  {
+    key: 'seoTitleLen',
+    label: 'SEO Title Len',
+    width: 130,
+    headClassName: 'whitespace-nowrap text-center',
+    cellClassName: 'whitespace-nowrap text-center text-slate-700',
+    render: (episode) => {
+      const val = (episode.seoTitle || '').trim();
+      if (!val) return <span className="text-slate-400">&ndash;</span>;
+      const len = val.length;
+      const color = len >= 50 && len <= 60 ? 'text-emerald-600' : 'text-amber-600';
+      return <span className={color}>{len}</span>;
+    }
+  },
+  {
+    key: 'metaDescLen',
+    label: 'Meta Desc Len',
+    width: 140,
+    headClassName: 'whitespace-nowrap text-center',
+    cellClassName: 'whitespace-nowrap text-center text-slate-700',
+    render: (episode) => {
+      const val = (episode.metaDescription || '').trim();
+      if (!val) return <span className="text-slate-400">&ndash;</span>;
+      const len = val.length;
+      const color = len >= 140 && len <= 158 ? 'text-emerald-600' : 'text-amber-600';
+      return <span className={color}>{len}</span>;
+    }
+  },
+  {
+    key: 'seoScore',
+    label: 'SEO Score',
+    width: 120,
+    headClassName: 'whitespace-nowrap text-center',
+    cellClassName: 'whitespace-nowrap text-center text-slate-700',
+    render: (episode) => {
+      const score = episode.seoScore ?? 0;
+      const color = score >= 80 ? 'text-emerald-600' : score >= 40 ? 'text-amber-600' : 'text-rose-600';
+      return <span className={`font-medium ${color}`}>{score}</span>;
+    }
+  },
+  {
+    key: 'hasTranscript',
+    label: 'Transcript',
+    width: 110,
+    headClassName: 'whitespace-nowrap',
+    cellClassName: 'whitespace-nowrap text-center text-slate-700',
+    render: (episode) => episode.hasTranscript ? <span className="text-emerald-600">✓</span> : <span className="text-slate-400">&ndash;</span>
+  },
+  {
     key: 'actions',
     label: 'Actions',
     width: ACTIONS_COLUMN_WIDTH,
@@ -288,7 +350,15 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
   const [query, setQuery] = useState('');
   const [yearFilter, setYearFilter] = useState('all');
   const [sortMode, setSortMode] = useState<SortMode>('newest');
-  const [page, setPage] = useState(1);
+  const [page, setPageRaw] = useState(1);
+
+  const setPage = (next: number | ((prev: number) => number)) => {
+    setPageRaw((prev) => {
+      const resolved = typeof next === 'function' ? next(prev) : next;
+      try { window.sessionStorage.setItem(WORKSPACE_EPISODES_PAGE_KEY, String(resolved)); } catch {}
+      return resolved;
+    });
+  };
   const [visibleColumns, setVisibleColumns] = useState<EditableColumnKey[]>(DEFAULT_VISIBLE_COLUMNS);
   const [columnWidths, setColumnWidths] = useState<Record<ColumnKey, number>>(DEFAULT_COLUMN_WIDTHS);
   const [columnEditorOpen, setColumnEditorOpen] = useState(false);
@@ -302,6 +372,14 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
   const columnsRef = useRef(visibleColumns);
 
   useLayoutEffect(() => {
+    try {
+      const storedPage = window.sessionStorage.getItem(WORKSPACE_EPISODES_PAGE_KEY);
+      if (storedPage) {
+        const parsed = Number(storedPage);
+        if (parsed >= 1) setPageRaw(parsed);
+      }
+    } catch {}
+
     try {
       const raw = window.localStorage.getItem(WORKSPACE_EPISODES_COLUMNS_KEY);
       if (!raw) return;
@@ -424,9 +502,7 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
     return sorted;
   }, [episodes, query, sortMode, yearFilter]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [query, yearFilter, sortMode]);
+
 
   const totalPages = Math.max(1, Math.ceil(filteredEpisodes.length / PAGE_SIZE));
 
@@ -564,14 +640,14 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
             <span className="relative inline-block">
               <input
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => { setQuery(event.target.value); setPage(1); }}
                 placeholder="Title, slug, or episode #"
                 className="h-8 w-72 rounded-md border border-slate-300 px-2 py-1 pr-7 text-xs"
               />
               {query ? (
                 <button
                   type="button"
-                  onClick={() => setQuery('')}
+                  onClick={() => { setQuery(''); setPage(1); }}
                   className="absolute right-1.5 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded text-slate-400 hover:text-slate-700"
                   aria-label="Clear search"
                 >
@@ -588,7 +664,7 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
             <span className="relative inline-block">
               <select
                 value={yearFilter}
-                onChange={(event) => setYearFilter(event.target.value)}
+                onChange={(event) => { setYearFilter(event.target.value); setPage(1); }}
                 className="h-8 w-auto min-w-[8rem] appearance-none rounded-md border border-slate-300 px-2 py-1 pr-7 text-xs"
               >
                 <option value="all">All years</option>
@@ -613,7 +689,7 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
             <span className="relative inline-block">
               <select
                 value={sortMode}
-                onChange={(event) => setSortMode(event.target.value as SortMode)}
+                onChange={(event) => { setSortMode(event.target.value as SortMode); setPage(1); }}
                 className="h-8 w-auto min-w-[10rem] appearance-none rounded-md border border-slate-300 px-2 py-1 pr-7 text-xs"
               >
                 <option value="newest">Newest first</option>

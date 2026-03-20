@@ -103,6 +103,7 @@ type PodcastEpisodeEditorialRow = {
   is_visible: boolean;
   is_archived: boolean;
   editorial_notes: string | null;
+  focus_keyword: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -497,6 +498,7 @@ function mapEditorial(row: PodcastEpisodeEditorialRow | null | undefined): Episo
     isVisible: row.is_visible,
     isArchived: row.is_archived,
     editorialNotes: row.editorial_notes,
+    focusKeyword: row.focus_keyword,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };

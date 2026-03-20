@@ -29,6 +29,7 @@ type EpisodeEditorialWritePayload = {
   heroImageStoragePath?: string | null;
   seoTitle?: string | null;
   metaDescription?: string | null;
+  focusKeyword?: string | null;
   canonicalUrlOverride?: string | null;
   socialTitle?: string | null;
   socialDescription?: string | null;
@@ -152,6 +153,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           hero_image_storage_path: asNullableText(payload.heroImageStoragePath),
           seo_title: asNullableText(payload.seoTitle),
           meta_description: asNullableText(payload.metaDescription),
+          focus_keyword: asNullableText(payload.focusKeyword),
           canonical_url_override: asNullableText(payload.canonicalUrlOverride),
           social_title: asNullableText(payload.socialTitle),
           social_description: asNullableText(payload.socialDescription),

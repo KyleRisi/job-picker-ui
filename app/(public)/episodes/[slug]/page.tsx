@@ -8,6 +8,7 @@ import { CompactEpisodeRow } from '@/components/episodes-browser';
 import { EpisodeMediaPlayer } from '@/components/episode-media-player';
 import { JoinPatreonCta } from '@/components/join-patreon-cta';
 import { TrackedExternalCtaLink } from '@/components/tracked-external-cta-link';
+import { TrackedPatreonCtaLink } from '@/components/tracked-patreon-cta-link';
 import { collectReferencedImageIds } from '@/lib/blog/content';
 import { getMediaAssetMapByIds, listBlogAuthors } from '@/lib/blog/data';
 import { breadcrumbsToJsonLd } from '@/lib/breadcrumbs';
@@ -283,12 +284,17 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
                 <span className="truncate">Apple Podcasts</span>
               </TrackedExternalCtaLink>
 
-              <Link
+              <TrackedPatreonCtaLink
                 href={PATREON_INTERNAL_PATH}
+                ctaLocation="episode_page"
+                sourcePageType="episode_page"
+                sourcePagePath={episode.canonicalUrl}
+                episodeTitle={episode.title}
+                episodeSlug={episode.slug}
                 className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-carnival-red px-2 py-2 text-xs font-bold text-white transition hover:brightness-110 sm:gap-2 sm:px-3 sm:text-sm"
               >
                 <span className="truncate">Patreon</span>
-              </Link>
+              </TrackedPatreonCtaLink>
             </div>
           </div>
           </div>

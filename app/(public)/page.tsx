@@ -8,6 +8,7 @@ import { getVisibleReviews, getVisibleReviewsCount, type PublicReview } from '@/
 import { getPublicSiteUrl } from '@/lib/site-url';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
 import { TrackedExternalCtaLink } from '@/components/tracked-external-cta-link';
+import { TrackedPatreonCtaLink } from '@/components/tracked-patreon-cta-link';
 
 export const metadata: Metadata = {
   title: 'The Compendium Podcast',
@@ -162,13 +163,16 @@ export default async function HomePage() {
                 </svg>
                 Spotify
               </TrackedExternalCtaLink>
-              <Link
+              <TrackedPatreonCtaLink
                 href={PATREON_INTERNAL_PATH}
+                ctaLocation="hero"
+                sourcePageType="home"
+                sourcePagePath="/"
                 className="inline-flex items-center gap-2 rounded-full bg-carnival-red px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
               >
                 <Image src="/patreon-icon.svg" alt="" width={20} height={20} className="h-5 w-5 brightness-0 invert" aria-hidden="true" />
                 Patreon
-              </Link>
+              </TrackedPatreonCtaLink>
               <TrackedExternalCtaLink
                 href={APPLE_PODCASTS_URL}
                 target="_blank"
@@ -345,13 +349,16 @@ export default async function HomePage() {
               </svg>
               Spotify
             </TrackedExternalCtaLink>
-            <Link
+            <TrackedPatreonCtaLink
               href={PATREON_INTERNAL_PATH}
+              ctaLocation="footer"
+              sourcePageType="home"
+              sourcePagePath="/"
               className="inline-flex items-center gap-2 rounded-full bg-carnival-red px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
             >
               <Image src="/patreon-icon.svg" alt="" width={20} height={20} className="h-5 w-5 brightness-0 invert" aria-hidden="true" />
               Patreon
-            </Link>
+            </TrackedPatreonCtaLink>
             <TrackedExternalCtaLink
               href={APPLE_PODCASTS_URL}
               target="_blank"

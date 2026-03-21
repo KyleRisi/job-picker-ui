@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { PatreonMembershipGrid } from '@/components/patreon/patreon-membership-grid';
+import { TrackedPatreonCtaLink } from '@/components/tracked-patreon-cta-link';
 import { PATREON_URL } from '@/lib/patreon-links';
 import type { PatreonTier } from '@/lib/patreon-content';
 
@@ -317,15 +318,16 @@ export default function PatreonPage() {
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <a
+            <TrackedPatreonCtaLink
               href={`${PATREON_UTM_BASE}&utm_content=hero`}
               target="_blank"
-              rel="noreferrer"
+              ctaLocation="patreon_page"
+              sourcePageType="patreon_page"
+              sourcePagePath="/patreon"
               className="inline-flex items-center rounded-full bg-carnival-red px-7 py-3 text-sm font-black uppercase tracking-wide text-white shadow-lg transition hover:brightness-110"
-              data-patreon-event="patreon_click_primary_cta"
             >
               Join on Patreon
-            </a>
+            </TrackedPatreonCtaLink>
             <a
               href="#membership-options"
               className="inline-flex items-center rounded-full border border-white/30 bg-white/10 px-7 py-3 text-sm font-black uppercase tracking-wide text-white transition hover:bg-white/20"
@@ -456,15 +458,16 @@ export default function PatreonPage() {
           </div>
         </section>
         <div className="mt-5 text-center">
-          <a
+          <TrackedPatreonCtaLink
             href={`${PATREON_UTM_BASE}&utm_content=faq`}
             target="_blank"
-            rel="noreferrer"
+            ctaLocation="patreon_page"
+            sourcePageType="patreon_page"
+            sourcePagePath="/patreon"
             className="inline-flex min-w-[20rem] items-center justify-center rounded-full bg-carnival-red px-10 py-4 text-base font-black uppercase tracking-wide text-white shadow-lg transition hover:brightness-110 md:min-w-[24rem] md:px-12 md:py-[18px] md:text-lg"
-            data-patreon-event="patreon_click_primary_cta"
           >
             Join on Patreon
-          </a>
+          </TrackedPatreonCtaLink>
         </div>
       </section>
 
@@ -477,15 +480,16 @@ export default function PatreonPage() {
             perks are very real.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <a
+            <TrackedPatreonCtaLink
               href={`${PATREON_UTM_BASE}&utm_content=final_cta`}
               target="_blank"
-              rel="noreferrer"
+              ctaLocation="patreon_page"
+              sourcePageType="patreon_page"
+              sourcePagePath="/patreon"
               className="inline-flex items-center rounded-full bg-carnival-red px-7 py-3 text-sm font-black uppercase tracking-wide text-white shadow-lg transition hover:brightness-110"
-              data-patreon-event="patreon_click_primary_cta"
             >
               Join on Patreon
-            </a>
+            </TrackedPatreonCtaLink>
             <Link
               href="/episodes"
               className="inline-flex items-center rounded-full border border-white/30 bg-white/10 px-7 py-3 text-sm font-black uppercase tracking-wide text-white transition hover:bg-white/20"

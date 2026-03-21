@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { PatreonTier } from '@/lib/patreon-content';
-import { trackMixpanel } from '@/lib/mixpanel-browser';
+import { TrackedPatreonCtaLink } from '@/components/tracked-patreon-cta-link';
 
 type BillingMode = 'monthly' | 'annual';
 type SupportedCurrency = 'USD' | 'GBP' | 'EUR' | 'CAD' | 'AUD' | 'NZD';
@@ -37,12 +37,6 @@ const EU_COUNTRY_CODES = new Set([
   'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU',
   'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE'
 ]);
-
-function tierSpecificEvent(internalKey: PatreonTier['internalKey']) {
-  if (internalKey === 'little_freak') return 'patreon_click_little_freak';
-  if (internalKey === 'certified_freak') return 'patreon_click_certified_freak';
-  return 'patreon_click_big_tops';
-}
 
 function countryFromLocale(locale: string): string {
   const match = locale.match(/-([a-z]{2})\b/i);
@@ -186,7 +180,6 @@ export function PatreonMembershipGrid({ sectionId, heading, tiers, visitorCountr
           aria-label="Membership tiers"
         >
         {visibleTiers.map((tier) => {
-          const tierEvent = tierSpecificEvent(tier.internalKey);
           const treatAsSoldOut = Boolean(tier.soldOut);
           const usdAmount = billingMode === 'annual' ? tier.annualPriceUsd : tier.monthlyPriceUsd;
           const localizedPrice = formatLocalizedPrice(usdAmount, currency, rates, billingMode);
@@ -262,25 +255,16 @@ export function PatreonMembershipGrid({ sectionId, heading, tiers, visitorCountr
                         See Available Tiers
                       </a>
                     ) : (
-                      <a
+                      <TrackedPatreonCtaLink
                         href={tier.ctaHref}
                         target="_blank"
-                        rel="noreferrer"
+                        ctaLocation="patreon_page"
+                        sourcePageType="patreon_page"
+                        sourcePagePath="/patreon"
                         className={`inline-flex w-full items-center justify-center rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-wide shadow-lg transition hover:brightness-110 ${ctaTone}`}
-                        data-patreon-event="patreon_click_tier_cta"
-                        data-patreon-tier={tier.internalKey}
-                        data-patreon-tier-event={tierEvent}
-                        onClick={() => {
-                          trackMixpanel('External CTA Clicked', {
-                            destination: 'patreon',
-                            cta_location: 'patreon_page',
-                            source_page_type: 'patreon_page',
-                            source_page_path: '/patreon'
-                          });
-                        }}
                       >
                         {tier.ctaLabel}
-                      </a>
+                      </TrackedPatreonCtaLink>
                     )}
                   </div>
                 </div>

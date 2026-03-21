@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { ReviewsPage } from '@/components/reviews-page';
 import { getVisibleReviewsPage } from '@/lib/reviews';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Reviews',
   description:
@@ -28,5 +30,5 @@ export default async function Page({ searchParams }: { searchParams: SearchParam
 
   const { reviews, pagination } = await getVisibleReviewsPage(page, REVIEWS_PAGE_SIZE);
 
-  return <ReviewsPage initialReviews={reviews} pagination={pagination} />;
+  return <ReviewsPage key={`reviews-page-${page}`} initialReviews={reviews} pagination={pagination} />;
 }

@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
+import { unstable_cache } from 'next/cache';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import { BlogPostCard } from '@/components/blog/blog-post-card';
 import { CompactPagination } from '@/components/compact-pagination';
 import { CompactEpisodeRow, EpisodeCard } from '@/components/episodes-browser';
@@ -23,6 +25,7 @@ type SearchParams = {
 };
 
 const EPISODES_PAGE_SIZE = 12;
+const AUTHOR_PAGE_REVALIDATE_SECONDS = 300;
 
 function isMissingRelationError(error: unknown) {
   const code = `${(error as { code?: string })?.code || ''}`;
@@ -34,11 +37,11 @@ function resolveAuthorHeroImage(slug: string, name: string, fallbackImageUrl: st
   const normalizedName = `${name || ''}`.trim().toLowerCase();
 
   if (normalizedSlug === 'kyle-risi' || normalizedSlug === 'kyle' || normalizedName === 'kyle risi' || normalizedName === 'kyle') {
-    return '/Kyle-meet-the-team.svg';
+    return '/Kyle-meet-the-team.jpg';
   }
 
   if (normalizedSlug === 'adam-cox' || normalizedSlug === 'adam' || normalizedName === 'adam cox' || normalizedName === 'adam') {
-    return '/Adam-meet-the-team.svg';
+    return '/Adam-meet-the-team.jpg';
   }
 
   return fallbackImageUrl;
@@ -59,15 +62,55 @@ function resolveInstagramUrl(slug: string, name: string) {
   return null;
 }
 
-async function loadAuthorArchive(authorSlug: string) {
+const getAuthorArchivePageOneCached = unstable_cache(
+  async (slug: string) => listAuthorArchive(slug, 1),
+  ['author-archive-page-one-v1'],
+  { revalidate: AUTHOR_PAGE_REVALIDATE_SECONDS }
+);
+
+const getAuthorEpisodeIdsCached = unstable_cache(
+  async (authorId: string) => {
+    const supabase = createSupabaseAdminClient();
+    try {
+      const { data, error } = await supabase
+        .from('podcast_episode_editorial')
+        .select('episode_id')
+        .eq('author_id', authorId);
+
+      if (error) throw error;
+      return Array.from(new Set((data || []).map((row: { episode_id: string | null }) => row.episode_id).filter(Boolean) as string[])).sort();
+    } catch (error) {
+      if (isMissingRelationError(error)) return [];
+      throw error;
+    }
+  },
+  ['author-episode-ids-v1'],
+  { revalidate: AUTHOR_PAGE_REVALIDATE_SECONDS }
+);
+
+const getResolvedEpisodesForAuthorCached = unstable_cache(
+  async (episodeIdsKey: string) => {
+    if (!episodeIdsKey) return [];
+    const ids = episodeIdsKey.split(',').filter(Boolean);
+    return getResolvedEpisodes({
+      ids,
+      includeHidden: false,
+      descriptionMaxLength: 220
+    });
+  },
+  ['author-resolved-episodes-v1'],
+  { revalidate: AUTHOR_PAGE_REVALIDATE_SECONDS }
+);
+
+const loadAuthorArchive = cache(async (authorSlug: string) => {
   const normalized = `${authorSlug || ''}`.trim().toLowerCase();
-  const primary = await listAuthorArchive(normalized, 1);
+  const primary = await getAuthorArchivePageOneCached(normalized);
   if (primary) return primary;
 
   const fallback = normalized.split('-')[0]?.trim();
   if (!fallback || fallback === normalized) return null;
-  return listAuthorArchive(fallback, 1);
-}
+  return getAuthorArchivePageOneCached(fallback);
+});
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const archive = await loadAuthorArchive(params.authorSlug);
@@ -102,28 +145,8 @@ export default async function AuthorHubPage({
   const archive = await loadAuthorArchive(params.authorSlug);
   if (!archive) notFound();
 
-  const supabase = createSupabaseAdminClient();
-  let episodeIds: string[] = [];
-
-  try {
-    const { data, error } = await supabase
-      .from('podcast_episode_editorial')
-      .select('episode_id')
-      .eq('author_id', archive.author.id);
-
-    if (error) throw error;
-    episodeIds = Array.from(new Set((data || []).map((row: { episode_id: string | null }) => row.episode_id).filter(Boolean) as string[]));
-  } catch (error) {
-    if (!isMissingRelationError(error)) throw error;
-  }
-
-  const episodes = episodeIds.length
-    ? await getResolvedEpisodes({
-        ids: episodeIds,
-        includeHidden: false,
-        descriptionMaxLength: 220
-      })
-    : [];
+  const episodeIds = await getAuthorEpisodeIdsCached(archive.author.id);
+  const episodes = episodeIds.length ? await getResolvedEpisodesForAuthorCached(episodeIds.join(',')) : [];
 
   const blogs = archive.items;
   const episodesCount = episodes.length;

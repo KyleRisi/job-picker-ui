@@ -1,7 +1,9 @@
 'use client';
 
 import { useMemo, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { usePodcastPlayback } from '@/components/podcast-playback-provider';
+import { resolveSourcePageType } from '@/lib/analytics-events';
 
 function formatClock(totalSeconds: number): string {
   if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return '0:00';
@@ -28,6 +30,10 @@ type EpisodeMediaPlayerProps = {
 
 export function EpisodeMediaPlayer({ episode }: EpisodeMediaPlayerProps) {
   const playButtonRef = useRef<HTMLButtonElement | null>(null);
+  const pathname = usePathname();
+  const sourcePagePath = typeof window === 'undefined' ? (pathname || '/') : `${window.location.pathname}${window.location.search || ''}`;
+  const sourcePageType = resolveSourcePageType(pathname);
+  const playerLocation = sourcePageType === 'episode_page' ? 'episode_player' : 'inline_player';
   const { activeEpisode, isPlaying, duration, currentTime, playbackRate, playEpisode, togglePlayPause, seekTo, skipBy, cycleSpeed } =
     usePodcastPlayback();
   const isActive = activeEpisode?.slug === episode.slug;
@@ -38,10 +44,18 @@ export function EpisodeMediaPlayer({ episode }: EpisodeMediaPlayerProps) {
 
   const togglePlay = async () => {
     if (!isActive) {
-      await playEpisode(episode, playButtonRef.current);
+      await playEpisode(episode, playButtonRef.current, {
+        playerLocation,
+        sourcePageType,
+        sourcePagePath
+      });
       return;
     }
-    await togglePlayPause();
+    await togglePlayPause({
+      playerLocation,
+      sourcePageType,
+      sourcePagePath
+    });
   };
 
   const handleSeek = (value: number) => {

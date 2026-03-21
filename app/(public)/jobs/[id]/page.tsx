@@ -6,6 +6,8 @@ import { getDefaultSalaryBenefits } from '@/lib/job-salary';
 import { JobContextReadMore } from '@/components/job-context-read-more';
 import { StatusPill } from '@/components/status-pill';
 import { ROBOTS_NOINDEX_FOLLOW, ROBOTS_NOINDEX_NOFOLLOW } from '@/lib/seo';
+import { JobPageViewedTracker } from '@/components/jobs-analytics-trackers';
+import { TrackedJobApplyLink } from '@/components/tracked-job-links';
 
 function toMetaDescription(value: string): string {
   const normalized = `${value || ''}`.replace(/\s+/g, ' ').trim();
@@ -67,6 +69,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
 
   return (
     <>
+      <JobPageViewedTracker jobId={job.id} jobTitle={job.title} />
       <div className="mb-4">
         <Link href="/jobs" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
           <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
@@ -112,7 +115,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                 </div>
               ) : null}
               <div className="flex justify-center py-4 sm:justify-end">
-                <Link href={`/apply/${job.id}`} className="btn-primary inline-flex">Apply for this role</Link>
+                <TrackedJobApplyLink href={`/apply/${job.id}`} className="btn-primary inline-flex" jobId={job.id} jobTitle={job.title}>Apply for this role</TrackedJobApplyLink>
               </div>
               <div className="space-y-4">
                 <div className="pt-4">
@@ -134,7 +137,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                   </div>
                 </div>
                 <div className="flex justify-center pt-1 sm:justify-end">
-                  <Link href={`/apply/${job.id}`} className="btn-primary inline-flex">Apply for this role</Link>
+                  <TrackedJobApplyLink href={`/apply/${job.id}`} className="btn-primary inline-flex" jobId={job.id} jobTitle={job.title}>Apply for this role</TrackedJobApplyLink>
                 </div>
               </div>
             </div>

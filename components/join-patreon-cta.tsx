@@ -1,5 +1,10 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
+import { resolveSourcePageType, type CtaLocation } from '@/lib/analytics-events';
+import { TrackedExternalCtaLink } from '@/components/tracked-external-cta-link';
 
 const COMPARE_TIERS_URL = 'https://www.thecompendiumpodcast.com/patreon#membership-options';
 const YOUTUBE_URL = 'https://www.youtube.com/@CompendiumPodcast';
@@ -7,6 +12,18 @@ const APPLE_PODCASTS_URL = 'https://podcasts.apple.com/gb/podcast/the-compendium
 const SPOTIFY_URL = 'https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ';
 
 export function JoinPatreonCta() {
+  const pathname = usePathname();
+  const sourcePageType = resolveSourcePageType(pathname);
+  const sourcePagePath = typeof window === 'undefined' ? (pathname || '/') : `${window.location.pathname}${window.location.search || ''}`;
+  const ctaLocation: CtaLocation =
+    sourcePageType === 'blog_post'
+      ? 'blog_post'
+      : sourcePageType === 'episode_page'
+        ? 'episode_page'
+        : sourcePageType === 'patreon_page'
+          ? 'patreon_page'
+          : 'other_cta';
+
   return (
     <section className="full-bleed bg-carnival-ink px-4 py-28 md:py-32 text-white">
       <div className="mx-auto max-w-6xl text-center">
@@ -30,22 +47,28 @@ export function JoinPatreonCta() {
           >
             Compare tiers
           </a>
-          <a
+          <TrackedExternalCtaLink
             href={SPOTIFY_URL}
             target="_blank"
-            rel="noreferrer"
+            destination="spotify"
+            ctaLocation={ctaLocation}
+            sourcePageType={sourcePageType}
+            sourcePagePath={sourcePagePath}
             className="inline-flex h-[35px] items-center justify-center rounded-full bg-[#1DB954] px-6 text-[14px] font-semibold text-white transition hover:brightness-110"
           >
             Listen on Spotify
-          </a>
-          <a
+          </TrackedExternalCtaLink>
+          <TrackedExternalCtaLink
             href={APPLE_PODCASTS_URL}
             target="_blank"
-            rel="noreferrer"
+            destination="apple_podcasts"
+            ctaLocation={ctaLocation}
+            sourcePageType={sourcePageType}
+            sourcePagePath={sourcePagePath}
             className="inline-flex h-[35px] items-center justify-center rounded-full bg-[#B457F2] px-6 text-[14px] font-semibold text-white transition hover:brightness-110"
           >
             Listen on Apple Podcasts
-          </a>
+          </TrackedExternalCtaLink>
           <a
             href={YOUTUBE_URL}
             target="_blank"

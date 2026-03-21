@@ -5,6 +5,7 @@ import { EpisodesGrid } from '@/components/episodes-browser';
 import { getPodcastEpisodes, type PodcastEpisode } from '@/lib/podcast';
 import { ReviewsSection } from '@/components/reviews-section';
 import { getVisibleReviews, getVisibleReviewsCount, type PublicReview } from '@/lib/reviews';
+import { TrackedExternalCtaLink } from '@/components/tracked-external-cta-link';
 
 const SPOTIFY_URL = 'https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ';
 const APPLE_PODCASTS_URL = 'https://podcasts.apple.com/gb/podcast/the-compendium-an-assembly-of-fascinating-things/id1676817109';
@@ -165,35 +166,44 @@ export default async function PressKitPage() {
               <div className="mt-7">
                 <p className="text-xs font-black uppercase tracking-[0.08em] text-white/65">Distribution</p>
                 <div className="mt-3 flex flex-wrap gap-3">
-                  <a
+                  <TrackedExternalCtaLink
                     href={SPOTIFY_URL}
                     target="_blank"
-                    rel="noreferrer"
+                    destination="spotify"
+                    ctaLocation="header"
+                    sourcePageType="press_kit"
+                    sourcePagePath="/connect/press-kit"
                     className="inline-flex items-center gap-2 rounded-xl bg-[#1DB954] px-5 py-3 text-sm font-black text-white transition hover:brightness-110"
                   >
                     <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
                       <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
                     </svg>
                     Spotify
-                  </a>
-                  <a
+                  </TrackedExternalCtaLink>
+                  <TrackedExternalCtaLink
                     href={PATREON_URL}
                     target="_blank"
-                    rel="noreferrer"
+                    destination="patreon"
+                    ctaLocation="header"
+                    sourcePageType="press_kit"
+                    sourcePagePath="/connect/press-kit"
                     className="inline-flex items-center gap-2 rounded-xl bg-carnival-red px-5 py-3 text-sm font-black text-white transition hover:brightness-110"
                   >
                     <Image src="/patreon-icon.svg" alt="" width={20} height={20} className="h-5 w-5 brightness-0 invert" aria-hidden="true" />
                     Patreon
-                  </a>
-                  <a
+                  </TrackedExternalCtaLink>
+                  <TrackedExternalCtaLink
                     href={APPLE_PODCASTS_URL}
                     target="_blank"
-                    rel="noreferrer"
+                    destination="apple_podcasts"
+                    ctaLocation="header"
+                    sourcePageType="press_kit"
+                    sourcePagePath="/connect/press-kit"
                     className="inline-flex items-center gap-2 rounded-xl bg-[#9933CC] px-5 py-3 text-sm font-black text-white transition hover:brightness-110"
                   >
                     <Image src="/apple-podcasts-icon.svg" alt="" width={20} height={20} className="h-5 w-5 brightness-0 invert" aria-hidden="true" />
                     Apple Podcasts
-                  </a>
+                  </TrackedExternalCtaLink>
                 </div>
 
                 <p className="mt-5 text-xs font-black uppercase tracking-[0.08em] text-white/65">Socials</p>
@@ -207,15 +217,18 @@ export default async function PressKitPage() {
                     <Image src="/ig-instagram-icon.svg" alt="" width={18} height={18} className="h-[18px] w-[18px]" aria-hidden="true" />
                     Instagram
                   </a>
-                  <a
+                  <TrackedExternalCtaLink
                     href={PATREON_URL}
                     target="_blank"
-                    rel="noreferrer"
+                    destination="patreon"
+                    ctaLocation="header"
+                    sourcePageType="press_kit"
+                    sourcePagePath="/connect/press-kit"
                     className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-black text-white transition hover:bg-white/20"
                   >
                     <Image src="/patreon-icon.svg" alt="" width={18} height={18} className="h-[18px] w-[18px]" aria-hidden="true" />
                     Patreon
-                  </a>
+                  </TrackedExternalCtaLink>
                   <a
                     href={YOUTUBE_URL}
                     target="_blank"

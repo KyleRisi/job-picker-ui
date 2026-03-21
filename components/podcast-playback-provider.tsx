@@ -14,6 +14,8 @@ import {
   type ReactNode,
   type TouchEvent as ReactTouchEvent
 } from 'react';
+import { trackMixpanel } from '@/lib/mixpanel-browser';
+import { resolveSourcePageType, type PlayerLocation, type SourcePageType } from '@/lib/analytics-events';
 
 const PLAYBACK_STORAGE_KEY = 'compendium:podcast-playback';
 
@@ -27,6 +29,12 @@ type PlaybackEpisode = {
   duration: string | null;
 };
 
+type PlaybackTrackingContext = {
+  playerLocation: PlayerLocation;
+  sourcePageType: SourcePageType;
+  sourcePagePath: string;
+};
+
 type PodcastPlaybackContextValue = {
   activeEpisode: PlaybackEpisode | null;
   isPlaying: boolean;
@@ -34,8 +42,12 @@ type PodcastPlaybackContextValue = {
   currentTime: number;
   playbackRate: number;
   sleepTimerActive: boolean;
-  playEpisode: (episode: PlaybackEpisode, sourceElement?: HTMLElement | null) => Promise<void>;
-  togglePlayPause: () => Promise<void>;
+  playEpisode: (
+    episode: PlaybackEpisode,
+    sourceElement?: HTMLElement | null,
+    trackingContext?: PlaybackTrackingContext
+  ) => Promise<void>;
+  togglePlayPause: (trackingContext?: PlaybackTrackingContext) => Promise<void>;
   pause: () => void;
   stop: () => void;
   seekTo: (seconds: number) => void;
@@ -101,6 +113,7 @@ export function PodcastPlaybackProvider({ children }: { children: ReactNode }) {
   const sleepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoplayResumeCleanupRef = useRef<(() => void) | null>(null);
   const playbackIntentRef = useRef(false);
+  const pendingPlayTrackingRef = useRef<(PlaybackTrackingContext & { episodeTitle: string; episodeSlug: string }) | null>(null);
   const isPageUnloadingRef = useRef(false);
   const latestPersistRef = useRef<{
     activeEpisode: PlaybackEpisode | null;
@@ -240,11 +253,22 @@ export function PodcastPlaybackProvider({ children }: { children: ReactNode }) {
   }, [clearAutoplayResumeListeners]);
 
   const playEpisode = useCallback(
-    async (episode: PlaybackEpisode, sourceElement?: HTMLElement | null) => {
+    async (
+      episode: PlaybackEpisode,
+      sourceElement?: HTMLElement | null,
+      trackingContext?: PlaybackTrackingContext
+    ) => {
       const audio = audioRef.current;
       if (!audio) return;
 
       playbackIntentRef.current = true;
+      if (trackingContext) {
+        pendingPlayTrackingRef.current = {
+          ...trackingContext,
+          episodeTitle: episode.title,
+          episodeSlug: episode.slug
+        };
+      }
       const sameEpisode = activeEpisode?.slug === episode.slug;
       if (!sameEpisode) {
         audio.src = episode.audioUrl;
@@ -268,11 +292,18 @@ export function PodcastPlaybackProvider({ children }: { children: ReactNode }) {
     [activeEpisode?.slug, animateArtworkFlight, playbackRate, scheduleAutoplayResumeOnInteraction, tryPlayWithFallback]
   );
 
-  const togglePlayPause = useCallback(async () => {
+  const togglePlayPause = useCallback(async (trackingContext?: PlaybackTrackingContext) => {
     const audio = audioRef.current;
     if (!audio) return;
     if (audio.paused) {
       playbackIntentRef.current = true;
+      if (trackingContext && activeEpisode) {
+        pendingPlayTrackingRef.current = {
+          ...trackingContext,
+          episodeTitle: activeEpisode.title,
+          episodeSlug: activeEpisode.slug
+        };
+      }
       // Manual play should never stay muted.
       audio.muted = false;
       const didResume = await tryPlayWithFallback(audio);
@@ -283,13 +314,15 @@ export function PodcastPlaybackProvider({ children }: { children: ReactNode }) {
       return;
     }
     playbackIntentRef.current = false;
+    pendingPlayTrackingRef.current = null;
     audio.pause();
-  }, [scheduleAutoplayResumeOnInteraction, tryPlayWithFallback]);
+  }, [activeEpisode, scheduleAutoplayResumeOnInteraction, tryPlayWithFallback]);
 
   const pause = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
     playbackIntentRef.current = false;
+    pendingPlayTrackingRef.current = null;
     audio.pause();
   }, []);
 
@@ -301,6 +334,7 @@ export function PodcastPlaybackProvider({ children }: { children: ReactNode }) {
     audio.removeAttribute('src');
     audio.load();
     playbackIntentRef.current = false;
+    pendingPlayTrackingRef.current = null;
     clearAutoplayResumeListeners();
     setCurrentTime(0);
     setDuration(0);
@@ -403,6 +437,17 @@ export function PodcastPlaybackProvider({ children }: { children: ReactNode }) {
     const handlePlay = () => {
       playbackIntentRef.current = true;
       setIsPlaying(true);
+      const payload = pendingPlayTrackingRef.current;
+      if (payload) {
+        trackMixpanel('Play Clicked', {
+          episode_title: payload.episodeTitle,
+          episode_slug: payload.episodeSlug,
+          source_page_type: payload.sourcePageType,
+          source_page_path: payload.sourcePagePath,
+          player_location: payload.playerLocation
+        });
+        pendingPlayTrackingRef.current = null;
+      }
     };
     const handlePause = () => {
       if (isPageUnloadingRef.current || restoringRef.current) return;
@@ -461,6 +506,7 @@ export function PodcastPlaybackProvider({ children }: { children: ReactNode }) {
     navigator.mediaSession.setActionHandler('play', async () => {
       if (audio && audio.paused) {
         playbackIntentRef.current = true;
+        pendingPlayTrackingRef.current = null;
         audio.muted = false;
         await tryPlayWithFallback(audio);
       }
@@ -468,6 +514,7 @@ export function PodcastPlaybackProvider({ children }: { children: ReactNode }) {
     navigator.mediaSession.setActionHandler('pause', () => {
       if (audio && !audio.paused) {
         playbackIntentRef.current = false;
+        pendingPlayTrackingRef.current = null;
         audio.pause();
       }
     });
@@ -496,6 +543,7 @@ export function PodcastPlaybackProvider({ children }: { children: ReactNode }) {
         audio.currentTime = 0;
       }
       playbackIntentRef.current = false;
+      pendingPlayTrackingRef.current = null;
       setIsPlaying(false);
     });
 
@@ -819,7 +867,13 @@ export function PodcastPlaybackProvider({ children }: { children: ReactNode }) {
                   </button>
                   <button
                     type="button"
-                    onClick={togglePlayPause}
+                    onClick={() =>
+                      togglePlayPause({
+                        playerLocation: 'global_player',
+                        sourcePageType: resolveSourcePageType(window.location.pathname),
+                        sourcePagePath: `${window.location.pathname}${window.location.search || ''}`
+                      })
+                    }
                     className={`inline-flex h-12 w-12 items-center justify-center rounded-full border-2 text-sm font-black ${
                       isPlaying ? 'border-white bg-white text-carnival-red' : 'border-white/80 bg-carnival-ink text-white'
                     }`}
@@ -864,7 +918,13 @@ export function PodcastPlaybackProvider({ children }: { children: ReactNode }) {
               {/* Play / Pause button (replaces internal artwork) */}
               <button
                 type="button"
-                onClick={togglePlayPause}
+                onClick={() =>
+                  togglePlayPause({
+                    playerLocation: 'global_player',
+                    sourcePageType: resolveSourcePageType(window.location.pathname),
+                    sourcePagePath: `${window.location.pathname}${window.location.search || ''}`
+                  })
+                }
                 className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-black transition ${
                   isPlaying ? 'bg-white text-carnival-red' : 'bg-[#f4e7bc] text-carnival-ink'
                 }`}

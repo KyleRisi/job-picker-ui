@@ -1,5 +1,9 @@
-import Link from 'next/link';
+'use client';
+
+import { usePathname } from 'next/navigation';
 import { PATREON_URL } from '@/lib/patreon-links';
+import { resolveSourcePageType, type CtaLocation } from '@/lib/analytics-events';
+import { TrackedExternalCtaLink } from '@/components/tracked-external-cta-link';
 
 export function SupportAndListenCta({
   pageType,
@@ -18,6 +22,21 @@ export function SupportAndListenCta({
   variant?: 'hero' | 'compact';
   className?: string;
 }) {
+  const pathname = usePathname();
+  const resolvedSourcePageType = resolveSourcePageType(pathname);
+  const sourcePagePath = typeof window === 'undefined' ? (pathname || '/') : `${window.location.pathname}${window.location.search || ''}`;
+  const normalizedLocation = `${placement || ''}`.trim().toLowerCase();
+  const ctaLocation: CtaLocation =
+    normalizedLocation === 'hero' || normalizedLocation === 'header' || normalizedLocation === 'footer'
+      ? (normalizedLocation as CtaLocation)
+      : resolvedSourcePageType === 'blog_post'
+        ? 'blog_post'
+        : resolvedSourcePageType === 'episode_page'
+          ? 'episode_page'
+          : resolvedSourcePageType === 'patreon_page'
+            ? 'patreon_page'
+            : 'other_cta';
+
   const wrapperClass =
     variant === 'compact'
       ? 'rounded-2xl border border-carnival-ink/15 bg-white p-5'
@@ -39,28 +58,39 @@ export function SupportAndListenCta({
         Catch more episodes, support the show, and stay connected with The Compendium.
       </p>
       <div className="mt-5 flex flex-wrap gap-3">
-        <a
+        <TrackedExternalCtaLink
           href="https://open.spotify.com/show/5fA8xqUEfXvD8WQmMsmFJk"
           target="_blank"
-          rel="noreferrer"
+          destination="spotify"
+          ctaLocation={ctaLocation}
+          sourcePageType={resolvedSourcePageType}
+          sourcePagePath={sourcePagePath}
           className="inline-flex items-center justify-center rounded-full bg-[#1DB954] px-5 py-2.5 text-sm font-black text-white no-underline transition hover:brightness-110"
         >
           Listen On Spotify
-        </a>
-        <a
+        </TrackedExternalCtaLink>
+        <TrackedExternalCtaLink
           href="https://podcasts.apple.com/us/podcast/the-compendium-podcast/id1531291277"
           target="_blank"
-          rel="noreferrer"
+          destination="apple_podcasts"
+          ctaLocation={ctaLocation}
+          sourcePageType={resolvedSourcePageType}
+          sourcePagePath={sourcePagePath}
           className="inline-flex items-center justify-center rounded-full bg-[#D56DFB] px-5 py-2.5 text-sm font-black text-white no-underline transition hover:brightness-110"
         >
           Listen On Apple
-        </a>
-        <Link
+        </TrackedExternalCtaLink>
+        <TrackedExternalCtaLink
           href={PATREON_URL}
+          destination="patreon"
+          ctaLocation={ctaLocation}
+          sourcePageType={resolvedSourcePageType}
+          sourcePagePath={sourcePagePath}
+          target="_blank"
           className="inline-flex items-center justify-center rounded-full bg-carnival-red px-5 py-2.5 text-sm font-black text-white no-underline transition hover:brightness-110"
         >
           Join Patreon
-        </Link>
+        </TrackedExternalCtaLink>
       </div>
     </section>
   );

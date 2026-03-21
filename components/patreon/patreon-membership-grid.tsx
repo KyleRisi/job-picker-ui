@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { PatreonTier } from '@/lib/patreon-content';
+import { trackMixpanel } from '@/lib/mixpanel-browser';
 
 type BillingMode = 'monthly' | 'annual';
 type SupportedCurrency = 'USD' | 'GBP' | 'EUR' | 'CAD' | 'AUD' | 'NZD';
@@ -269,6 +270,14 @@ export function PatreonMembershipGrid({ sectionId, heading, tiers, visitorCountr
                         data-patreon-event="patreon_click_tier_cta"
                         data-patreon-tier={tier.internalKey}
                         data-patreon-tier-event={tierEvent}
+                        onClick={() => {
+                          trackMixpanel('External CTA Clicked', {
+                            destination: 'patreon',
+                            cta_location: 'patreon_page',
+                            source_page_type: 'patreon_page',
+                            source_page_path: '/patreon'
+                          });
+                        }}
                       >
                         {tier.ctaLabel}
                       </a>

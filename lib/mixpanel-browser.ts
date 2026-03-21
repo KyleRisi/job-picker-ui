@@ -28,7 +28,9 @@ export function initMixpanel() {
       debug: process.env.NODE_ENV !== 'production',
       track_pageview: true,
       persistence: 'localStorage',
-      autocapture: true,
+      autocapture: {
+        pageview: false
+      },
       record_sessions_percent: 100,
       record_mask_all_text: false,
       record_mask_all_inputs: false,

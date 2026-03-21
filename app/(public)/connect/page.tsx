@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ConnectForm } from '@/components/forms/connect-form';
+import { TrackedExternalCtaLink } from '@/components/tracked-external-cta-link';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/thecompendiumpodcast/';
 const PATREON_URL = 'https://www.patreon.com/cw/TheCompendiumPodcast';
@@ -65,16 +66,32 @@ export default function ConnectPage() {
 
               <div className="mt-4 grid gap-3">
                 {SOCIALS.map((social) => (
-                  <a
-                    key={social.label}
-                    href={social.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-3 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-black text-white transition hover:border-carnival-gold/45 hover:bg-white/15"
-                  >
-                    <Image src={social.icon} alt="" width={22} height={22} className="h-[22px] w-[22px]" aria-hidden="true" />
-                    {social.label}
-                  </a>
+                  social.label === 'Patreon' ? (
+                    <TrackedExternalCtaLink
+                      key={social.label}
+                      href={social.href}
+                      target="_blank"
+                      destination="patreon"
+                      ctaLocation="header"
+                      sourcePageType="connect"
+                      sourcePagePath="/connect"
+                      className="inline-flex items-center gap-3 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-black text-white transition hover:border-carnival-gold/45 hover:bg-white/15"
+                    >
+                      <Image src={social.icon} alt="" width={22} height={22} className="h-[22px] w-[22px]" aria-hidden="true" />
+                      {social.label}
+                    </TrackedExternalCtaLink>
+                  ) : (
+                    <a
+                      key={social.label}
+                      href={social.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-3 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-black text-white transition hover:border-carnival-gold/45 hover:bg-white/15"
+                    >
+                      <Image src={social.icon} alt="" width={22} height={22} className="h-[22px] w-[22px]" aria-hidden="true" />
+                      {social.label}
+                    </a>
+                  )
                 ))}
               </div>
             </section>

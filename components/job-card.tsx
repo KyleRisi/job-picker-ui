@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Job } from '@/lib/types';
 import { getDefaultSalaryBenefits } from '@/lib/job-salary';
 import { StatusPill } from '@/components/status-pill';
+import { TrackedJobListingLink } from '@/components/tracked-job-links';
 
 export function JobCard({
   job,
@@ -80,9 +81,9 @@ export function JobCard({
 
   if (clickableToDetails) {
     return (
-      <Link href={detailHref} className="block w-full min-w-0">
+      <TrackedJobListingLink href={detailHref} className="block w-full min-w-0" jobId={job.id} jobTitle={job.title}>
         {cardBody}
-      </Link>
+      </TrackedJobListingLink>
     );
   }
 

@@ -88,6 +88,28 @@ const getAuthorEpisodeIdsCached = unstable_cache(
   { revalidate: AUTHOR_PAGE_REVALIDATE_SECONDS }
 );
 
+const getAuthorEpisodeCountCached = unstable_cache(
+  async (authorId: string) => {
+    const supabase = createSupabaseAdminClient();
+    try {
+      const { count, error } = await supabase
+        .from('podcast_episode_editorial')
+        .select('episode_id', { count: 'exact', head: true })
+        .eq('author_id', authorId)
+        .eq('is_visible', true)
+        .eq('is_archived', false);
+
+      if (error) throw error;
+      return count || 0;
+    } catch (error) {
+      if (isMissingRelationError(error)) return 0;
+      throw error;
+    }
+  },
+  ['author-episode-count-v1'],
+  { revalidate: AUTHOR_PAGE_REVALIDATE_SECONDS }
+);
+
 const getResolvedEpisodesForAuthorCached = unstable_cache(
   async (episodeIdsKey: string) => {
     if (!episodeIdsKey) return [];
@@ -145,15 +167,23 @@ export default async function AuthorHubPage({
   const archive = await loadAuthorArchive(params.authorSlug);
   if (!archive) notFound();
 
-  const episodeIds = await getAuthorEpisodeIdsCached(archive.author.id);
-  const episodes = episodeIds.length ? await getResolvedEpisodesForAuthorCached(episodeIds.join(',')) : [];
-
-  const blogs = archive.items;
-  const episodesCount = episodes.length;
-  const blogsCount = archive.pagination.total;
-  const totalCount = episodesCount + blogsCount;
   const tabValue = Array.isArray(searchParams.tab) ? searchParams.tab[0] : searchParams.tab;
   const activeTab = tabValue === 'blogs' ? 'blogs' : 'episodes';
+  let episodes: Awaited<ReturnType<typeof getResolvedEpisodes>> = [];
+  let episodesCount = 0;
+
+  if (activeTab === 'blogs') {
+    // Keep badge counts without paying the full episode resolution cost on blog-only views.
+    episodesCount = await getAuthorEpisodeCountCached(archive.author.id);
+  } else {
+    const episodeIds = await getAuthorEpisodeIdsCached(archive.author.id);
+    episodes = episodeIds.length ? await getResolvedEpisodesForAuthorCached(episodeIds.join(',')) : [];
+    episodesCount = episodes.length;
+  }
+
+  const blogs = archive.items;
+  const blogsCount = archive.pagination.total;
+  const totalCount = episodesCount + blogsCount;
   const viewValue = Array.isArray(searchParams.view) ? searchParams.view[0] : searchParams.view;
   const activeEpisodeView = viewValue === 'grid' ? 'grid' : 'compact';
   const pageValueRaw = Array.isArray(searchParams.page) ? searchParams.page[0] : searchParams.page;

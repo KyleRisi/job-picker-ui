@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
 import { resolveSourcePageType, type CtaLocation } from '@/lib/analytics-events';
 import { TrackedExternalCtaLink } from '@/components/tracked-external-cta-link';
+import { TrackedPatreonCtaLink } from '@/components/tracked-patreon-cta-link';
 
 const COMPARE_TIERS_URL = 'https://www.thecompendiumpodcast.com/patreon#membership-options';
 const YOUTUBE_URL = 'https://www.youtube.com/@CompendiumPodcast';
@@ -33,12 +33,15 @@ export function JoinPatreonCta() {
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link
+          <TrackedPatreonCtaLink
             href={PATREON_INTERNAL_PATH}
+            ctaLocation={ctaLocation}
+            sourcePageType={sourcePageType}
+            sourcePagePath={sourcePagePath}
             className="inline-flex h-[35px] items-center justify-center rounded-full bg-carnival-red px-6 text-[14px] font-semibold text-white transition hover:brightness-110"
           >
             Join Patreon
-          </Link>
+          </TrackedPatreonCtaLink>
           <a
             href={COMPARE_TIERS_URL}
             target="_blank"

@@ -5,6 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
+import { resolveSourcePageType } from '@/lib/analytics-events';
+import { TrackedPatreonCtaLink } from '@/components/tracked-patreon-cta-link';
 
 export function MainNav() {
   const instagramUrl = 'https://www.instagram.com/thecompendiumpodcast/';
@@ -21,6 +23,8 @@ export function MainNav() {
   const drawerRef = useRef<HTMLDivElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname() || '';
+  const sourcePageType = resolveSourcePageType(pathname);
+  const sourcePagePath = pathname || '/';
   const isAdminRoute = pathname.startsWith('/admin');
 
   useEffect(() => {
@@ -166,9 +170,9 @@ export function MainNav() {
                   ))}
                 </div>
               </div>
-              <Link href={PATREON_INTERNAL_PATH} className="btn-primary">
+              <TrackedPatreonCtaLink href={PATREON_INTERNAL_PATH} ctaLocation="header" sourcePageType={sourcePageType} sourcePagePath={sourcePagePath} className="btn-primary">
                 Patreon
-              </Link>
+              </TrackedPatreonCtaLink>
             </>
           )}
         </div>
@@ -259,9 +263,9 @@ export function MainNav() {
                   {item.label}
                 </Link>
               ))}
-              <Link href={PATREON_INTERNAL_PATH} className="btn-primary flex w-full justify-center" onClick={() => setOpen(false)}>
+              <TrackedPatreonCtaLink href={PATREON_INTERNAL_PATH} ctaLocation="header" sourcePageType={sourcePageType} sourcePagePath={sourcePagePath} className="btn-primary flex w-full justify-center" onClick={() => setOpen(false)}>
                 Patreon
-              </Link>
+              </TrackedPatreonCtaLink>
             </div>
 
             <div className="mt-auto pt-4">
@@ -277,14 +281,17 @@ export function MainNav() {
                 >
                   <Image src="/ig-instagram-icon.svg" alt="" width={28} height={28} className="h-7 w-7" aria-hidden="true" />
                 </a>
-                <Link
+                <TrackedPatreonCtaLink
                   href={PATREON_INTERNAL_PATH}
+                  ctaLocation="header"
+                  sourcePageType={sourcePageType}
+                  sourcePagePath={sourcePagePath}
                   className="inline-flex items-center justify-center p-1 text-carnival-ink transition hover:text-carnival-red"
                   onClick={() => setOpen(false)}
                   aria-label="Patreon"
                 >
                   <Image src="/patreon-icon.svg" alt="" width={28} height={28} className="h-7 w-7" aria-hidden="true" />
-                </Link>
+                </TrackedPatreonCtaLink>
                 <a
                   href={youtubeUrl}
                   target="_blank"

@@ -17,6 +17,7 @@ import { buildBlogPostBreadcrumbs } from '@/lib/episodes';
 import type { PodcastEpisode } from '@/lib/podcast-shared';
 import { getPublicSiteUrl } from '@/lib/site-url';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
+import { TrackedPatreonCtaLink } from '@/components/tracked-patreon-cta-link';
 
 export const revalidate = 300;
 
@@ -292,15 +293,17 @@ export default async function BlogPostPage({ params }: { params: Params }) {
                   >
                     <IconFacebook />
                   </a>
-                  <Link
+                  <TrackedPatreonCtaLink
                     href={PATREON_INTERNAL_PATH}
+                    ctaLocation="blog_post"
+                    sourcePageType="blog_post"
+                    sourcePagePath={`/blog/${post.slug}`}
                     className={actionButtonClass}
                     aria-label="Join Patreon"
                     title="Join Patreon"
-                    data-blog-cta="1"
                   >
                     <Image src="/patreon-icon.svg" alt="" width={16} height={16} className="h-4 w-4 brightness-0 invert" aria-hidden="true" />
-                  </Link>
+                  </TrackedPatreonCtaLink>
                 </div>
               </div>
             </div>

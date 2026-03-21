@@ -68,6 +68,17 @@ export function TrackedExternalCtaLink({
     if (episodeTitle) properties.episode_title = episodeTitle;
     if (episodeSlug) properties.episode_slug = episodeSlug;
 
+    if (resolvedDestination === 'patreon') {
+      trackMixpanel('Patreon CTA Clicked', {
+        target_type: 'external_patreon',
+        cta_location: ctaLocation,
+        source_page_type: sourcePageType,
+        source_page_path: pagePath,
+        ...(episodeTitle ? { episode_title: episodeTitle } : {}),
+        ...(episodeSlug ? { episode_slug: episodeSlug } : {})
+      });
+    }
+
     const opensNewTab = target === '_blank';
     if (!opensNewTab) {
       event.preventDefault();

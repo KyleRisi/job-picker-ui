@@ -14,8 +14,9 @@ import { trackMixpanel } from '@/lib/mixpanel-browser';
 import { pageHref } from '@/lib/pagination';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
 import { isTaxonomyPublicDisplayable } from '@/lib/taxonomy-route-policy';
-import { resolveSourcePageType } from '@/lib/analytics-events';
+import { currentPathWithSearch, resolveSourcePageType } from '@/lib/analytics-events';
 import { TrackedExternalCtaLink } from '@/components/tracked-external-cta-link';
+import { TrackedPatreonCtaLink } from '@/components/tracked-patreon-cta-link';
 
 type EpisodeListItem = Pick<
   PodcastEpisode,
@@ -59,7 +60,6 @@ function CardAudioPlayer({
   const playButtonRef = useRef<HTMLButtonElement | null>(null);
   const pathname = usePathname();
   const sourcePageType = resolveSourcePageType(pathname);
-  const sourcePagePath = typeof window === 'undefined' ? (pathname || '/') : `${window.location.pathname}${window.location.search || ''}`;
   const { activeEpisode, isPlaying, duration, currentTime, playEpisode, togglePlayPause, seekTo, skipBy } = usePodcastPlayback();
   const isActive = activeEpisode?.slug === episode.slug;
   const playing = isActive && isPlaying;
@@ -67,6 +67,7 @@ function CardAudioPlayer({
   const displayedDuration = isActive ? duration : 0;
 
   const togglePlay = async () => {
+    const sourcePagePath = currentPathWithSearch();
     if (!isActive) {
       await playEpisode({
         slug: episode.slug,
@@ -339,12 +340,17 @@ export function EpisodeCard({
                 >
                   <span className="truncate">Apple Podcasts</span>
                 </TrackedExternalCtaLink>
-                <Link
+                <TrackedPatreonCtaLink
                   href={PATREON_INTERNAL_PATH}
+                  ctaLocation="episode_card"
+                  sourcePageType={sourcePageType}
+                  sourcePagePath={sourcePagePath}
+                  episodeTitle={episode.title}
+                  episodeSlug={episode.slug}
                   className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-carnival-red px-2 py-2 text-xs font-bold !text-white !no-underline transition hover:brightness-110 hover:!text-white sm:gap-2 sm:px-3 sm:text-sm"
                 >
                   <span className="truncate">Patreon</span>
-                </Link>
+                </TrackedPatreonCtaLink>
               </div>
             </>
           ) : null}
@@ -425,7 +431,6 @@ export function CompactEpisodeRow({
   const artworkButtonRef = useRef<HTMLButtonElement | null>(null);
   const pathname = usePathname();
   const sourcePageType = resolveSourcePageType(pathname);
-  const sourcePagePath = typeof window === 'undefined' ? (pathname || '/') : `${window.location.pathname}${window.location.search || ''}`;
   const router = useRouter();
   const { activeEpisode, isPlaying, playEpisode, togglePlayPause } = usePodcastPlayback();
   const isActive = activeEpisode?.slug === episode.slug;
@@ -433,6 +438,7 @@ export function CompactEpisodeRow({
   const resolvedDetailHref = detailHref || `/episodes/${episode.slug}`;
 
   const togglePlay = async (sourceElement?: HTMLElement | null) => {
+    const sourcePagePath = currentPathWithSearch();
     if (!isActive) {
       await playEpisode({
         slug: episode.slug,

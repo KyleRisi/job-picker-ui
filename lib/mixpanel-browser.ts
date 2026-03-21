@@ -26,7 +26,7 @@ export function initMixpanel() {
     if (initialized) return;
     mixpanel.init(MIXPANEL_TOKEN, {
       debug: process.env.NODE_ENV !== 'production',
-      track_pageview: true,
+      track_pageview: false,
       persistence: 'localStorage',
       autocapture: {
         pageview: false

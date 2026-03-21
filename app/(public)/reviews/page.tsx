@@ -3,7 +3,7 @@ import { ReviewsPage } from '@/components/reviews-page';
 import { getVisibleReviewsPage } from '@/lib/reviews';
 
 export const metadata: Metadata = {
-  title: 'Listener Reviews | The Compendium Podcast',
+  title: 'Reviews',
   description:
     'Read what listeners around the world are saying about The Compendium Podcast, and leave your own review.',
   alternates: { canonical: '/reviews' },

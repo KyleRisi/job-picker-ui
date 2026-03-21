@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { type PodcastEpisode, formatEpisodeDate } from '@/lib/podcast-shared';
 import { usePodcastPlayback } from '@/components/podcast-playback-provider';
 import { LiveSearchInput } from '@/components/live-search-input';
@@ -14,6 +14,8 @@ import { trackMixpanel } from '@/lib/mixpanel-browser';
 import { pageHref } from '@/lib/pagination';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
 import { isTaxonomyPublicDisplayable } from '@/lib/taxonomy-route-policy';
+import { resolveSourcePageType } from '@/lib/analytics-events';
+import { TrackedExternalCtaLink } from '@/components/tracked-external-cta-link';
 
 type EpisodeListItem = Pick<
   PodcastEpisode,
@@ -55,6 +57,9 @@ function CardAudioPlayer({
   episode: EpisodeListItem;
 }) {
   const playButtonRef = useRef<HTMLButtonElement | null>(null);
+  const pathname = usePathname();
+  const sourcePageType = resolveSourcePageType(pathname);
+  const sourcePagePath = typeof window === 'undefined' ? (pathname || '/') : `${window.location.pathname}${window.location.search || ''}`;
   const { activeEpisode, isPlaying, duration, currentTime, playEpisode, togglePlayPause, seekTo, skipBy } = usePodcastPlayback();
   const isActive = activeEpisode?.slug === episode.slug;
   const playing = isActive && isPlaying;
@@ -71,10 +76,18 @@ function CardAudioPlayer({
         episodeNumber: episode.episodeNumber,
         publishedAt: episode.publishedAt,
         duration: episode.duration
-      }, playButtonRef.current);
+      }, playButtonRef.current, {
+        playerLocation: 'episode_card',
+        sourcePageType,
+        sourcePagePath
+      });
       return;
     }
-    await togglePlayPause();
+    await togglePlayPause({
+      playerLocation: 'episode_card',
+      sourcePageType,
+      sourcePagePath
+    });
   };
 
   const handleSeek = (value: number) => {
@@ -159,6 +172,9 @@ export function EpisodeCard({
   detailCtaLabel?: string;
   minimalCard?: boolean;
 }) {
+  const pathname = usePathname();
+  const sourcePageType = resolveSourcePageType(pathname);
+  const sourcePagePath = typeof window === 'undefined' ? (pathname || '/') : `${window.location.pathname}${window.location.search || ''}`;
   const excerpt = toExcerpt(episode.description, featured ? 480 : 220);
   const resolvedDetailHref = detailHref || `/episodes/${episode.slug}`;
   const spotifyEpisodeUrl = getSpotifyEpisodeUrl(episode.title);
@@ -297,22 +313,32 @@ export function EpisodeCard({
 
               <p className="mt-4 text-xs font-black uppercase tracking-wide text-carnival-ink/70">Listen On</p>
               <div className="mt-2 flex flex-nowrap gap-2">
-                <a
+                <TrackedExternalCtaLink
                   href={spotifyEpisodeUrl}
                   target="_blank"
-                  rel="noreferrer"
+                  destination="spotify"
+                  ctaLocation="episode_card"
+                  sourcePageType={sourcePageType}
+                  sourcePagePath={sourcePagePath}
+                  episodeTitle={episode.title}
+                  episodeSlug={episode.slug}
                   className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-[#1DB954] px-2 py-2 text-xs font-bold !text-white !no-underline transition hover:brightness-110 hover:!text-white sm:gap-2 sm:px-3 sm:text-sm"
                 >
                   <span className="truncate">Spotify</span>
-                </a>
-                <a
+                </TrackedExternalCtaLink>
+                <TrackedExternalCtaLink
                   href={applePodcastsEpisodeUrl}
                   target="_blank"
-                  rel="noreferrer"
+                  destination="apple_podcasts"
+                  ctaLocation="episode_card"
+                  sourcePageType={sourcePageType}
+                  sourcePagePath={sourcePagePath}
+                  episodeTitle={episode.title}
+                  episodeSlug={episode.slug}
                   className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-[#D56DFB] px-2 py-2 text-xs font-bold !text-white !no-underline transition hover:brightness-110 hover:!text-white sm:gap-2 sm:px-3 sm:text-sm"
                 >
                   <span className="truncate">Apple Podcasts</span>
-                </a>
+                </TrackedExternalCtaLink>
                 <Link
                   href={PATREON_INTERNAL_PATH}
                   className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-carnival-red px-2 py-2 text-xs font-bold !text-white !no-underline transition hover:brightness-110 hover:!text-white sm:gap-2 sm:px-3 sm:text-sm"
@@ -397,6 +423,9 @@ export function CompactEpisodeRow({
   detailHref?: string;
 }) {
   const artworkButtonRef = useRef<HTMLButtonElement | null>(null);
+  const pathname = usePathname();
+  const sourcePageType = resolveSourcePageType(pathname);
+  const sourcePagePath = typeof window === 'undefined' ? (pathname || '/') : `${window.location.pathname}${window.location.search || ''}`;
   const router = useRouter();
   const { activeEpisode, isPlaying, playEpisode, togglePlayPause } = usePodcastPlayback();
   const isActive = activeEpisode?.slug === episode.slug;
@@ -413,10 +442,18 @@ export function CompactEpisodeRow({
         episodeNumber: episode.episodeNumber,
         publishedAt: episode.publishedAt,
         duration: episode.duration
-      }, sourceElement || artworkButtonRef.current);
+      }, sourceElement || artworkButtonRef.current, {
+        playerLocation: 'inline_player',
+        sourcePageType,
+        sourcePagePath
+      });
       return;
     }
-    await togglePlayPause();
+    await togglePlayPause({
+      playerLocation: 'inline_player',
+      sourcePageType,
+      sourcePagePath
+    });
   };
 
   const openDetails = () => {

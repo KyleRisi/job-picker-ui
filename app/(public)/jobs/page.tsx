@@ -4,6 +4,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getJobsForPublic, getSettings } from '@/lib/data';
+import { JobsListingsViewedTracker } from '@/components/jobs-analytics-trackers';
 
 export const metadata: Metadata = {
   title: {
@@ -37,6 +38,7 @@ export default async function JobsPage() {
 
   return (
     <>
+      <JobsListingsViewedTracker listingCount={jobs.length} />
       <JobsApplicationSuccessModal />
       <section className="full-bleed relative -mt-8 overflow-hidden bg-carnival-ink pb-16 pt-16 md:pb-20 md:pt-20">
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">

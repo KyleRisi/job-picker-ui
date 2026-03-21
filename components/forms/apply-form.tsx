@@ -213,6 +213,12 @@ export function ApplyForm({
       identifyMixpanel(userId, {
         $email: trackedEmail
       });
+      trackMixpanel('Job Application Submitted', {
+        job_id: jobId,
+        job_title: jobTitle,
+        source_page_type: 'job_apply_page',
+        source_page_path: `${window.location.pathname}${window.location.search || ''}`
+      });
       setValidationHeading('');
       setValidationItems([]);
       setFieldErrors({});

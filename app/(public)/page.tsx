@@ -7,11 +7,10 @@ import type { Metadata } from 'next';
 import { getVisibleReviews, getVisibleReviewsCount } from '@/lib/reviews';
 import { getPublicSiteUrl } from '@/lib/site-url';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
+import { TrackedExternalCtaLink } from '@/components/tracked-external-cta-link';
 
 export const metadata: Metadata = {
-  title: {
-    absolute: 'The Compendium Podcast | True Crime, History & Incredible People'
-  },
+  title: 'The Compendium Podcast',
   description:
     'A weekly variety podcast covering true crime, forgotten historical events, and incredible people. Hosted by Kyle Risi and Adam Cox. Listen on Spotify, Apple Podcasts, and more.',
   alternates: { canonical: '/' },
@@ -132,17 +131,20 @@ export default async function HomePage() {
               Subscribe and Listen on
             </p>
             <div className="flex flex-wrap justify-center gap-3 md:justify-start">
-              <a
+              <TrackedExternalCtaLink
                 href={SPOTIFY_URL}
                 target="_blank"
-                rel="noreferrer"
+                destination="spotify"
+                ctaLocation="hero"
+                sourcePageType="home"
+                sourcePagePath="/"
                 className="inline-flex items-center gap-2 rounded-full bg-[#1DB954] px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
               >
                 <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
                   <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
                 </svg>
                 Spotify
-              </a>
+              </TrackedExternalCtaLink>
               <Link
                 href={PATREON_INTERNAL_PATH}
                 className="inline-flex items-center gap-2 rounded-full bg-carnival-red px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
@@ -150,15 +152,18 @@ export default async function HomePage() {
                 <Image src="/patreon-icon.svg" alt="" width={20} height={20} className="h-5 w-5 brightness-0 invert" aria-hidden="true" />
                 Patreon
               </Link>
-              <a
+              <TrackedExternalCtaLink
                 href={APPLE_PODCASTS_URL}
                 target="_blank"
-                rel="noreferrer"
+                destination="apple_podcasts"
+                ctaLocation="hero"
+                sourcePageType="home"
+                sourcePagePath="/"
                 className="inline-flex items-center gap-2 rounded-full bg-[#9933CC] px-5 py-2.5 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
               >
                 <Image src="/apple-podcasts-icon.svg" alt="" width={20} height={20} className="h-5 w-5 brightness-0 invert" aria-hidden="true" />
                 Apple Podcasts
-              </a>
+              </TrackedExternalCtaLink>
             </div>
           </div>
         </div>
@@ -309,17 +314,20 @@ export default async function HomePage() {
           </p>
 
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <a
+            <TrackedExternalCtaLink
               href={SPOTIFY_URL}
               target="_blank"
-              rel="noreferrer"
+              destination="spotify"
+              ctaLocation="footer"
+              sourcePageType="home"
+              sourcePagePath="/"
               className="inline-flex items-center gap-2 rounded-full bg-[#1DB954] px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
                 <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
               </svg>
               Spotify
-            </a>
+            </TrackedExternalCtaLink>
             <Link
               href={PATREON_INTERNAL_PATH}
               className="inline-flex items-center gap-2 rounded-full bg-carnival-red px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
@@ -327,15 +335,18 @@ export default async function HomePage() {
               <Image src="/patreon-icon.svg" alt="" width={20} height={20} className="h-5 w-5 brightness-0 invert" aria-hidden="true" />
               Patreon
             </Link>
-            <a
+            <TrackedExternalCtaLink
               href={APPLE_PODCASTS_URL}
               target="_blank"
-              rel="noreferrer"
+              destination="apple_podcasts"
+              ctaLocation="footer"
+              sourcePageType="home"
+              sourcePagePath="/"
               className="inline-flex items-center gap-2 rounded-full bg-[#9933CC] px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:brightness-110"
             >
               <Image src="/apple-podcasts-icon.svg" alt="" width={20} height={20} className="h-5 w-5 brightness-0 invert" aria-hidden="true" />
               Apple Podcasts
-            </a>
+            </TrackedExternalCtaLink>
           </div>
         </div>
       </section>

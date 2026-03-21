@@ -7,6 +7,7 @@ import { BlogPostCard } from '@/components/blog/blog-post-card';
 import { CompactEpisodeRow } from '@/components/episodes-browser';
 import { EpisodeMediaPlayer } from '@/components/episode-media-player';
 import { JoinPatreonCta } from '@/components/join-patreon-cta';
+import { TrackedExternalCtaLink } from '@/components/tracked-external-cta-link';
 import { collectReferencedImageIds } from '@/lib/blog/content';
 import { getMediaAssetMapByIds, listBlogAuthors } from '@/lib/blog/data';
 import { breadcrumbsToJsonLd } from '@/lib/breadcrumbs';
@@ -51,9 +52,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   }
 
   return {
-    title: {
-      absolute: episode.seoTitle
-    },
+    title: episode.title,
     description: episode.metaDescription || undefined,
     alternates: {
       canonical: episode.canonicalUrl
@@ -256,23 +255,33 @@ export default async function EpisodeDetailPage({ params }: { params: Params }) 
 
             <p className="mt-4 text-xs font-black uppercase tracking-wide text-white/80">Listen On</p>
             <div className="mt-2 flex flex-nowrap gap-2">
-              <a
+              <TrackedExternalCtaLink
                 href={spotifyUrl}
                 target="_blank"
-                rel="noreferrer"
+                destination="spotify"
+                ctaLocation="episode_page"
+                sourcePageType="episode_page"
+                sourcePagePath={episode.canonicalUrl}
+                episodeTitle={episode.title}
+                episodeSlug={episode.slug}
                 className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-[#1DB954] px-2 py-2 text-xs font-bold text-white transition hover:brightness-110 sm:gap-2 sm:px-3 sm:text-sm"
               >
                 <span className="truncate">Spotify</span>
-              </a>
+              </TrackedExternalCtaLink>
 
-              <a
+              <TrackedExternalCtaLink
                 href={applePodcastsUrl}
                 target="_blank"
-                rel="noreferrer"
+                destination="apple_podcasts"
+                ctaLocation="episode_page"
+                sourcePageType="episode_page"
+                sourcePagePath={episode.canonicalUrl}
+                episodeTitle={episode.title}
+                episodeSlug={episode.slug}
                 className="inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-[#D56DFB] px-2 py-2 text-xs font-bold text-white transition hover:brightness-110 sm:gap-2 sm:px-3 sm:text-sm"
               >
                 <span className="truncate">Apple Podcasts</span>
-              </a>
+              </TrackedExternalCtaLink>
 
               <Link
                 href={PATREON_INTERNAL_PATH}

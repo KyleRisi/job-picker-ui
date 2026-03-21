@@ -4,7 +4,7 @@ import { getEpisodesLandingPageData } from '@/lib/episodes';
 import { getPodcastEpisodes, type PodcastEpisode } from '@/lib/podcast';
 import { EpisodesBrowser } from '@/components/episodes-browser';
 import type { Metadata } from 'next';
-import { getVisibleReviews, getVisibleReviewsCount } from '@/lib/reviews';
+import { getVisibleReviews, getVisibleReviewsCount, type PublicReview } from '@/lib/reviews';
 import { getPublicSiteUrl } from '@/lib/site-url';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
 import { TrackedExternalCtaLink } from '@/components/tracked-external-cta-link';
@@ -68,7 +68,7 @@ function PodcastJsonLd({ episodes }: { episodes: PodcastEpisode[] }) {
 /* ─── Page ─── */
 export default async function HomePage() {
   let episodes: PodcastEpisode[] = [];
-  let reviews = [];
+  let reviews: PublicReview[] = [];
   let reviewCount = 0;
 
   const [episodesResult, reviewsResult, reviewCountResult] = await Promise.allSettled([

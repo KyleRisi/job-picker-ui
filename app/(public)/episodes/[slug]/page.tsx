@@ -53,7 +53,9 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   }
 
   return {
-    title: episode.title,
+    title: {
+      absolute: episode.seoTitle || episode.title
+    },
     description: episode.metaDescription || undefined,
     alternates: {
       canonical: episode.canonicalUrl

@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { CompactPagination } from '@/components/compact-pagination';
 import { pageHref } from '@/lib/pagination';
 import type { PublicReview } from '@/lib/reviews';
@@ -358,6 +358,11 @@ export function ReviewsPage({
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
   const [totalReviews, setTotalReviews] = useState<number>(pagination.total);
   const hrefForPage = (page: number) => pageHref('/reviews', page);
+
+  useEffect(() => {
+    setReviews(initialReviews);
+    setTotalReviews(pagination.total);
+  }, [initialReviews, pagination.total, pagination.page]);
 
   function handleNewReview(review: Review) {
     setTotalReviews((prev) => prev + 1);

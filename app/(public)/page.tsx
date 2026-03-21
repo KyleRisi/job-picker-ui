@@ -1,10 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { getEpisodesLandingPageData } from '@/lib/episodes';
-import type { PodcastEpisode } from '@/lib/podcast';
+import { getPodcastEpisodes, type PodcastEpisode } from '@/lib/podcast';
 import { EpisodesBrowser } from '@/components/episodes-browser';
 import type { Metadata } from 'next';
-import { getVisibleReviews, getVisibleReviewsCount } from '@/lib/reviews';
+import { getVisibleReviews, getVisibleReviewsCount, type PublicReview } from '@/lib/reviews';
 import { getPublicSiteUrl } from '@/lib/site-url';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
 import { TrackedExternalCtaLink } from '@/components/tracked-external-cta-link';
@@ -68,20 +68,37 @@ function PodcastJsonLd({ episodes }: { episodes: PodcastEpisode[] }) {
 /* ─── Page ─── */
 export default async function HomePage() {
   let episodes: PodcastEpisode[] = [];
-  let reviews = [];
+  let reviews: PublicReview[] = [];
   let reviewCount = 0;
-  try {
-    const [landingData, loadedReviews, loadedReviewCount] = await Promise.all([
-      getEpisodesLandingPageData(),
-      getVisibleReviews(9),
-      getVisibleReviewsCount()
-    ]);
-    episodes = landingData.episodes;
-    reviews = loadedReviews;
-    reviewCount = loadedReviewCount;
-  } catch (error) {
-    console.error('Failed to load podcast episodes for home page:', error);
-    reviews = await getVisibleReviews(9);
+
+  const [episodesResult, reviewsResult, reviewCountResult] = await Promise.allSettled([
+    getEpisodesLandingPageData(),
+    getVisibleReviews(9),
+    getVisibleReviewsCount()
+  ]);
+
+  if (episodesResult.status === 'fulfilled') {
+    episodes = episodesResult.value.episodes;
+  } else {
+    console.error('Failed to load episode landing data for home page:', episodesResult.reason);
+    try {
+      episodes = await getPodcastEpisodes({ descriptionMaxLength: 520, limit: 24 });
+    } catch (fallbackError) {
+      console.error('Failed to load podcast episodes fallback for home page:', fallbackError);
+      episodes = [];
+    }
+  }
+
+  if (reviewsResult.status === 'fulfilled') {
+    reviews = reviewsResult.value;
+  } else {
+    console.error('Failed to load reviews for home page:', reviewsResult.reason);
+    reviews = [];
+  }
+
+  if (reviewCountResult.status === 'fulfilled') {
+    reviewCount = reviewCountResult.value;
+  } else {
     reviewCount = reviews.length;
   }
 

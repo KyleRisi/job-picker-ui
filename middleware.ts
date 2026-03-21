@@ -148,16 +148,37 @@ async function resolveRedirect(req: NextRequest, normalizedPath: string): Promis
 }
 
 export async function middleware(req: NextRequest) {
-  const method = req.method.toUpperCase();
-  if (method !== 'GET' && method !== 'HEAD') return withBaselineHeaders(req, NextResponse.next());
-
   const normalizedPath = normalizePath(req.nextUrl.pathname);
-  if (normalizedPath === '/') return withBaselineHeaders(req, NextResponse.next());
-  if (shouldSkipRedirectLookup(normalizedPath)) return withBaselineHeaders(req, NextResponse.next());
+  const isAuthorRoute = normalizedPath === '/author' || normalizedPath.startsWith('/author/');
+  const middlewareStart = performance.now();
+  const serverTiming: string[] = [];
+  const markTiming = (name: string, startedAt: number) => {
+    if (!isAuthorRoute) return;
+    serverTiming.push(`${name};dur=${(performance.now() - startedAt).toFixed(1)}`);
+  };
+  const finalize = (response: NextResponse) => {
+    const nextResponse = withBaselineHeaders(req, response);
+    if (!isAuthorRoute) return nextResponse;
+    const total = `mw_total;dur=${(performance.now() - middlewareStart).toFixed(1)}`;
+    const value = [...serverTiming, total].join(', ');
+    if (value) {
+      const existing = nextResponse.headers.get('server-timing');
+      nextResponse.headers.set('server-timing', existing ? `${existing}, ${value}` : value);
+    }
+    return nextResponse;
+  };
 
+  const method = req.method.toUpperCase();
+  if (method !== 'GET' && method !== 'HEAD') return finalize(NextResponse.next());
+
+  if (normalizedPath === '/') return finalize(NextResponse.next());
+  if (shouldSkipRedirectLookup(normalizedPath)) return finalize(NextResponse.next());
+
+  const taxonomyStart = performance.now();
   const taxonomyRoutePolicy = getTaxonomyRoutePolicy(normalizedPath);
+  markTiming('mw_taxonomy', taxonomyStart);
   if (taxonomyRoutePolicy?.action === 'gone_410') {
-    return withBaselineHeaders(req, new NextResponse('Gone', { status: 410 }));
+    return finalize(new NextResponse('Gone', { status: 410 }));
   }
   if (taxonomyRoutePolicy?.action === 'redirect_301' && taxonomyRoutePolicy.redirect_destination) {
     const destination = buildRedirectLocation({
@@ -170,16 +191,18 @@ export async function middleware(req: NextRequest) {
     });
     const destinationUrl = new URL(destination);
     if (destinationUrl.toString() !== req.nextUrl.toString()) {
-      return withBaselineHeaders(req, NextResponse.redirect(destinationUrl, 301));
+      return finalize(NextResponse.redirect(destinationUrl, 301));
     }
   }
   if (taxonomyRoutePolicy?.action === 'live_noindex') {
-    const response = withBaselineHeaders(req, NextResponse.next());
+    const response = finalize(NextResponse.next());
     response.headers.set('x-robots-tag', 'noindex, follow');
     return response;
   }
 
+  const redirectLookupStart = performance.now();
   const match = await resolveRedirect(req, normalizedPath);
+  markTiming('mw_redirect_lookup', redirectLookupStart);
   if (!match) {
     const deterministicEpisodeTarget = getDeterministicLegacyEpisodeTarget(normalizedPath);
     if (deterministicEpisodeTarget && deterministicEpisodeTarget !== normalizedPath) {
@@ -191,16 +214,16 @@ export async function middleware(req: NextRequest) {
         matchType: 'exact',
         preserveQuery: true
       });
-      return withBaselineHeaders(req, NextResponse.redirect(new URL(destination), 301));
+      return finalize(NextResponse.redirect(new URL(destination), 301));
     }
 
-    return withBaselineHeaders(req, NextResponse.next());
+    return finalize(NextResponse.next());
   }
   if (match.status_code === 410) {
-    return withBaselineHeaders(req, new NextResponse('Gone', { status: 410 }));
+    return finalize(new NextResponse('Gone', { status: 410 }));
   }
   if (!match.target_url) {
-    return withBaselineHeaders(req, NextResponse.next());
+    return finalize(NextResponse.next());
   }
 
   const destination = buildRedirectLocation({
@@ -214,10 +237,10 @@ export async function middleware(req: NextRequest) {
 
   const destinationUrl = new URL(destination);
   if (destinationUrl.toString() === req.nextUrl.toString()) {
-    return withBaselineHeaders(req, NextResponse.next());
+    return finalize(NextResponse.next());
   }
 
-  return withBaselineHeaders(req, NextResponse.redirect(destinationUrl, match.status_code));
+  return finalize(NextResponse.redirect(destinationUrl, match.status_code));
 }
 
 export const config = {

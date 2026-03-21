@@ -32,6 +32,10 @@ function isMissingRelationError(error: unknown) {
   return code === 'PGRST205' || code === '42P01';
 }
 
+function toTimingMs(value: number) {
+  return Number(value.toFixed(1));
+}
+
 function resolveAuthorHeroImage(slug: string, name: string, fallbackImageUrl: string | null) {
   const normalizedSlug = `${slug || ''}`.trim().toLowerCase();
   const normalizedName = `${name || ''}`.trim().toLowerCase();
@@ -163,7 +167,19 @@ export default async function AuthorHubPage({
   params: Params;
   searchParams: SearchParams;
 }) {
+  const routeStart = performance.now();
+  const timing = {
+    authorArchiveMs: 0,
+    authorEpisodeCountMs: 0,
+    authorEpisodeIdsMs: 0,
+    authorEpisodeListMs: 0,
+    renderAssemblyMs: 0,
+    totalRouteMs: 0
+  };
+
+  const archiveStart = performance.now();
   const archive = await loadAuthorArchive(params.authorSlug);
+  timing.authorArchiveMs = toTimingMs(performance.now() - archiveStart);
   if (!archive) notFound();
 
   const tabValue = Array.isArray(searchParams.tab) ? searchParams.tab[0] : searchParams.tab;
@@ -173,13 +189,20 @@ export default async function AuthorHubPage({
 
   if (activeTab === 'blogs') {
     // Keep badge counts without paying the full episode resolution cost on blog-only views.
+    const episodeCountStart = performance.now();
     episodesCount = await getAuthorEpisodeCountCached(archive.author.id);
+    timing.authorEpisodeCountMs = toTimingMs(performance.now() - episodeCountStart);
   } else {
+    const episodeIdsStart = performance.now();
     const episodeIds = await getAuthorEpisodeIdsCached(archive.author.id);
+    timing.authorEpisodeIdsMs = toTimingMs(performance.now() - episodeIdsStart);
+    const episodeListStart = performance.now();
     episodes = episodeIds.length ? await getAuthorEpisodeListForAuthorCached(episodeIds.join(',')) : [];
+    timing.authorEpisodeListMs = toTimingMs(performance.now() - episodeListStart);
     episodesCount = episodes.length;
   }
 
+  const renderAssemblyStart = performance.now();
   const blogs = archive.items;
   const blogsCount = archive.pagination.total;
   const totalCount = episodesCount + blogsCount;
@@ -210,6 +233,18 @@ export default async function AuthorHubPage({
     const query = params.toString();
     return `/author/${archive.author.slug}${query ? `?${query}` : ''}`;
   };
+  timing.renderAssemblyMs = toTimingMs(performance.now() - renderAssemblyStart);
+  timing.totalRouteMs = toTimingMs(performance.now() - routeStart);
+  console.info(
+    '[perf][author-page]',
+    JSON.stringify({
+      slug: archive.author.slug,
+      tab: activeTab,
+      episodesCount,
+      blogsCount,
+      ...timing
+    })
+  );
 
   return (
     <section className="-mb-8 space-y-0">

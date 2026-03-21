@@ -32,6 +32,8 @@ export function initMixpanel() {
         pageview: false
       },
       record_sessions_percent: 100,
+      // Keep replay media visible by default; only block elements we explicitly mark.
+      record_block_selector: '[data-mixpanel-block="true"]',
       record_mask_all_text: false,
       record_mask_all_inputs: false,
       record_mask_text_selector:

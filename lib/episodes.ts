@@ -108,6 +108,42 @@ type PodcastEpisodeEditorialRow = {
   updated_at: string;
 };
 
+export type AuthorEpisodeListItem = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+  episodeNumber: number | null;
+  audioUrl: string;
+  artworkUrl: string | null;
+  duration: string | null;
+};
+
+type AuthorEpisodeListRow = {
+  id: string;
+  title: string;
+  slug: string;
+  description_plain: string;
+  published_at: string | null;
+  audio_url: string;
+  artwork_url: string | null;
+  episode_number: number | null;
+  duration_seconds: number | null;
+  is_visible: boolean;
+  is_archived: boolean;
+};
+
+type AuthorEpisodeListEditorialRow = {
+  episode_id: string;
+  web_title: string | null;
+  web_slug: string | null;
+  excerpt: string | null;
+  hero_image_url: string | null;
+  is_visible: boolean;
+  is_archived: boolean;
+};
+
 type DiscoveryTermRow = {
   id: string;
   term_type: DiscoveryTermType;
@@ -973,6 +1009,72 @@ async function queryEpisodeRows(params?: {
   const { data, error } = await query;
   if (error) throw error;
   return (data || []) as PodcastEpisodeRow[];
+}
+
+async function queryAuthorEpisodeListRows(ids: string[]): Promise<AuthorEpisodeListRow[]> {
+  if (!ids.length) return [];
+  const supabase = await getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('podcast_episodes')
+    .select('id, title, slug, description_plain, published_at, audio_url, artwork_url, episode_number, duration_seconds, is_visible, is_archived')
+    .in('id', ids)
+    .order('published_at', { ascending: false });
+  if (error) throw error;
+  return (data || []) as AuthorEpisodeListRow[];
+}
+
+async function loadAuthorEpisodeListEditorialRows(supabase: SupabaseAdminClient, episodeIds: string[]) {
+  if (!episodeIds.length) return new Map<string, AuthorEpisodeListEditorialRow>();
+  const { data, error } = await supabase
+    .from('podcast_episode_editorial')
+    .select('episode_id, web_title, web_slug, excerpt, hero_image_url, is_visible, is_archived')
+    .in('episode_id', episodeIds);
+  if (error) {
+    if (isMissingRelationError(error)) return new Map();
+    throw error;
+  }
+  return new Map(((data || []) as AuthorEpisodeListEditorialRow[]).map((row) => [row.episode_id, row]));
+}
+
+export async function getAuthorEpisodeList(options?: {
+  ids?: string[];
+  descriptionMaxLength?: number | null;
+}): Promise<AuthorEpisodeListItem[]> {
+  const rows = await queryAuthorEpisodeListRows(options?.ids || []);
+  if (!rows.length) return [];
+
+  const supabase = await getSupabaseAdmin();
+  const editorialMap = await loadAuthorEpisodeListEditorialRows(supabase, rows.map((row) => row.id));
+
+  const items = rows
+    .map((row) => {
+      const editorial = editorialMap.get(row.id) || null;
+      const isVisible = editorial ? editorial.is_visible : row.is_visible;
+      const isArchived = editorial ? editorial.is_archived : row.is_archived;
+      if (!isVisible || isArchived) return null;
+
+      const publishedAt = row.published_at || new Date(0).toISOString();
+      const description = getResolvedExcerpt(
+        row.description_plain || '',
+        editorial?.excerpt || null,
+        options?.descriptionMaxLength ?? DEFAULT_LIST_DESCRIPTION_MAX_LENGTH
+      );
+
+      return {
+        id: row.id,
+        slug: `${editorial?.web_slug || row.slug}`.trim(),
+        title: `${editorial?.web_title || row.title}`.trim(),
+        description,
+        publishedAt,
+        episodeNumber: row.episode_number,
+        audioUrl: row.audio_url,
+        artworkUrl: editorial?.hero_image_url || row.artwork_url,
+        duration: formatDurationLabel(row.duration_seconds)
+      } satisfies AuthorEpisodeListItem;
+    })
+    .filter((item): item is AuthorEpisodeListItem => Boolean(item));
+
+  return items.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 }
 
 async function getPodcastEpisodesFromDatabase(

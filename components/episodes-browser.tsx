@@ -15,6 +15,11 @@ import { pageHref } from '@/lib/pagination';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
 import { isTaxonomyPublicDisplayable } from '@/lib/taxonomy-route-policy';
 
+type EpisodeListItem = Pick<
+  PodcastEpisode,
+  'id' | 'slug' | 'title' | 'description' | 'publishedAt' | 'episodeNumber' | 'audioUrl' | 'artworkUrl' | 'duration'
+>;
+
 function toExcerpt(value: string, maxLength: number): string {
   const normalized = `${value || ''}`.replace(/\s+/g, ' ').trim();
   if (!normalized) return 'No description available for this episode yet.';
@@ -22,7 +27,7 @@ function toExcerpt(value: string, maxLength: number): string {
   return `${normalized.slice(0, maxLength).trimEnd()}...`;
 }
 
-function episodeDateLabel(episode: PodcastEpisode): string {
+function episodeDateLabel(episode: EpisodeListItem): string {
   return formatEpisodeDate(episode.publishedAt);
 }
 
@@ -47,7 +52,7 @@ function formatClock(totalSeconds: number): string {
 function CardAudioPlayer({
   episode
 }: {
-  episode: PodcastEpisode;
+  episode: EpisodeListItem;
 }) {
   const playButtonRef = useRef<HTMLButtonElement | null>(null);
   const { activeEpisode, isPlaying, duration, currentTime, playEpisode, togglePlayPause, seekTo, skipBy } = usePodcastPlayback();
@@ -138,7 +143,7 @@ export function EpisodeCard({
   detailCtaLabel = 'View Episode',
   minimalCard = false
 }: {
-  episode: PodcastEpisode;
+  episode: EpisodeListItem;
   featured: boolean;
   featuredDesktopTextLarger?: boolean;
   taxonomyChips?: Array<{
@@ -387,7 +392,7 @@ export function CompactEpisodeRow({
   excerptNoSnippet = false,
   detailHref
 }: {
-  episode: PodcastEpisode;
+  episode: EpisodeListItem;
   excerptNoSnippet?: boolean;
   detailHref?: string;
 }) {

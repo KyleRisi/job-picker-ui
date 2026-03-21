@@ -9,7 +9,7 @@ import { CompactPagination } from '@/components/compact-pagination';
 import { CompactEpisodeRow, EpisodeCard } from '@/components/episodes-browser';
 import { JoinPatreonCta } from '@/components/join-patreon-cta';
 import { listAuthorArchive } from '@/lib/blog/data';
-import { getResolvedEpisodes } from '@/lib/episodes';
+import { getAuthorEpisodeList, type AuthorEpisodeListItem } from '@/lib/episodes';
 import { createSupabaseAdminClient } from '@/lib/supabase';
 
 export const revalidate = 300;
@@ -110,17 +110,16 @@ const getAuthorEpisodeCountCached = unstable_cache(
   { revalidate: AUTHOR_PAGE_REVALIDATE_SECONDS }
 );
 
-const getResolvedEpisodesForAuthorCached = unstable_cache(
+const getAuthorEpisodeListForAuthorCached = unstable_cache(
   async (episodeIdsKey: string) => {
     if (!episodeIdsKey) return [];
     const ids = episodeIdsKey.split(',').filter(Boolean);
-    return getResolvedEpisodes({
+    return getAuthorEpisodeList({
       ids,
-      includeHidden: false,
       descriptionMaxLength: 220
     });
   },
-  ['author-resolved-episodes-v1'],
+  ['author-episode-list-v1'],
   { revalidate: AUTHOR_PAGE_REVALIDATE_SECONDS }
 );
 
@@ -169,7 +168,7 @@ export default async function AuthorHubPage({
 
   const tabValue = Array.isArray(searchParams.tab) ? searchParams.tab[0] : searchParams.tab;
   const activeTab = tabValue === 'blogs' ? 'blogs' : 'episodes';
-  let episodes: Awaited<ReturnType<typeof getResolvedEpisodes>> = [];
+  let episodes: AuthorEpisodeListItem[] = [];
   let episodesCount = 0;
 
   if (activeTab === 'blogs') {
@@ -177,7 +176,7 @@ export default async function AuthorHubPage({
     episodesCount = await getAuthorEpisodeCountCached(archive.author.id);
   } else {
     const episodeIds = await getAuthorEpisodeIdsCached(archive.author.id);
-    episodes = episodeIds.length ? await getResolvedEpisodesForAuthorCached(episodeIds.join(',')) : [];
+    episodes = episodeIds.length ? await getAuthorEpisodeListForAuthorCached(episodeIds.join(',')) : [];
     episodesCount = episodes.length;
   }
 

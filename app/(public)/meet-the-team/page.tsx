@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { unstable_noStore as noStore } from 'next/cache';
 import { getActiveTeamMembers, getJobsForPublic } from '@/lib/data';
 import { FreaksGrid, type FreakMember } from '@/components/freaks-grid';
 
@@ -13,6 +12,9 @@ type TeamMember = {
   imageClassName?: string;
   href?: string;
 };
+
+// Public, non-personalized content: refresh periodically instead of rendering on every request.
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: 'Meet the Team',
@@ -78,8 +80,6 @@ function MemberCard({ member }: { member: TeamMember }) {
 }
 
 export default async function MeetTheTeamPage() {
-  noStore();
-
   let adamTitle = 'Co-Host';
   let liveTeamMembers: Awaited<ReturnType<typeof getActiveTeamMembers>> = [];
 
@@ -100,7 +100,7 @@ export default async function MeetTheTeamPage() {
     {
       name: 'Kyle Risi',
       title: 'Ringmaster',
-      imageSrc: '/Kyle-meet-the-team.svg',
+      imageSrc: '/Kyle-meet-the-team.jpg',
       imageAlt: 'Kyle',
       imageClassName: 'scale-150',
       href: '/author/kyle-risi'
@@ -108,7 +108,7 @@ export default async function MeetTheTeamPage() {
     {
       name: 'Adam Cox',
       title: adamTitle,
-      imageSrc: '/Adam-meet-the-team.svg',
+      imageSrc: '/Adam-meet-the-team.jpg',
       imageAlt: 'Adam',
       imageClassName: 'scale-150',
       href: '/author/adam-cox'
@@ -116,13 +116,13 @@ export default async function MeetTheTeamPage() {
     {
       name: 'Kieth',
       title: 'Resident Lion Behaviour Co-ordinator',
-      imageSrc: '/Kieth-meet-the-team.svg',
+      imageSrc: '/Kieth-meet-the-team-256.jpg',
       imageAlt: 'Kieth'
     },
     {
       name: 'Sue',
       title: 'Ministeress of Human Affairs',
-      imageSrc: '/Sue-meet-the-team.svg',
+      imageSrc: '/Sue-meet-the-team-256.jpg',
       imageAlt: 'Sue from HR'
     }
   ];

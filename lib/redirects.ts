@@ -144,12 +144,14 @@ export function buildRedirectLocation(params: {
 
 export function shouldSkipRedirectLookup(pathname: string): boolean {
   if (!pathname.startsWith('/')) return true;
+  // Match only the auth namespace (/auth and /auth/*), not /author/*.
+  const isAuthNamespace = pathname === '/auth' || pathname.startsWith('/auth/');
 
   if (
     pathname.startsWith('/api') ||
     pathname.startsWith('/admin') ||
     pathname.startsWith('/_next') ||
-    pathname.startsWith('/auth')
+    isAuthNamespace
   ) {
     return true;
   }

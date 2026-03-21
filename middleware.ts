@@ -222,6 +222,7 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)'
+    // Skip obvious file-extension paths so middleware only runs on route-like requests.
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)'
   ]
 };

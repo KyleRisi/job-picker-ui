@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { initMixpanel, trackMixpanel } from '@/lib/mixpanel-browser';
+import { routeVisitStorageKey } from '@/lib/analytics-events';
 
 function currentUserId(): string | null {
   return null;
@@ -9,6 +11,8 @@ function currentUserId(): string | null {
 
 export function MixpanelProvider() {
   const initializedRef = useRef(false);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -51,6 +55,25 @@ export function MixpanelProvider() {
       window.removeEventListener('unhandledrejection', onUnhandledRejection);
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const search = searchParams?.toString() || '';
+    const path = `${pathname || '/'}${search ? `?${search}` : ''}`;
+    const dedupeKey = routeVisitStorageKey(`mixpanel:page_view:${path}`);
+    try {
+      if (window.sessionStorage.getItem(dedupeKey) === '1') return;
+      window.sessionStorage.setItem(dedupeKey, '1');
+    } catch {
+      // Ignore sessionStorage failures and continue tracking.
+    }
+
+    trackMixpanel('Page View', {
+      page_title: document.title || '',
+      page_url: window.location.href,
+      page_path: path
+    });
+  }, [pathname, searchParams]);
 
   return null;
 }

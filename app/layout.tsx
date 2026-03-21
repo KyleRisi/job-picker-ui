@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { Poppins } from 'next/font/google';
 import { PodcastPlaybackProvider } from '@/components/podcast-playback-provider';
 import { AppShell } from '@/components/app-shell';
@@ -104,7 +105,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={poppins.className}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }} />
         <PodcastPlaybackProvider>
-          <MixpanelProvider />
+          <Suspense fallback={null}>
+            <MixpanelProvider />
+          </Suspense>
           <AppShell>{children}</AppShell>
         </PodcastPlaybackProvider>
       </body>

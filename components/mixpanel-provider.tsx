@@ -4,9 +4,53 @@ import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { initMixpanel, trackMixpanel } from '@/lib/mixpanel-browser';
 import { routeVisitStorageKey } from '@/lib/analytics-events';
+import { trackBrokenHealthEvent } from '@/lib/mixpanel-broken-health';
 
 function currentUserId(): string | null {
   return null;
+}
+
+const STRICT_ROUTE_FAILURE_PATTERNS: RegExp[] = [
+  /\bchunkloaderror\b/i,
+  /loading chunk [\w-]+ failed/i,
+  /loading css chunk [\w-]+ failed/i,
+  /failed to fetch dynamically imported module/i,
+  /importing a module script failed/i,
+  /abort fetching component for route/i
+];
+
+function textFromUnknownError(value: unknown): string {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (value instanceof Error) {
+    return `${value.name || 'Error'}: ${value.message || ''}\n${value.stack || ''}`.trim();
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function isStrictRouteFailureSignal(details: string): boolean {
+  const normalized = `${details || ''}`.trim();
+  if (!normalized) return false;
+  if (STRICT_ROUTE_FAILURE_PATTERNS.some((pattern) => pattern.test(normalized))) return true;
+
+  const lower = normalized.toLowerCase();
+  if (lower.includes('/_next/static/chunks/') && /(failed|error|missing|not found)/i.test(normalized)) {
+    return true;
+  }
+
+  return false;
+}
+
+function maybeTrackRouteLoadFailure(details: string) {
+  if (!isStrictRouteFailureSignal(details)) return;
+  trackBrokenHealthEvent('Route Load Failed', {
+    error_type: 'route_error',
+    error_message: details
+  });
 }
 
 export function MixpanelProvider() {
@@ -20,6 +64,7 @@ export function MixpanelProvider() {
     initializedRef.current = true;
 
     const onError = (event: ErrorEvent) => {
+      const details = `${event.message || ''}\n${event.filename || ''}\n${event.error ? textFromUnknownError(event.error) : ''}`.trim();
       trackMixpanel('Error', {
         error_type: 'client',
         error_message: event.message || 'Unknown client error',
@@ -27,10 +72,12 @@ export function MixpanelProvider() {
         page_url: window.location.href,
         user_id: currentUserId()
       });
+      maybeTrackRouteLoadFailure(details);
     };
 
     const onUnhandledRejection = (event: PromiseRejectionEvent) => {
       const reason = event.reason;
+      const reasonDetails = textFromUnknownError(reason);
       const message =
         typeof reason === 'string'
           ? reason
@@ -45,6 +92,7 @@ export function MixpanelProvider() {
         page_url: window.location.href,
         user_id: currentUserId()
       });
+      maybeTrackRouteLoadFailure(reasonDetails);
     };
 
     window.addEventListener('error', onError);

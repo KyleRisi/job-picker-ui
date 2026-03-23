@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
@@ -113,6 +113,7 @@ export function FreakyRegisterPage({
 
   const [resendBusy, setResendBusy] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
+  const hasSkippedInitialFetchRef = useRef(false);
   const effectiveSort = bucket === 'covered' ? 'newest' : 'top';
   const visibleOpenSuggestions = useMemo(
     () => openSuggestions.filter((item) => !item.isCovered && !item.coveredEpisode),
@@ -214,6 +215,12 @@ export function FreakyRegisterPage({
   }, [votedSuggestionIds]);
 
   useEffect(() => {
+    if (!hasSkippedInitialFetchRef.current) {
+      hasSkippedInitialFetchRef.current = true;
+      const isDefaultInitialState = bucket === 'open' && !query.trim();
+      if (isDefaultInitialState) return;
+    }
+
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
@@ -603,10 +610,10 @@ export function FreakyRegisterPage({
           src="/cover-banner-hero.jpg"
           alt=""
           fill
-          priority
-          quality={72}
-          className="object-cover object-top opacity-30"
-          sizes="100vw"
+          loading="lazy"
+          quality={58}
+          className="hidden object-cover object-top opacity-30 sm:block"
+          sizes="(max-width: 639px) 0px, 100vw"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-carnival-ink/70 via-carnival-ink/85 to-carnival-ink" />
         <div className="absolute -left-24 top-1/3 h-80 w-80 rounded-full bg-carnival-red/25 blur-[120px]" />

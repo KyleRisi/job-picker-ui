@@ -36,6 +36,10 @@ Whimsical HR portal prototype for The Compendium podcast.
 - Public listener reviews page (`/reviews`) backed by DB with fallback JSON data
 - Review submission API (`/api/reviews/submit`) with admin moderation workflow
 - Admin reviews management (`/admin/reviews`) with filters + bulk hide/unhide + detail view
+- Public Freaky Register page (`/freaky-register`) for episode topic suggestions + voting
+- Email verification flow for Freaky Register publish/upvote actions (24h expiry + resend)
+- Workspace moderation for Freaky Register (`/workspace/dashboard/freaky-register`) including identity block/unblock
+- Daily Freaky Register cleanup (archives stale unverified suggestions and prunes old verification tokens)
 - Database-driven redirects with runtime middleware 301/302/307/308 handling
 - Admin redirects management (`/admin/redirects`) with create/edit/search + CSV import/export
 - Admin settings (`/admin/settings`) for:
@@ -62,6 +66,8 @@ STRIPE_SECRET_KEY=
 STRIPE_KEYCHAIN_PRICE_ID=
 STRIPE_PAYMENT_LINK_URL=
 STRIPE_WEBHOOK_SECRET=
+FREAKY_CLEANUP_SECRET=
+FREAKY_IDENTITY_SESSION_SECRET=
 ```
 
 `STRIPE_PAYMENT_LINK_URL` is optional. If set, merch "Buy Now" redirects to that Stripe Payment Link instead of creating a Checkout Session with `STRIPE_SECRET_KEY` + `STRIPE_KEYCHAIN_PRICE_ID`.
@@ -71,7 +77,7 @@ STRIPE_WEBHOOK_SECRET=
 1. Open Supabase SQL editor.
 2. Run migrations in order:
   - Run every `*.sql` file in `supabase/migrations` in lexical order (`0001_...` through the latest migration).
-  - Current latest migration: `supabase/migrations/0023_harden_blog_analytics_views.sql`.
+  - Current latest migration: `supabase/migrations/0031_freaky_suggestion_submitter_fields.sql`.
 3. Run `supabase/seed.sql`.
 
 This creates all required tables:
@@ -209,3 +215,8 @@ Route templates for audits live in `data/performance-route-templates.json`.
 - `/admin/exports`
 - `/admin/settings`
 - `/reviews`
+- `/freaky-register`
+
+## Freaky Register docs
+
+- See [`docs/freaky-register.md`](docs/freaky-register.md) for data model, verification, voting protection, moderation, and customization notes.

@@ -12,6 +12,7 @@ const WORKSPACE_NAV_LINKS = [
   { href: '/workspace/dashboard/media', label: 'Media', icon: '/blog/icons/Media.svg' },
   { href: '/workspace/dashboard/analytics', label: 'Analytics', icon: '/blog/icons/analytics.svg' },
   { href: '/workspace/dashboard/reviews', label: 'Reviews', icon: '/blog/icons/reviews.svg' },
+  { href: '/workspace/dashboard/freaky-register', label: 'Freaky Register', icon: '/blog/icons/reviews.svg' },
   { href: '/workspace/dashboard/contacts', label: 'Contacts', icon: '/blog/icons/contacts.svg' },
   { href: '/workspace/dashboard/redirects', label: 'Redirects', icon: '/blog/icons/redirects.svg' },
   { href: '/workspace/dashboard/taxonomies', label: 'Taxonomies', icon: '/blog/icons/Taxonomies.svg' },

@@ -1,0 +1,4 @@
+suggestion_external_key,voter_email,created_at
+topic-001,listener1@example.com,2025-11-02T09:00:00Z
+topic-001,listener2@example.com,2025-11-03T09:00:00Z
+topic-002,listener1@example.com,2025-11-06T11:45:00Z

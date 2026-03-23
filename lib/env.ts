@@ -18,6 +18,7 @@ export const env = {
   mixpanelApiHost: process.env.NEXT_PUBLIC_MIXPANEL_API_HOST || '',
   reviewsSyncSecret: process.env.REVIEWS_SYNC_SECRET || '',
   redirectResolveSecret: process.env.REDIRECT_RESOLVE_SECRET || '',
+  freakyCleanupSecret: process.env.FREAKY_CLEANUP_SECRET || '',
   adminAuthDisabled: (process.env.ADMIN_AUTH_DISABLED || '').toLowerCase() === 'true',
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
   stripeKeychainPriceId: process.env.STRIPE_KEYCHAIN_PRICE_ID || '',

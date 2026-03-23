@@ -4,12 +4,44 @@ import Image from 'next/image';
 import { type MouseEvent as ReactMouseEvent, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { type PodcastEpisode, formatEpisodeDate } from '@/lib/podcast-shared';
+import { type PrepublishDraftStatus } from '@/lib/episode-prepublish-drafts';
+
+type WorkspaceDraftListRow = {
+  rowType: 'prepublish_draft';
+  id: string;
+  title: string;
+  normalizedTitle: string;
+  status: PrepublishDraftStatus;
+  reviewReason: string | null;
+  matchedEpisodeId: string | null;
+  updatedAt: string;
+  expectedPublishDate: string | null;
+  allowTitleCollision: boolean;
+  primaryTopicName?: string | null;
+  seoTitle?: string | null;
+  metaDescription?: string | null;
+  seoScore?: number | null;
+  hasTranscript?: boolean;
+  artworkUrl?: string | null;
+};
+
+type WorkspaceEpisodeTableRow = PodcastEpisode & {
+  rowType: 'live_episode' | 'prepublish_draft';
+  draftId?: string;
+  draftStatus?: PrepublishDraftStatus;
+  normalizedTitle?: string;
+  reviewReason?: string | null;
+  matchedEpisodeId?: string | null;
+  expectedPublishDate?: string | null;
+  allowTitleCollision?: boolean;
+};
 
 type SortDirection = 'asc' | 'desc';
 type SortState = { column: ColumnKey; direction: SortDirection };
 
 const SORTABLE_COLUMNS = new Set<ColumnKey>([
   'title',
+  'rowStatus',
   'episodeNumber',
   'publishedAt',
   'duration',
@@ -21,8 +53,9 @@ const SORTABLE_COLUMNS = new Set<ColumnKey>([
   'hasTranscript'
 ]);
 
-function getSortValue(episode: PodcastEpisode, column: ColumnKey): string | number {
+function getSortValue(episode: WorkspaceEpisodeTableRow, column: ColumnKey): string | number {
   switch (column) {
+    case 'rowStatus': return episode.rowType === 'prepublish_draft' ? (episode.draftStatus || '') : 'live_episode';
     case 'title': return episode.title.toLowerCase();
     case 'episodeNumber': return episode.episodeNumber ?? -1;
     case 'publishedAt': return toDateMs(episode.publishedAt);
@@ -38,6 +71,7 @@ function getSortValue(episode: PodcastEpisode, column: ColumnKey): string | numb
 }
 
 type ColumnKey =
+  | 'rowStatus'
   | 'id'
   | 'slug'
   | 'title'
@@ -65,18 +99,20 @@ type ColumnDefinition = {
   width: number;
   headClassName?: string;
   cellClassName?: string;
-  render: (episode: PodcastEpisode) => ReactNode;
+  render: (episode: WorkspaceEpisodeTableRow) => ReactNode;
 };
 type EditableColumnDefinition = Omit<ColumnDefinition, 'key'> & { key: EditableColumnKey };
 
 const PAGE_SIZE = 25;
 const WORKSPACE_EPISODES_COLUMNS_KEY = 'workspace_episodes_visible_columns';
 const WORKSPACE_EPISODES_PAGE_KEY = 'workspace_episodes_page';
+const WORKSPACE_EPISODES_FILTERS_KEY = 'workspace_episodes_filters_v1';
 const MIN_COLUMN_WIDTH = 80;
 const MAX_COLUMN_WIDTH = 1200;
 const FIXED_COLUMN: ColumnKey = 'actions';
 const ACTIONS_COLUMN_WIDTH = 132;
 const DEFAULT_VISIBLE_COLUMNS: EditableColumnKey[] = [
+  'rowStatus',
   'artworkUrl',
   'episodeNumber',
   'title',
@@ -98,6 +134,37 @@ function compactValue(value: string, maxLength = 90): string {
 }
 
 const ALL_COLUMNS: ColumnDefinition[] = [
+  {
+    key: 'rowStatus',
+    label: 'Type',
+    width: 180,
+    headClassName: 'whitespace-nowrap',
+    cellClassName: 'whitespace-nowrap',
+    render: (episode) => {
+      if (episode.rowType === 'live_episode') {
+        return (
+          <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold uppercase text-emerald-800">
+            Live
+          </span>
+        );
+      }
+
+      const status = episode.draftStatus || 'draft';
+      const statusTone: Record<PrepublishDraftStatus, string> = {
+        draft: 'bg-slate-100 text-slate-700',
+        ready_to_match: 'bg-blue-100 text-blue-800',
+        needs_review: 'bg-amber-100 text-amber-800',
+        conflict: 'bg-rose-100 text-rose-800',
+        attached: 'bg-emerald-100 text-emerald-800',
+        archived: 'bg-slate-200 text-slate-700'
+      };
+      return (
+        <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase ${statusTone[status]}`}>
+          {status.replaceAll('_', ' ')}
+        </span>
+      );
+    }
+  },
   {
     key: 'title',
     label: 'Title',
@@ -162,7 +229,7 @@ const ALL_COLUMNS: ColumnDefinition[] = [
     width: 240,
     headClassName: 'whitespace-nowrap',
     cellClassName: 'whitespace-nowrap text-slate-700',
-    render: (episode) => (
+    render: (episode) => episode.audioUrl ? (
       <span
         className="inline-flex"
         onClick={(event) => event.stopPropagation()}
@@ -172,6 +239,8 @@ const ALL_COLUMNS: ColumnDefinition[] = [
           <source src={episode.audioUrl} />
         </audio>
       </span>
+    ) : (
+      <span className="text-slate-400">&ndash;</span>
     )
   },
   {
@@ -285,18 +354,22 @@ const ALL_COLUMNS: ColumnDefinition[] = [
     headClassName: 'whitespace-nowrap',
     cellClassName: 'whitespace-nowrap text-slate-700',
     render: (episode) => (
-      <button
-        type="button"
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          window.open(`/episodes/${episode.slug}`, '_blank', 'noopener,noreferrer');
-        }}
-        onMouseDown={(event) => event.stopPropagation()}
-        className="inline-flex h-7 items-center justify-center rounded-md border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-      >
-        View
-      </button>
+      episode.rowType === 'live_episode' ? (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            window.open(`/episodes/${episode.slug}`, '_blank', 'noopener,noreferrer');
+          }}
+          onMouseDown={(event) => event.stopPropagation()}
+          className="inline-flex h-7 items-center justify-center rounded-md border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+        >
+          View
+        </button>
+      ) : (
+        <span className="text-xs text-slate-400">Draft only</span>
+      )
     )
   }
 ];
@@ -370,6 +443,25 @@ function toPersistedSort(value: unknown): SortState | null {
   return { column: column as ColumnKey, direction: direction as SortDirection };
 }
 
+function toPersistedQuery(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
+function toPersistedRowType(value: unknown): 'all' | 'live_episode' | 'prepublish_draft' | null {
+  const normalized = `${value || ''}`;
+  if (normalized === 'all' || normalized === 'live_episode' || normalized === 'prepublish_draft') return normalized;
+  return null;
+}
+
+function toPersistedDraftStatus(value: unknown): 'all' | PrepublishDraftStatus | null {
+  const normalized = `${value || ''}`;
+  if (normalized === 'all') return 'all';
+  if (normalized === 'draft' || normalized === 'ready_to_match' || normalized === 'needs_review' || normalized === 'conflict' || normalized === 'attached' || normalized === 'archived') {
+    return normalized;
+  }
+  return null;
+}
+
 function persistTableConfig(columns: EditableColumnKey[], widths: Record<ColumnKey, number>, sort: SortState) {
   try {
     window.localStorage.setItem(
@@ -385,10 +477,17 @@ function persistTableConfig(columns: EditableColumnKey[], widths: Record<ColumnK
   }
 }
 
-export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[] }) {
+export function WorkspaceEpisodesTable({
+  episodes,
+  draftRows
+}: {
+  episodes: PodcastEpisode[];
+  draftRows: WorkspaceDraftListRow[];
+}) {
   const router = useRouter();
   const [query, setQuery] = useState('');
-  const [yearFilter, setYearFilter] = useState('all');
+  const [rowTypeFilter, setRowTypeFilter] = useState<'all' | 'live_episode' | 'prepublish_draft'>('all');
+  const [draftStatusFilter, setDraftStatusFilter] = useState<'all' | PrepublishDraftStatus>('all');
   const [sort, setSort] = useState<SortState>({ column: 'publishedAt', direction: 'desc' });
   const [page, setPageRaw] = useState(1);
 
@@ -449,12 +548,46 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
     } finally {
       setConfigRestored(true);
     }
+
+    try {
+      const rawFilters = window.localStorage.getItem(WORKSPACE_EPISODES_FILTERS_KEY);
+      if (!rawFilters) return;
+      const parsed = JSON.parse(rawFilters) as {
+        query?: unknown;
+        rowTypeFilter?: unknown;
+        draftStatusFilter?: unknown;
+      };
+      const restoredQuery = toPersistedQuery(parsed.query);
+      const restoredRowType = toPersistedRowType(parsed.rowTypeFilter);
+      const restoredDraftStatus = toPersistedDraftStatus(parsed.draftStatusFilter);
+      if (restoredQuery !== null) setQuery(restoredQuery);
+      if (restoredRowType) setRowTypeFilter(restoredRowType);
+      if (restoredDraftStatus) setDraftStatusFilter(restoredDraftStatus);
+    } catch {
+      // Ignore storage parse errors and keep defaults.
+    }
   }, []);
 
   useEffect(() => {
     if (!configRestored) return;
     persistTableConfig(visibleColumns, columnWidths, sort);
   }, [visibleColumns, columnWidths, sort, configRestored]);
+
+  useEffect(() => {
+    if (!configRestored) return;
+    try {
+      window.localStorage.setItem(
+        WORKSPACE_EPISODES_FILTERS_KEY,
+        JSON.stringify({
+          query,
+          rowTypeFilter,
+          draftStatusFilter
+        })
+      );
+    } catch {
+      // Ignore storage write failures in restricted browser contexts.
+    }
+  }, [query, rowTypeFilter, draftStatusFilter, configRestored]);
 
   useEffect(() => {
     widthsRef.current = columnWidths;
@@ -496,36 +629,65 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
       document.body.style.userSelect = '';
       document.body.style.cursor = '';
     };
-  }, [resizing]);
+  }, [resizing, sort]);
 
-  const years = useMemo(() => {
-    const uniqueYears = new Set<string>();
+  const tableRows = useMemo<WorkspaceEpisodeTableRow[]>(() => {
+    const liveRows: WorkspaceEpisodeTableRow[] = episodes.map((episode) => ({
+      ...episode,
+      rowType: 'live_episode'
+    }));
 
-    episodes.forEach((episode) => {
-      const date = new Date(episode.publishedAt);
-      if (Number.isNaN(date.getTime())) return;
-      uniqueYears.add(`${date.getUTCFullYear()}`);
-    });
+    const draftMappedRows: WorkspaceEpisodeTableRow[] = draftRows.map((draft) => ({
+      id: draft.id,
+      slug: '',
+      title: draft.title,
+      seasonNumber: null,
+      episodeNumber: null,
+      publishedAt: draft.expectedPublishDate || draft.updatedAt,
+      description: '',
+      descriptionHtml: '',
+      audioUrl: '',
+      artworkUrl: draft.artworkUrl || null,
+      duration: null,
+      sourceUrl: null,
+      primaryTopicName: draft.primaryTopicName || null,
+      seoTitle: draft.seoTitle || null,
+      metaDescription: draft.metaDescription || null,
+      seoScore: draft.seoScore ?? null,
+      hasTranscript: draft.hasTranscript === true,
+      rowType: 'prepublish_draft',
+      draftId: draft.id,
+      draftStatus: draft.status,
+      normalizedTitle: draft.normalizedTitle,
+      reviewReason: draft.reviewReason,
+      matchedEpisodeId: draft.matchedEpisodeId,
+      expectedPublishDate: draft.expectedPublishDate,
+      allowTitleCollision: draft.allowTitleCollision
+    }));
 
-    return Array.from(uniqueYears).sort((a, b) => Number(b) - Number(a));
-  }, [episodes]);
+    return [...liveRows, ...draftMappedRows];
+  }, [episodes, draftRows]);
 
   const filteredEpisodes = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    const filtered = episodes.filter((episode) => {
-      if (yearFilter !== 'all') {
-        const publishedDate = new Date(episode.publishedAt);
-        if (Number.isNaN(publishedDate.getTime())) return false;
-        if (`${publishedDate.getUTCFullYear()}` !== yearFilter) return false;
+    const filtered = tableRows.filter((episode) => {
+      if (rowTypeFilter !== 'all' && episode.rowType !== rowTypeFilter) {
+        return false;
+      }
+
+      if (draftStatusFilter !== 'all') {
+        if (episode.rowType !== 'prepublish_draft') return false;
+        if ((episode.draftStatus || 'draft') !== draftStatusFilter) return false;
       }
 
       if (!normalizedQuery) return true;
 
       return (
         episode.title.toLowerCase().includes(normalizedQuery) ||
-        episode.slug.toLowerCase().includes(normalizedQuery) ||
-        `${episode.episodeNumber ?? ''}`.includes(normalizedQuery)
+        (episode.slug || '').toLowerCase().includes(normalizedQuery) ||
+        `${episode.episodeNumber ?? ''}`.includes(normalizedQuery) ||
+        (episode.normalizedTitle || '').toLowerCase().includes(normalizedQuery)
       );
     });
 
@@ -541,7 +703,7 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
     });
 
     return sorted;
-  }, [episodes, query, sort, yearFilter]);
+  }, [tableRows, query, sort, rowTypeFilter, draftStatusFilter]);
 
 
 
@@ -653,10 +815,10 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
     });
   }
 
-  if (!episodes.length) {
+  if (!tableRows.length) {
     return (
       <div className="rounded-md border border-slate-300 bg-white p-6 text-sm text-slate-700">
-        No episodes were returned from the feed.
+        No episodes or prepublish drafts are available.
       </div>
     );
   }
@@ -682,7 +844,7 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
               <input
                 value={query}
                 onChange={(event) => { setQuery(event.target.value); setPage(1); }}
-                placeholder="Title, slug, or episode #"
+                placeholder="Title, slug, normalized title, or episode #"
                 className="h-8 w-72 rounded-md border border-slate-300 px-2 py-1 pr-7 text-xs"
               />
               {query ? (
@@ -701,19 +863,47 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
           </div>
 
           <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-            <span>Year</span>
+            <span>Row Type</span>
             <span className="relative inline-block">
               <select
-                value={yearFilter}
-                onChange={(event) => { setYearFilter(event.target.value); setPage(1); }}
-                className="h-8 w-auto min-w-[8rem] appearance-none rounded-md border border-slate-300 px-2 py-1 pr-7 text-xs"
+                value={rowTypeFilter}
+                onChange={(event) => {
+                  setRowTypeFilter(event.target.value as 'all' | 'live_episode' | 'prepublish_draft');
+                  setPage(1);
+                }}
+                className="h-8 w-auto min-w-[10rem] appearance-none rounded-md border border-slate-300 px-2 py-1 pr-7 text-xs"
               >
-                <option value="all">All years</option>
-                {years.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
+                <option value="all">All rows</option>
+                <option value="live_episode">Live episodes</option>
+                <option value="prepublish_draft">Prepublish drafts</option>
+              </select>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 10 6"
+                className="pointer-events-none absolute right-2 top-1/2 h-[0.5rem] w-[0.5rem] -translate-y-1/2 fill-slate-600"
+              >
+                <path d="M5 6L0 0h10L5 6z" />
+              </svg>
+            </span>
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+            <span>Draft Status</span>
+            <span className="relative inline-block">
+              <select
+                value={draftStatusFilter}
+                onChange={(event) => {
+                  setDraftStatusFilter(event.target.value as 'all' | PrepublishDraftStatus);
+                  setPage(1);
+                }}
+                className="h-8 w-auto min-w-[11rem] appearance-none rounded-md border border-slate-300 px-2 py-1 pr-7 text-xs"
+              >
+                <option value="all">All statuses</option>
+                <option value="draft">Draft</option>
+                <option value="ready_to_match">Ready to match</option>
+                <option value="needs_review">Needs review</option>
+                <option value="conflict">Conflict</option>
+                <option value="attached">Attached</option>
+                <option value="archived">Archived</option>
               </select>
               <svg
                 aria-hidden="true"
@@ -787,7 +977,9 @@ export function WorkspaceEpisodesTable({ episodes }: { episodes: PodcastEpisode[
 
           <tbody>
             {pagedEpisodes.map((episode) => {
-              const detailHref = `/workspace/dashboard/episodes/${episode.slug}`;
+              const detailHref = episode.rowType === 'prepublish_draft'
+                ? `/workspace/dashboard/episodes/drafts/${episode.id}`
+                : `/workspace/dashboard/episodes/${episode.slug}`;
 
               return (
                 <tr

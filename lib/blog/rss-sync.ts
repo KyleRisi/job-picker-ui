@@ -1,6 +1,7 @@
 import { XMLParser } from 'fast-xml-parser';
 import { env } from '@/lib/env';
 import { createSupabaseAdminClient } from '@/lib/supabase';
+import { runPrepublishDraftMatcher } from '@/lib/episode-prepublish-drafts';
 import { slugifyBlogText } from './content';
 
 const parser = new XMLParser({
@@ -278,6 +279,17 @@ export async function syncPodcastEpisodes(options: SyncPodcastEpisodesOptions = 
       }
     }
 
+    let matcher: Awaited<ReturnType<typeof runPrepublishDraftMatcher>> | null = null;
+    let matcherErrorSummary = '';
+    if (!options.episodeId && mode !== 'metadata_without_content') {
+      try {
+        matcher = await runPrepublishDraftMatcher();
+      } catch (error) {
+        matcherErrorSummary = error instanceof Error ? error.message : 'Prepublish matcher failed.';
+        console.error('[rss sync] prepublish matcher failed:', error);
+      }
+    }
+
     const syncResult = await supabase
       .from('episode_sync_logs')
       .update({
@@ -286,7 +298,10 @@ export async function syncPodcastEpisodes(options: SyncPodcastEpisodesOptions = 
         records_added: recordsAdded,
         records_updated: recordsUpdated,
         records_skipped: recordsSkipped,
-        error_summary: errors.length ? errors.join('; ') : ''
+        error_summary: [
+          errors.length ? errors.join('; ') : '',
+          matcherErrorSummary ? `matcher: ${matcherErrorSummary}` : ''
+        ].filter(Boolean).join('; ')
       })
       .eq('id', logRow.id);
     if (syncResult.error) throw syncResult.error;
@@ -295,7 +310,8 @@ export async function syncPodcastEpisodes(options: SyncPodcastEpisodesOptions = 
       recordsAdded,
       recordsUpdated,
       recordsSkipped,
-      mode
+      mode,
+      matcher
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'RSS sync failed.';

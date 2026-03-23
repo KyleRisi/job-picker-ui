@@ -9,6 +9,7 @@ export function WorkspaceEpisodesActions() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [creatingDraft, setCreatingDraft] = useState(false);
   const [feedback, setFeedback] = useState<null | { tone: 'success' | 'error'; text: string }>(null);
 
   useEffect(() => {
@@ -56,6 +57,34 @@ export function WorkspaceEpisodesActions() {
     }
   }
 
+  async function createPrepublishDraft() {
+    if (creatingDraft) return;
+    setCreatingDraft(true);
+    setFeedback(null);
+    try {
+      const response = await fetch('/api/admin/blog/episodes/prepublish-drafts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Untitled episode draft' })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Failed to create draft.');
+      }
+      const id = `${payload?.item?.id || ''}`.trim();
+      if (!id) throw new Error('Draft created but id was missing.');
+      router.push(`/workspace/dashboard/episodes/drafts/${id}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create draft.';
+      setFeedback({
+        tone: 'error',
+        text: message
+      });
+    } finally {
+      setCreatingDraft(false);
+    }
+  }
+
   return (
     <div className="relative" ref={menuRef}>
       <button
@@ -64,6 +93,15 @@ export function WorkspaceEpisodesActions() {
         className="inline-flex h-9 items-center justify-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
       >
         Actions
+      </button>
+
+      <button
+        type="button"
+        onClick={createPrepublishDraft}
+        disabled={creatingDraft}
+        className="ml-2 inline-flex h-9 items-center justify-center rounded-md bg-blue-600 px-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {creatingDraft ? 'Creating…' : 'New Prepublish Draft'}
       </button>
 
       {menuOpen ? (
@@ -139,4 +177,3 @@ export function WorkspaceEpisodesActions() {
     </div>
   );
 }
-

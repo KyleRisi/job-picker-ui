@@ -7,6 +7,7 @@ type LiveSearchInputProps = {
   placeholder: string;
   ariaLabel?: string;
   className?: string;
+  inputClassName?: string;
 };
 
 export function LiveSearchInput({
@@ -15,13 +16,15 @@ export function LiveSearchInput({
   onChange,
   placeholder,
   ariaLabel,
-  className = ''
+  className = '',
+  inputClassName = ''
 }: LiveSearchInputProps) {
+  const defaultInputClassName = 'w-full rounded-xl border-2 border-carnival-ink/20 bg-white py-3 pl-4 pr-4 text-base font-semibold text-carnival-ink transition placeholder:text-carnival-ink/45 focus:border-carnival-gold focus:outline-none focus:ring-4 focus:ring-carnival-gold/45';
   return (
     <div className={`relative ${className}`.trim()}>
       <input
         id={id}
-        className="w-full rounded-xl border-2 border-carnival-ink/20 bg-white py-3 pl-4 pr-4 text-base font-semibold text-carnival-ink transition placeholder:text-carnival-ink/45 focus:border-carnival-gold focus:outline-none focus:ring-4 focus:ring-carnival-gold/45"
+        className={`${defaultInputClassName} ${inputClassName}`.trim()}
         type="search"
         value={value}
         onChange={(event) => onChange(event.target.value)}

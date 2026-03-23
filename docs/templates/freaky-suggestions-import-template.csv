@@ -1,0 +1,4 @@
+external_key,title,description,status,is_visible,created_at,submitted_full_name,submitted_country,submitter_email,topic_term_id,topic_slug,topic_name,duplicate_of_external_key
+topic-001,The Byford Dolphin Accident,Deep dive into the decompression accident and offshore safety changes.,published,true,2025-11-01T10:00:00Z,Jane Smith,United Kingdom,jane@example.com,,disaster,Disaster,
+topic-002,The Dyatlov Pass Incident,Revisit the leading hypotheses and what evidence still matters.,published,true,2025-11-05T14:15:00Z,Alex Murphy,United States,alex@example.com,,,Mystery,
+topic-003,The Halifax Explosion,Can we cover this catastrophe and its long-term impact?,pending_verification,false,2025-11-07T09:30:00Z,Chris Lee,Canada,chris@example.com,,,History,topic-001

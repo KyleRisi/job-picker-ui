@@ -320,6 +320,64 @@ export async function sendContactSubmissionNotificationEmail(input: {
   return sendEmail(env.adminEmail, `New contact form message: ${input.subject}`, html);
 }
 
+export async function sendFreakyRegisterVerificationEmail(input: {
+  to: string;
+  verifyUrl: string;
+  purpose: 'publish_suggestion' | 'cast_vote';
+  suggestionTitle?: string;
+  requestId: string;
+}) {
+  const actionCopy = input.purpose === 'publish_suggestion'
+    ? 'publish your Freaky Register suggestion'
+    : 'confirm your upvote on Freaky Register';
+  const titleCopy = input.suggestionTitle
+    ? `<p><strong>Topic:</strong> ${escapeHtml(input.suggestionTitle)}</p>`
+    : '';
+
+  const html = `
+    <h1>Freaky Register verification</h1>
+    <p>You're one click away. Confirm this email to ${actionCopy}.</p>
+    ${titleCopy}
+    <p><a href="${escapeHtml(input.verifyUrl)}">Verify this action</a></p>
+    <p>This link expires in 24 hours.</p>
+    <p style="font-size:12px;color:#666;">Request ID: ${escapeHtml(input.requestId)}</p>
+  `;
+
+  return sendEmail(input.to, 'Verify your Freaky Register action', html);
+}
+
+export async function sendFreakyRegisterSubmissionNotificationEmail(input: {
+  to?: string;
+  suggestionId: string;
+  fullName: string;
+  country: string;
+  topicName: string;
+  title: string;
+  description: string;
+  submitterEmail: string;
+}) {
+  const recipient = (input.to || 'thecompendiumpod@gmail.com').trim().toLowerCase();
+  if (!recipient) return { id: 'freaky-admin-notification-skipped' };
+
+  const moderationUrl = `${env.appBaseUrl.replace(/\/$/, '')}/workspace/dashboard/freaky-register`;
+  const html = `
+    <h1>New Freaky Register suggestion submitted</h1>
+    <p>A new suggestion was submitted and is awaiting verification.</p>
+    <hr />
+    <p><strong>Suggestion ID:</strong> ${escapeHtml(input.suggestionId)}</p>
+    <p><strong>Submitter:</strong> ${escapeHtml(input.fullName)}</p>
+    <p><strong>Origin:</strong> ${escapeHtml(input.country)}</p>
+    <p><strong>Email:</strong> ${escapeHtml(input.submitterEmail)}</p>
+    <p><strong>Topic category:</strong> ${escapeHtml(input.topicName)}</p>
+    <p><strong>Title:</strong> ${escapeHtml(input.title)}</p>
+    <p><strong>Description:</strong><br/>${nl2br(input.description)}</p>
+    <hr />
+    <p><a href="${escapeHtml(moderationUrl)}">Open Freaky Register moderation</a></p>
+  `;
+
+  return sendEmail(recipient, 'New Freaky Register suggestion submitted', html);
+}
+
 export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')

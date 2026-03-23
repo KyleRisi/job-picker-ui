@@ -16,6 +16,7 @@ export function MainNav() {
     { href: '/connect', label: 'Connect', prefetch: true },
     { href: '/meet-the-team', label: 'The Team', prefetch: true },
     { href: '/reviews', label: 'Reviews', prefetch: false },
+    { href: '/freaky-register', label: 'Suggestions', prefetch: false },
     { href: '/blog', label: 'Blog', prefetch: false }
   ];
   const [open, setOpen] = useState(false);

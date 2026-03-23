@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { EpisodesBrowser } from '@/components/episodes-browser';
+import { BrokenHealthEpisodesTracker } from '@/components/broken-health-episodes-tracker';
 import { JoinPatreonCta } from '@/components/join-patreon-cta';
 import { getEpisodesLandingPageData } from '@/lib/episodes';
 import { getPodcastEpisodes, type PodcastEpisode } from '@/lib/podcast';
@@ -190,9 +191,14 @@ export default async function EpisodesPage({ searchParams }: EpisodesPageProps) 
   const totalPages = Math.max(1, Math.ceil(sortedEpisodes.length / EPISODES_PAGE_SIZE));
   const page = Math.min(requestedPage, totalPages);
   const displayedEpisodeCount = episodes.length + ARCHIVED_PATREON_EPISODE_BASELINE;
+  const hasUnexpectedMissingPrimaryContent = !hasFeedError && episodes.length === 0;
 
   return (
     <>
+      <BrokenHealthEpisodesTracker
+        hasCriticalApiFailure={hasFeedError}
+        hasUnexpectedMissingPrimaryContent={hasUnexpectedMissingPrimaryContent}
+      />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <div className="flex min-h-[calc(100dvh-var(--app-shell-header-height,0px)-4rem)] flex-col">
         <section className="full-bleed relative -mt-8 overflow-hidden bg-carnival-ink pb-16 pt-16 md:pb-20 md:pt-20">

@@ -10,6 +10,7 @@ import { ViewModeToggle, VIEW_MODE_STORAGE_KEY, type ViewMode } from '@/componen
 import { pageHref } from '@/lib/pagination';
 import type { DiscoveryHubPage as DiscoveryHubPageData } from '@/lib/podcast-shared';
 import { resolveHubIntroText } from '@/lib/seo-page-copy';
+import { trackBrokenHealthEvent } from '@/lib/mixpanel-broken-health';
 
 const LABELS: Record<string, string> = {
   topics: 'Topics',
@@ -29,6 +30,10 @@ export function DiscoveryHubPage({
   hub: DiscoveryHubPageData;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>('compact');
+  const hasUnexpectedMissingPrimaryContent =
+    hub.pagination.page === 1 &&
+    hub.pagination.total > 0 &&
+    hub.latestEpisodes.length === 0;
 
   useEffect(() => {
     try {
@@ -48,6 +53,17 @@ export function DiscoveryHubPage({
       // Ignore localStorage failures.
     }
   }, [viewMode]);
+
+  useEffect(() => {
+    if (!hasUnexpectedMissingPrimaryContent) return;
+    trackBrokenHealthEvent('Soft 404 Viewed', {
+      content_id: hub.term.id,
+      content_slug: hub.term.slug,
+      content_type: routeKey,
+      error_type: 'content_missing',
+      error_message: 'Discovery hub expected episode content but primary listing was empty.'
+    });
+  }, [hasUnexpectedMissingPrimaryContent, hub.term.id, hub.term.slug, routeKey]);
 
   const basePath = hub.term.path || `/${routeKey}/${hub.term.slug}`;
   const hrefForPage = (page: number) => pageHref(basePath, page);

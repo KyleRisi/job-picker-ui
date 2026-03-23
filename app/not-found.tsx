@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+import { BrokenHealthNotFoundTracker } from '@/components/broken-health-not-found-tracker';
 
 export const metadata: Metadata = {
   robots: {
@@ -16,6 +17,7 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <section className="full-bleed relative -my-8 min-h-[calc(100vh-7rem)] overflow-hidden">
+      <BrokenHealthNotFoundTracker />
       <Image
         src="/Cover Banner.png"
         alt=""

@@ -10,14 +10,12 @@ import { compactJsonLd, getPageEntityIds, resolveCanonicalForSchema, toAbsoluteS
 type EpisodesPageProps = {
   searchParams?: {
     view?: string | string[];
-    sort?: string | string[];
     page?: string | string[];
     topic?: string | string[];
   };
 };
 
 type ViewMode = 'grid' | 'compact';
-type SortOrder = 'newest' | 'oldest';
 const EPISODES_PAGE_SIZE = 12;
 const ARCHIVED_PATREON_EPISODE_BASELINE = 19;
 
@@ -55,11 +53,6 @@ function normalizeViewMode(value: string | string[] | undefined): ViewMode | und
   const normalized = normalizeSingleValue(value);
   if (normalized === 'grid' || normalized === 'compact') return normalized;
   return undefined;
-}
-
-function normalizeSortOrder(value: string | string[] | undefined): SortOrder {
-  const normalized = normalizeSingleValue(value);
-  return normalized === 'oldest' ? 'oldest' : 'newest';
 }
 
 function normalizePageNumber(value: string | string[] | undefined): number {
@@ -105,16 +98,13 @@ function buildTopicToggleOptions(
 
 function toPreservedSearchParams({
   view,
-  sort,
   topic
 }: {
   view?: ViewMode;
-  sort: SortOrder;
   topic: string | null;
 }): URLSearchParams | undefined {
   const nextParams = new URLSearchParams();
   if (view) nextParams.set('view', view);
-  if (sort !== 'newest') nextParams.set('sort', sort);
   if (topic) nextParams.set('topic', topic);
   return nextParams.size ? nextParams : undefined;
 }
@@ -130,7 +120,6 @@ function validateTopicFilter(
 
 export default async function EpisodesPage({ searchParams }: EpisodesPageProps) {
   const initialViewMode = normalizeViewMode(searchParams?.view);
-  const initialSortOrder = normalizeSortOrder(searchParams?.sort);
   const requestedTopicFilter = normalizeTopicFilter(searchParams?.topic);
   const requestedPage = normalizePageNumber(searchParams?.page);
   const siteUrl = getPublicSiteUrl();
@@ -170,7 +159,6 @@ export default async function EpisodesPage({ searchParams }: EpisodesPageProps) 
   const topicFilter = validateTopicFilter(requestedTopicFilter, topicToggleOptions);
   const preservedSearchParams = toPreservedSearchParams({
     view: initialViewMode,
-    sort: initialSortOrder,
     topic: topicFilter
   });
   const hasTopicCoverage = episodes.some((episode) => Boolean(episode.primaryTopicSlug));
@@ -180,12 +168,12 @@ export default async function EpisodesPage({ searchParams }: EpisodesPageProps) 
   const sortedEpisodes = [...filteredByTopicEpisodes].sort((a, b) => {
     const left = Date.parse(a.publishedAt || '') || 0;
     const right = Date.parse(b.publishedAt || '') || 0;
-    return initialSortOrder === 'oldest' ? left - right : right - left;
+    return right - left;
   });
   const sortedSearchEpisodes = [...episodes].sort((a, b) => {
     const left = Date.parse(a.publishedAt || '') || 0;
     const right = Date.parse(b.publishedAt || '') || 0;
-    return initialSortOrder === 'oldest' ? left - right : right - left;
+    return right - left;
   });
 
   const totalPages = Math.max(1, Math.ceil(sortedEpisodes.length / EPISODES_PAGE_SIZE));
@@ -216,7 +204,7 @@ export default async function EpisodesPage({ searchParams }: EpisodesPageProps) 
                 </span>
               </div>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/85 sm:text-lg">
-                Browse every episode from newest to oldest, then search by title or episode number.
+                Browse every episode, then search by title or episode number.
               </p>
             </div>
           </div>
@@ -234,7 +222,7 @@ export default async function EpisodesPage({ searchParams }: EpisodesPageProps) 
               episodes={sortedEpisodes}
               searchEpisodes={sortedSearchEpisodes}
               initialViewMode={initialViewMode}
-              initialSortOrder={initialSortOrder}
+              showSortToggle={false}
               mobileSortLeft
               topicFilter={topicFilter}
               topicToggleOptions={topicToggleOptions}

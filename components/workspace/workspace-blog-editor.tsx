@@ -2196,14 +2196,16 @@ export function WorkspaceBlogEditor({
   authors,
   taxonomyOptions,
   mode = 'blog',
-  episodeId
+  episodeId,
+  prepublishDraftControls
 }: {
   post: BlogPost;
   episodes: WorkspaceEpisodeOption[];
   relatedPosts: WorkspacePostOption[];
   authors: WorkspaceAuthorOption[];
-  mode?: 'blog' | 'episode';
+  mode?: 'blog' | 'episode' | 'episode-draft';
   episodeId?: string;
+  prepublishDraftControls?: React.ReactNode;
   taxonomyOptions: {
     categories: WorkspaceTermOption[];
     series: WorkspaceTermOption[];
@@ -2212,7 +2214,8 @@ export function WorkspaceBlogEditor({
     collections: WorkspaceTermOption[];
   };
 }) {
-  const isEpisodeMode = mode === 'episode';
+  const isEpisodeMode = mode === 'episode' || mode === 'episode-draft';
+  const isEpisodeDraftMode = mode === 'episode-draft';
   const router = useRouter();
   const backHref = isEpisodeMode ? '/workspace/dashboard/episodes' : '/workspace/dashboard/blogs';
   const draftStorageKey = `${isEpisodeMode ? WORKSPACE_EPISODE_DRAFT_STORAGE_PREFIX : WORKSPACE_DRAFT_STORAGE_PREFIX}${episodeId || post.id}`;
@@ -2278,6 +2281,7 @@ export function WorkspaceBlogEditor({
           .filter(Boolean)
       : []
   );
+  const [relatedEpisodeSearch, setRelatedEpisodeSearch] = useState('');
   const [relatedPostIds, setRelatedPostIds] = useState<string[]>(
     Array.isArray(postAny.related_override_ids) ? postAny.related_override_ids : []
   );
@@ -2323,6 +2327,18 @@ export function WorkspaceBlogEditor({
   );
   const [removedInactiveNotice, setRemovedInactiveNotice] = useState<string[]>([]);
   const draftHydratedRef = useRef(false);
+  const normalizedRelatedEpisodeSearch = relatedEpisodeSearch.trim().toLowerCase();
+  const selectableRelatedEpisodes = useMemo(() => {
+    const blockedId = episodeId || post.id;
+    const available = episodes.filter((episode) => {
+      if (!episode?.id) return false;
+      if (episode.id === blockedId) return false;
+      if (!normalizedRelatedEpisodeSearch) return true;
+      const haystack = `${episode.title} ${episode.slug}`.toLowerCase();
+      return haystack.includes(normalizedRelatedEpisodeSearch);
+    });
+    return available.slice(0, 100);
+  }, [episodeId, episodes, normalizedRelatedEpisodeSearch, post.id]);
   const taxonomyOptionById = useMemo(
     () => new Map<string, string>([
       ...taxonomyOptions.categories.map((item) => [item.id, item.name] as const),
@@ -2342,11 +2358,12 @@ export function WorkspaceBlogEditor({
   }), [taxonomyOptions]);
   const [hasPrimaryListenBlockInEditor, setHasPrimaryListenBlockInEditor] = useState(false);
   const activeSlug = useMemo(() => {
+    if (isEpisodeDraftMode) return '';
     if (isEpisodeMode) return post.slug;
     if (slugManuallyEdited) return slugifyBlogText(slugDraft.trim() || 'Untitled Post');
     if (post.status !== 'draft') return post.slug;
     return slugifyBlogText(title.trim() || 'Untitled Post');
-  }, [isEpisodeMode, post.slug, post.status, slugDraft, slugManuallyEdited, title]);
+  }, [isEpisodeDraftMode, isEpisodeMode, post.slug, post.status, slugDraft, slugManuallyEdited, title]);
 
   const initialContent = useMemo(() => {
     const doc = normalizeBlogDocument(post.content_json || []);
@@ -2912,7 +2929,7 @@ export function WorkspaceBlogEditor({
     return {
       authorId: authorId || null,
       webTitle: title.trim() || null,
-      webSlug: activeSlug || null,
+      webSlug: isEpisodeDraftMode ? null : (activeSlug || null),
       excerpt: excerpt.trim() || null,
       bodyJson: normalizedBody,
       bodyMarkdown,
@@ -2984,7 +3001,11 @@ export function WorkspaceBlogEditor({
     setSaving(true);
     try {
       const payload = await buildPayload(tiptapJsonToBlocks(editor.getJSON() as any));
-      const endpoint = isEpisodeMode ? `/api/admin/blog/episodes/${episodeId || post.id}` : `/api/admin/blog/posts/${post.id}`;
+      const endpoint = isEpisodeMode
+        ? (isEpisodeDraftMode
+          ? `/api/admin/blog/episodes/prepublish-drafts/${episodeId || post.id}`
+          : `/api/admin/blog/episodes/${episodeId || post.id}`)
+        : `/api/admin/blog/posts/${post.id}`;
       const response = await fetch(endpoint, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -3013,7 +3034,11 @@ export function WorkspaceBlogEditor({
     setSaving(true);
     try {
       const payload = await buildPayload(tiptapJsonToBlocks(editor.getJSON() as any), { status: 'published' });
-      const endpoint = isEpisodeMode ? `/api/admin/blog/episodes/${episodeId || post.id}` : `/api/admin/blog/posts/${post.id}`;
+      const endpoint = isEpisodeMode
+        ? (isEpisodeDraftMode
+          ? `/api/admin/blog/episodes/prepublish-drafts/${episodeId || post.id}`
+          : `/api/admin/blog/episodes/${episodeId || post.id}`)
+        : `/api/admin/blog/posts/${post.id}`;
       const response = await fetch(endpoint, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -3062,6 +3087,10 @@ export function WorkspaceBlogEditor({
   async function openPreview() {
     if (!editor || previewBusy) return;
     if (isEpisodeMode) {
+      if (isEpisodeDraftMode) {
+        window.alert('Prepublish drafts are private until attached to a live RSS episode.');
+        return;
+      }
       if (isDirty) {
         await persist();
       }
@@ -3094,7 +3123,7 @@ export function WorkspaceBlogEditor({
   }
 
   async function confirmEpisodeSync() {
-    if (!isEpisodeMode || !episodeSyncModalMode || episodeSyncBusyMode) return;
+    if (!isEpisodeMode || isEpisodeDraftMode || !episodeSyncModalMode || episodeSyncBusyMode) return;
     const syncMode = episodeSyncModalMode;
     setEpisodeSyncBusyMode(syncMode);
     setEpisodeSyncFeedback(null);
@@ -3246,12 +3275,16 @@ export function WorkspaceBlogEditor({
               </div>
             ) : (
               <p className="break-all">
-                {isEpisodeMode ? '/episodes/' : '/blog/'}<span className="font-semibold text-slate-900">{activeSlug}</span>
+                {isEpisodeMode ? '/episodes/' : '/blog/'}<span className="font-semibold text-slate-900">{activeSlug || (isEpisodeDraftMode ? '<assigned-on-attach>' : '')}</span>
               </p>
             )}
           </div>
           {isEpisodeMode ? (
-            <p className="text-xs text-slate-500">Episode URL slugs are locked and can’t be edited here.</p>
+            <p className="text-xs text-slate-500">
+              {isEpisodeDraftMode
+                ? 'Episode URL slug is assigned from the live RSS episode when this draft is attached.'
+                : 'Episode URL slugs are locked and can’t be edited here.'}
+            </p>
           ) : !slugEditorOpen ? (
             <button
               type="button"
@@ -3418,6 +3451,12 @@ export function WorkspaceBlogEditor({
         </div>
       </SidebarSection>
 
+      {prepublishDraftControls ? (
+        <SidebarSection title="Prepublish Draft" defaultOpen={false}>
+          {prepublishDraftControls}
+        </SidebarSection>
+      ) : null}
+
       <SidebarSection title="Taxonomy" defaultOpen={false}>
         <div className="space-y-3">
           {removedInactiveNotice.length ? (
@@ -3572,23 +3611,54 @@ export function WorkspaceBlogEditor({
             <label className="text-xs font-bold uppercase tracking-[0.14em] text-[#72789b]">
               {isEpisodeMode ? 'Related episode IDs' : 'Linked episode IDs'}
             </label>
-            <select
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-              value=""
-              onChange={(event) => {
-                const episodeId = event.currentTarget.value;
-                if (!episodeId || linkedEpisodeIds.includes(episodeId)) return;
-                setLinkedEpisodeIds((current) => [...current, episodeId]);
-                setIsDirty(true);
-              }}
-            >
-              <option value="">Select episodes</option>
-              {episodes.map((episode) => (
-                <option key={episode.id} value={episode.id}>
-                  {episode.title}
-                </option>
-              ))}
-            </select>
+            <details className="group rounded-md border border-slate-300 bg-white">
+              <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-sm text-slate-700">
+                <span>Select episodes</span>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 10 6"
+                  className="h-2 w-2 fill-slate-600 transition-transform group-open:rotate-180"
+                >
+                  <path d="M5 6L0 0h10L5 6z" />
+                </svg>
+              </summary>
+              <div className="space-y-2 border-t border-slate-200 px-3 py-2">
+                <input
+                  value={relatedEpisodeSearch}
+                  onChange={(event) => setRelatedEpisodeSearch(event.currentTarget.value)}
+                  placeholder="Search episodes by title or slug"
+                  className="w-full rounded-md border border-slate-300 px-2.5 py-2 text-sm"
+                />
+                <div className="max-h-44 overflow-y-auto rounded-md border border-slate-200">
+                  {selectableRelatedEpisodes.length ? (
+                    selectableRelatedEpisodes.map((episode) => (
+                      <button
+                        key={episode.id}
+                        type="button"
+                        className={`flex w-full items-center gap-2 border-b px-2.5 py-2 text-left text-sm last:border-b-0 ${
+                          linkedEpisodeIds.includes(episode.id)
+                            ? 'border-emerald-100 bg-emerald-50 text-emerald-900'
+                            : 'border-slate-100 text-slate-700 hover:bg-slate-50'
+                        }`}
+                        onClick={() => {
+                          if (linkedEpisodeIds.includes(episode.id)) return;
+                          setLinkedEpisodeIds((current) => [...current, episode.id]);
+                          setRelatedEpisodeSearch('');
+                          setIsDirty(true);
+                        }}
+                      >
+                        <span className={`shrink-0 text-xs font-semibold ${linkedEpisodeIds.includes(episode.id) ? 'text-emerald-700' : 'text-transparent'}`}>
+                          ✓
+                        </span>
+                        <span className="truncate">{episode.title}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="px-2.5 py-2 text-xs text-slate-500">No episodes match your search.</p>
+                  )}
+                </div>
+              </div>
+            </details>
 
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#72789b]">
               {isEpisodeMode ? 'Selected related episodes (save order)' : 'Selected episodes (save order)'}
@@ -3803,7 +3873,7 @@ export function WorkspaceBlogEditor({
         </div>
       </SidebarSection>
 
-      {isEpisodeMode ? (
+      {isEpisodeMode && !isEpisodeDraftMode ? (
         <SidebarSection title="Sync Episode" defaultOpen={false}>
           <div className="space-y-3">
             <p className="text-xs text-slate-600">
@@ -3835,7 +3905,7 @@ export function WorkspaceBlogEditor({
       ) : null}
 
       <SidebarSection title="Revisions" defaultOpen={false}>
-        {post.revisions.length > 0 ? (
+      {post.revisions.length > 0 ? (
           <ul className="space-y-2">
             {post.revisions.map((rev) => (
               <li key={rev.id} className="flex items-baseline justify-between text-xs">
@@ -3870,9 +3940,9 @@ export function WorkspaceBlogEditor({
             type="button"
             className="inline-flex h-8 items-center rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
             onClick={() => void openPreview()}
-            disabled={previewBusy}
+            disabled={previewBusy || isEpisodeDraftMode}
           >
-            {previewBusy ? 'Building…' : 'View'}
+            {isEpisodeDraftMode ? 'Private Draft' : (previewBusy ? 'Building…' : 'View')}
           </button>
           <button
             type="button"
@@ -4062,7 +4132,7 @@ export function WorkspaceBlogEditor({
         <EditorContent editor={editor} />
       </div>
       </WorkspaceEditorShell>
-      {isEpisodeMode && episodeSyncModalMode ? (
+      {isEpisodeMode && !isEpisodeDraftMode && episodeSyncModalMode ? (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/45 px-4">
           <div className="w-full max-w-xl rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
             <div className="space-y-3">

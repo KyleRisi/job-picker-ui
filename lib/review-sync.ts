@@ -2,8 +2,10 @@ import { createSupabaseAdminClient } from '@/lib/supabase';
 
 const PODCAST_ID = '1676817109';
 const MAX_PAGES = 10;
-const DELAY_MS = 300;
+const DELAY_MS = 120;
 const CHUNK_SIZE = 200;
+const TIME_BUDGET_MS = Number.parseInt(process.env.REVIEWS_SYNC_TIME_BUDGET_MS || '45000', 10);
+const PRIORITY_COUNTRY_CODES = ['us', 'gb', 'au', 'ca', 'ie', 'nz'] as const;
 
 const COUNTRY_CODES = [
   'ae', 'ag', 'ai', 'al', 'am', 'ao', 'ar', 'at', 'au', 'az',
@@ -23,6 +25,29 @@ const COUNTRY_CODES = [
   'tj', 'tm', 'tn', 'tr', 'tt', 'tw', 'tz', 'ua', 'ug', 'us',
   'uy', 'uz', 've', 'vg', 'vn', 'ye', 'za', 'zw'
 ];
+
+function uniq(values: string[]): string[] {
+  return Array.from(new Set(values));
+}
+
+function normalizeCountryCode(value: string): string | null {
+  const normalized = `${value || ''}`.trim().toLowerCase();
+  if (!normalized) return null;
+  if (!/^[a-z]{2}$/.test(normalized)) return null;
+  return normalized;
+}
+
+function getOrderedCountryCodes(): string[] {
+  const configuredRaw = `${process.env.REVIEWS_SYNC_COUNTRIES || ''}`.trim();
+  const configured = configuredRaw
+    ? configuredRaw.split(',').map((item) => normalizeCountryCode(item)).filter((value): value is string => Boolean(value))
+    : COUNTRY_CODES;
+
+  const configuredSet = new Set(configured);
+  const prioritized = PRIORITY_COUNTRY_CODES.filter((code) => configuredSet.has(code));
+  const remaining = configured.filter((code) => !prioritized.includes(code as (typeof PRIORITY_COUNTRY_CODES)[number]));
+  return uniq([...prioritized, ...remaining]);
+}
 
 const COUNTRY_NAMES: Record<string, string> = {
   ae: 'United Arab Emirates', ag: 'Antigua and Barbuda', ai: 'Anguilla', al: 'Albania',
@@ -117,19 +142,52 @@ async function fetchAppleReviewsPage(country: string, page: number): Promise<App
   }
 }
 
-async function scrapeAppleReviews(): Promise<AppleReview[]> {
+async function scrapeAppleReviews(options?: { newerThanIso?: string | null }): Promise<{
+  reviews: AppleReview[];
+  countriesProcessed: number;
+  countriesTotal: number;
+  timedOut: boolean;
+}> {
   const allReviews: AppleReview[] = [];
   const seenIds = new Set<string>();
+  const countryCodes = getOrderedCountryCodes();
+  const startedAt = Date.now();
+  const newerThanMs = options?.newerThanIso ? new Date(options.newerThanIso).getTime() : Number.NEGATIVE_INFINITY;
+  let countriesProcessed = 0;
+  let timedOut = false;
 
-  for (const country of COUNTRY_CODES) {
+  countryLoop:
+  for (const country of countryCodes) {
+    if (Date.now() - startedAt >= TIME_BUDGET_MS) {
+      timedOut = true;
+      break;
+    }
+
+    countriesProcessed += 1;
+
     for (let page = 1; page <= MAX_PAGES; page += 1) {
+      if (Date.now() - startedAt >= TIME_BUDGET_MS) {
+        timedOut = true;
+        break countryLoop;
+      }
+
       const pageReviews = await fetchAppleReviewsPage(country, page);
       if (!pageReviews.length) break;
+      let pageHasNewerReview = false;
 
       for (const review of pageReviews) {
         if (seenIds.has(review.id)) continue;
         seenIds.add(review.id);
         allReviews.push(review);
+
+        const reviewDateMs = new Date(review.date).getTime();
+        if (Number.isFinite(reviewDateMs) && reviewDateMs > newerThanMs) {
+          pageHasNewerReview = true;
+        }
+      }
+
+      if (options?.newerThanIso && !pageHasNewerReview) {
+        break;
       }
 
       await sleep(DELAY_MS);
@@ -137,7 +195,12 @@ async function scrapeAppleReviews(): Promise<AppleReview[]> {
   }
 
   allReviews.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  return allReviews;
+  return {
+    reviews: allReviews,
+    countriesProcessed,
+    countriesTotal: countryCodes.length,
+    timedOut
+  };
 }
 
 function toInsertRows(rows: AppleReview[]): ReviewInsertRow[] {
@@ -167,8 +230,20 @@ export async function syncReviewsFromSources() {
   const before = await supabase.from('reviews').select('id', { count: 'exact', head: true });
   if (before.error) throw new Error(before.error.message);
 
-  const appleReviews = await scrapeAppleReviews();
-  const insertRows = toInsertRows(appleReviews);
+  let newestKnownAppleReviewAt: string | null = null;
+  const latestAppleReview = await supabase
+    .from('reviews')
+    .select('received_at')
+    .eq('source', 'apple')
+    .order('received_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!latestAppleReview.error && latestAppleReview.data?.received_at) {
+    newestKnownAppleReviewAt = latestAppleReview.data.received_at;
+  }
+
+  const scraped = await scrapeAppleReviews({ newerThanIso: newestKnownAppleReviewAt });
+  const insertRows = toInsertRows(scraped.reviews);
 
   for (let i = 0; i < insertRows.length; i += CHUNK_SIZE) {
     const chunk = insertRows.slice(i, i + CHUNK_SIZE);
@@ -187,7 +262,11 @@ export async function syncReviewsFromSources() {
   return {
     sources: {
       apple: {
-        scraped: appleReviews.length
+        scraped: scraped.reviews.length,
+        countriesProcessed: scraped.countriesProcessed,
+        countriesTotal: scraped.countriesTotal,
+        timedOut: scraped.timedOut,
+        newerThanIso: newestKnownAppleReviewAt
       }
     },
     processed: insertRows.length,

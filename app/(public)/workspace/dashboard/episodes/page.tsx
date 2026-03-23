@@ -15,8 +15,10 @@ export default async function WorkspaceEpisodesPage() {
   let feedError = '';
 
   try {
-    episodes = await getPodcastEpisodes({ descriptionMaxLength: 520, includeEditorialMeta: true });
-    draftRows = await listWorkspacePrepublishDraftRows();
+    [episodes, draftRows] = await Promise.all([
+      getPodcastEpisodes({ descriptionMaxLength: 520, includeEditorialMeta: true }),
+      listWorkspacePrepublishDraftRows()
+    ]);
   } catch (error) {
     feedError = 'Could not load episodes from the RSS feed right now.';
     console.error('Workspace episodes feed failed to load:', error);

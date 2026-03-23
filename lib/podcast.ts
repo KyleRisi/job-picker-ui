@@ -430,10 +430,12 @@ async function getPodcastEpisodesFromDatabase(
     const editorialSelect = options.includeEditorialMeta
       ? 'podcast_episode_editorial(web_title, seo_title, meta_description, body_json, excerpt, author_id, focus_keyword)'
       : 'podcast_episode_editorial(web_title)';
+    const episodeSelectFields =
+      'id,slug,title,season_number,episode_number,published_at,description_plain,description_html,audio_url,artwork_url,duration_seconds,source_url';
 
     const { data, error } = await supabase
       .from('podcast_episodes')
-      .select(`*, ${editorialSelect}`)
+      .select(`${episodeSelectFields}, ${editorialSelect}`)
       .eq('is_visible', true)
       .eq('is_archived', false)
       .order('published_at', { ascending: false });
@@ -460,9 +462,9 @@ async function getPodcastEpisodesFromDatabase(
     }
 
     const episodes: PodcastEpisode[] = data.map((episode) => {
-      const editorial = Array.isArray(episode.podcast_episode_editorial)
+      const editorial = (Array.isArray(episode.podcast_episode_editorial)
         ? episode.podcast_episode_editorial[0]
-        : episode.podcast_episode_editorial;
+        : episode.podcast_episode_editorial) as Record<string, any> | null;
 
       const base: PodcastEpisode = {
         id: episode.id,
@@ -498,7 +500,7 @@ async function getPodcastEpisodesFromDatabase(
         const transcriptBlocks = rawBodyJson.filter((b: any) => b?.type === 'transcript');
         let hydratedBodyJson: unknown[] = rawBodyJson;
         if (nonTranscriptBlocks.length === 0) {
-          const sourcePlain = (episode.description_html || episode.description_plain || '').trim();
+          const sourcePlain = (episode.description_plain || '').trim();
           if (sourcePlain) {
             const sourceDoc = blogContent!.markdownToBlogDocument(sourcePlain);
             hydratedBodyJson = sourceDoc.length > 0

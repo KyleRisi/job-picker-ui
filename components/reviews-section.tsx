@@ -66,8 +66,12 @@ export function ReviewsSection({
   ctaLabel = 'See All Reviews',
   sectionClassName = 'py-14 md:py-20',
   headingClassName = 'text-3xl font-black text-carnival-ink md:text-4xl',
+  ctaClassName = 'inline-flex items-center gap-2 rounded-full bg-carnival-red px-8 py-3 text-sm font-black uppercase tracking-wide text-white shadow-lg transition hover:brightness-110',
   ctaMode = 'link',
-  loadMoreCount = LOAD_MORE_COUNT
+  ctaLinkProps,
+  loadMoreCount = LOAD_MORE_COUNT,
+  showHeader = true,
+  showCtaAlways = false
 }: {
   reviews: PublicReview[];
   totalCount?: number;
@@ -76,8 +80,12 @@ export function ReviewsSection({
   ctaLabel?: string;
   sectionClassName?: string;
   headingClassName?: string;
+  ctaClassName?: string;
   ctaMode?: 'link' | 'load_more';
+  ctaLinkProps?: Record<string, string>;
   loadMoreCount?: number;
+  showHeader?: boolean;
+  showCtaAlways?: boolean;
 }) {
   const [visible, setVisible] = useState(INITIAL_COUNT);
   const displayed = reviews.slice(0, visible);
@@ -86,12 +94,14 @@ export function ReviewsSection({
 
   return (
     <section className={sectionClassName} aria-label={ariaLabel}>
-      <div className="mb-8 flex items-center gap-3">
-        <h2 className={headingClassName}>{heading}</h2>
-        <span className="rounded-full bg-carnival-red px-3 py-0.5 text-sm font-black text-white">
-          {countLabel}
-        </span>
-      </div>
+      {showHeader ? (
+        <div className="mb-8 flex items-center gap-3">
+          <h2 className={headingClassName}>{heading}</h2>
+          <span className="rounded-full bg-carnival-red px-3 py-0.5 text-sm font-black text-white">
+            {countLabel}
+          </span>
+        </div>
+      ) : null}
 
       <div className="grid gap-6 md:grid-cols-3">
         {displayed.map((review) => (
@@ -132,12 +142,12 @@ export function ReviewsSection({
         ))}
       </div>
 
-      {hasMore ? (
+      {hasMore || showCtaAlways ? (
         <div className="mt-8 text-center">
           {ctaMode === 'load_more' ? (
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-full bg-carnival-red px-8 py-3 text-sm font-black uppercase tracking-wide text-white shadow-lg transition hover:brightness-110"
+              className={ctaClassName}
               onClick={() => setVisible((count) => Math.min(reviews.length, count + loadMoreCount))}
             >
               {ctaLabel}
@@ -145,7 +155,8 @@ export function ReviewsSection({
           ) : (
             <Link
               href="/reviews"
-              className="inline-flex items-center gap-2 rounded-full bg-carnival-red px-8 py-3 text-sm font-black uppercase tracking-wide text-white shadow-lg transition hover:brightness-110"
+              className={ctaClassName}
+              {...ctaLinkProps}
             >
               {ctaLabel}
             </Link>

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { MainNav } from '@/components/main-nav';
+import { SiteFooter } from '@/components/site-footer';
 
 function isImmersiveEditorRoute(pathname: string | null) {
   if (!pathname) return false;
@@ -24,6 +25,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const headerRef = useRef<HTMLElement | null>(null);
   const immersiveEditor = isImmersiveEditorRoute(pathname);
   const workspaceRoute = Boolean(pathname?.startsWith('/workspace'));
+  const currentPath = pathname || '/';
+  const isHomepageV2Preview = currentPath === '/preview/homepage-v2';
+  const hidePublicFooter =
+    (currentPath.startsWith('/preview/') && !isHomepageV2Preview) ||
+    currentPath.startsWith('/admin') ||
+    currentPath.startsWith('/workspace') ||
+    currentPath.startsWith('/my-job') ||
+    currentPath.startsWith('/apply/');
 
   useEffect(() => {
     const updateHeaderHeight = () => {
@@ -66,7 +75,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         <MainNav />
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 pt-8">{children}</main>
+      {hidePublicFooter ? null : <SiteFooter />}
     </>
   );
 }

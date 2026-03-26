@@ -187,16 +187,10 @@ export function FreakyRegisterPage({
   }, []);
 
   useEffect(() => {
-    if (verifyState === 'suggestion_success') {
-      trackMixpanel('Suggestion Verified', { source: 'freaky_register', purpose: 'publish_suggestion' });
-      trackMixpanel('Suggestion Published', { source: 'freaky_register', suggestionId: highlightedSuggestionId || undefined });
-    } else if (verifyState === 'vote_success') {
-      trackMixpanel('Suggestion Verified', { source: 'freaky_register', purpose: 'cast_vote' });
-      if (highlightedSuggestionId) {
-        setVotedSuggestionIds((current) => (
-          current.includes(highlightedSuggestionId) ? current : [...current, highlightedSuggestionId]
-        ));
-      }
+    if (verifyState === 'vote_success' && highlightedSuggestionId) {
+      setVotedSuggestionIds((current) => (
+        current.includes(highlightedSuggestionId) ? current : [...current, highlightedSuggestionId]
+      ));
     }
   }, [highlightedSuggestionId, verifyState]);
 
@@ -349,12 +343,6 @@ export function FreakyRegisterPage({
       setEmail('');
       setShowEmailStep(false);
 
-      trackMixpanel('Suggestion Submit Requested', { source: 'freaky_register', suggestionId: data?.suggestionId });
-      trackMixpanel('Suggestion Verification Sent', {
-        source: 'freaky_register',
-        purpose: 'publish_suggestion',
-        requestId: data?.requestId
-      });
     } finally {
       setSubmitBusy(false);
     }
@@ -386,12 +374,6 @@ export function FreakyRegisterPage({
           return;
         }
         setUpvoteMessage(data?.message || 'Verification email sent.');
-        trackMixpanel('Suggestion Verification Sent', {
-          source: 'freaky_register',
-          purpose: 'cast_vote',
-          requestId: data?.requestId,
-          suggestionId
-        });
         return;
       }
 
@@ -405,7 +387,6 @@ export function FreakyRegisterPage({
         setVotedSuggestionIds((current) => current.includes(suggestionId) ? current : [...current, suggestionId]);
       } else {
         setVotedSuggestionIds((current) => current.includes(suggestionId) ? current : [...current, suggestionId]);
-        trackMixpanel('Suggestion Upvoted', { source: 'freaky_register', suggestionId });
       }
       setUpvotePromptId(null);
       setUpvoteEmail('');
@@ -430,11 +411,6 @@ export function FreakyRegisterPage({
         return;
       }
       setResendMessage(data?.message || 'Verification email resent.');
-      trackMixpanel('Suggestion Verification Sent', {
-        source: 'freaky_register',
-        requestId: data?.requestId,
-        resend: true
-      });
     } finally {
       setResendBusy(false);
     }

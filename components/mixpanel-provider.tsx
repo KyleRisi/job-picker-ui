@@ -3,8 +3,10 @@
 import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { initMixpanel, trackMixpanel } from '@/lib/mixpanel-browser';
-import { routeVisitStorageKey } from '@/lib/analytics-events';
+import { isPublicAnalyticsPath, routeVisitStorageKey } from '@/lib/analytics-events';
 import { trackBrokenHealthEvent } from '@/lib/mixpanel-broken-health';
+import { inferHomepageV2EnvironmentFromWindowLocation } from '@/lib/homepage-v2/env';
+import { HOMEPAGE_V2_PAGE_VERSION, resolveHomepageV2DeviceTypeFromWindow } from '@/lib/homepage-v2/tracking';
 
 function currentUserId(): string | null {
   return null;
@@ -64,6 +66,7 @@ export function MixpanelProvider() {
     initializedRef.current = true;
 
     const onError = (event: ErrorEvent) => {
+      if (!isPublicAnalyticsPath(window.location.pathname)) return;
       const details = `${event.message || ''}\n${event.filename || ''}\n${event.error ? textFromUnknownError(event.error) : ''}`.trim();
       trackMixpanel('Error', {
         error_type: 'client',
@@ -76,6 +79,7 @@ export function MixpanelProvider() {
     };
 
     const onUnhandledRejection = (event: PromiseRejectionEvent) => {
+      if (!isPublicAnalyticsPath(window.location.pathname)) return;
       const reason = event.reason;
       const reasonDetails = textFromUnknownError(reason);
       const message =
@@ -106,6 +110,8 @@ export function MixpanelProvider() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (!pathname) return;
+    if (!isPublicAnalyticsPath(pathname)) return;
     const search = searchParams?.toString() || '';
     const path = `${pathname || '/'}${search ? `?${search}` : ''}`;
     const dedupeKey = routeVisitStorageKey(`mixpanel:page_view:${path}`);
@@ -119,7 +125,17 @@ export function MixpanelProvider() {
     trackMixpanel('Page View', {
       page_title: document.title || '',
       page_url: window.location.href,
-      page_path: path
+      page_path: path,
+      ...(() => {
+        const isHomepageV2Path = pathname === '/preview/homepage-v2' || pathname === '/';
+        const hasHomepageV2Marker = Boolean(document.querySelector('[data-homepage-v2-root="true"]'));
+        if (!isHomepageV2Path || !hasHomepageV2Marker) return {};
+        return {
+          page_version: HOMEPAGE_V2_PAGE_VERSION,
+          environment: inferHomepageV2EnvironmentFromWindowLocation(),
+          device_type: resolveHomepageV2DeviceTypeFromWindow()
+        };
+      })()
     });
   }, [pathname, searchParams]);
 

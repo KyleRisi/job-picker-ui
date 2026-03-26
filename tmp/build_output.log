@@ -1,0 +1,217 @@
+
+> compendium-circus-hr@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+
+./components/forms/admin-episodes-table.tsx
+108:6  Warning: React Hook useEffect has a missing dependency: 'setPage'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+112:6  Warning: React Hook useEffect has a missing dependency: 'setPage'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/118) ...
+   Generating static pages (29/118) 
+   Generating static pages (58/118) 
+   Generating static pages (88/118) 
+ ✓ Generating static pages (118/118)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                                           Size     First Load JS
+┌ ○ /                                                                 325 B           137 kB
+├ ○ /_not-found                                                       224 B          87.6 kB
+├ ○ /about                                                            185 B          96.2 kB
+├ ƒ /admin                                                            224 B          87.6 kB
+├ ƒ /admin/analytics                                                  226 B            99 kB
+├ ƒ /admin/applications/[id]                                          1.91 kB         113 kB
+├ ƒ /admin/blog                                                       1.92 kB          98 kB
+├ ƒ /admin/blog/[id]                                                  25.7 kB         285 kB
+├ ƒ /admin/blog/analytics                                             223 B          87.6 kB
+├ ƒ /admin/blog/episodes                                              1.72 kB        89.1 kB
+├ ƒ /admin/blog/import                                                1.47 kB        88.8 kB
+├ ƒ /admin/blog/media                                                 3.34 kB        95.9 kB
+├ ƒ /admin/blog/new                                                   1.1 kB         97.2 kB
+├ ƒ /admin/blog/taxonomies                                            4.88 kB        92.2 kB
+├ ƒ /admin/contacts                                                   973 B          99.7 kB
+├ ƒ /admin/episodes                                                   2.69 kB         107 kB
+├ ƒ /admin/exports                                                    1.21 kB         100 kB
+├ ƒ /admin/jobs                                                       5.54 kB         104 kB
+├ ƒ /admin/jobs/[id]                                                  2.06 kB         101 kB
+├ ○ /admin/jobs/template-existing.csv                                 0 B                0 B
+├ ○ /admin/jobs/template.csv                                          0 B                0 B
+├ ƒ /admin/redirects                                                  4.24 kB         116 kB
+├ ƒ /admin/reviews                                                    2.63 kB         101 kB
+├ ƒ /admin/reviews/[id]                                               844 B          99.6 kB
+├ ƒ /admin/settings                                                   4.24 kB         103 kB
+├ ƒ /api/admin/applications/[id]                                      0 B                0 B
+├ ƒ /api/admin/applications/[id]/broadcast                            0 B                0 B
+├ ƒ /api/admin/applications/[id]/fire                                 0 B                0 B
+├ ƒ /api/admin/applications/[id]/photo                                0 B                0 B
+├ ƒ /api/admin/blog/analytics                                         0 B                0 B
+├ ƒ /api/admin/blog/episodes                                          0 B                0 B
+├ ƒ /api/admin/blog/episodes/[id]                                     0 B                0 B
+├ ƒ /api/admin/blog/episodes/[id]/reset-from-rss                      0 B                0 B
+├ ƒ /api/admin/blog/episodes/[id]/sync                                0 B                0 B
+├ ƒ /api/admin/blog/episodes/prepublish-drafts                        0 B                0 B
+├ ƒ /api/admin/blog/episodes/prepublish-drafts/[id]                   0 B                0 B
+├ ƒ /api/admin/blog/episodes/prepublish-drafts/[id]/attach            0 B                0 B
+├ ƒ /api/admin/blog/episodes/prepublish-drafts/[id]/resolve-conflict  0 B                0 B
+├ ƒ /api/admin/blog/episodes/prepublish-drafts/[id]/rollback          0 B                0 B
+├ ƒ /api/admin/blog/episodes/prepublish-drafts/[id]/snapshots         0 B                0 B
+├ ƒ /api/admin/blog/episodes/reset-all-from-rss                       0 B                0 B
+├ ƒ /api/admin/blog/import                                            0 B                0 B
+├ ƒ /api/admin/blog/import/[jobId]/run                                0 B                0 B
+├ ƒ /api/admin/blog/import/preview                                    0 B                0 B
+├ ƒ /api/admin/blog/media                                             0 B                0 B
+├ ƒ /api/admin/blog/media/[id]                                        0 B                0 B
+├ ƒ /api/admin/blog/media/[id]/usage                                  0 B                0 B
+├ ƒ /api/admin/blog/posts                                             0 B                0 B
+├ ƒ /api/admin/blog/posts/[id]                                        0 B                0 B
+├ ƒ /api/admin/blog/posts/[id]/archive                                0 B                0 B
+├ ƒ /api/admin/blog/posts/[id]/autosave                               0 B                0 B
+├ ƒ /api/admin/blog/posts/[id]/duplicate                              0 B                0 B
+├ ƒ /api/admin/blog/posts/[id]/preview                                0 B                0 B
+├ ƒ /api/admin/blog/posts/[id]/restore                                0 B                0 B
+├ ƒ /api/admin/blog/posts/[id]/revisions/[revisionId]/restore         0 B                0 B
+├ ƒ /api/admin/blog/taxonomies/[kind]                                 0 B                0 B
+├ ƒ /api/admin/blog/taxonomies/[kind]/archive                         0 B                0 B
+├ ƒ /api/admin/contact-submissions/[id]                               0 B                0 B
+├ ƒ /api/admin/discovery-terms                                        0 B                0 B
+├ ƒ /api/admin/discovery-terms/[id]                                   0 B                0 B
+├ ƒ /api/admin/exports/[type]                                         0 B                0 B
+├ ƒ /api/admin/freaky-register                                        0 B                0 B
+├ ƒ /api/admin/freaky-register/[id]                                   0 B                0 B
+├ ƒ /api/admin/freaky-register/episodes                               0 B                0 B
+├ ƒ /api/admin/freaky-register/identities/[id]                        0 B                0 B
+├ ƒ /api/admin/homepage-v2-content                                    0 B                0 B
+├ ƒ /api/admin/jobs                                                   0 B                0 B
+├ ƒ /api/admin/jobs/bulk                                              0 B                0 B
+├ ƒ /api/admin/jobs/bulk-existing                                     0 B                0 B
+├ ƒ /api/admin/jobs/bulk-update                                       0 B                0 B
+├ ƒ /api/admin/login                                                  0 B                0 B
+├ ƒ /api/admin/logout                                                 0 B                0 B
+├ ƒ /api/admin/redirects                                              0 B                0 B
+├ ƒ /api/admin/redirects/[id]                                         0 B                0 B
+├ ƒ /api/admin/redirects/export                                       0 B                0 B
+├ ƒ /api/admin/redirects/import                                       0 B                0 B
+├ ƒ /api/admin/redirects/unified                                      0 B                0 B
+├ ƒ /api/admin/reviews                                                0 B                0 B
+├ ƒ /api/admin/reviews/[id]                                           0 B                0 B
+├ ƒ /api/admin/reviews/sync                                           0 B                0 B
+├ ƒ /api/admin/send-login                                             0 B                0 B
+├ ƒ /api/admin/settings                                               0 B                0 B
+├ ƒ /api/apply                                                        0 B                0 B
+├ ƒ /api/blog/analytics                                               0 B                0 B
+├ ƒ /api/blog/posts                                                   0 B                0 B
+├ ƒ /api/blog/search                                                  0 B                0 B
+├ ƒ /api/contact/submit                                               0 B                0 B
+├ ƒ /api/freaky-register/suggestions                                  0 B                0 B
+├ ƒ /api/freaky-register/suggestions/similar                          0 B                0 B
+├ ○ /api/freaky-register/topics                                       0 B                0 B
+├ ƒ /api/freaky-register/verification/resend                          0 B                0 B
+├ ƒ /api/freaky-register/votes                                        0 B                0 B
+├ ƒ /api/internal/freaky-register/cleanup                             0 B                0 B
+├ ƒ /api/internal/redirects/resolve                                   0 B                0 B
+├ ƒ /api/internal/reviews/sync                                        0 B                0 B
+├ ƒ /api/my-job/confirm-email-change                                  0 B                0 B
+├ ƒ /api/my-job/photo                                                 0 B                0 B
+├ ƒ /api/my-job/recover                                               0 B                0 B
+├ ƒ /api/my-job/request-email-change                                  0 B                0 B
+├ ƒ /api/my-job/request-link                                          0 B                0 B
+├ ƒ /api/my-job/resign                                                0 B                0 B
+├ ƒ /api/my-job/save                                                  0 B                0 B
+├ ƒ /api/newsletter/subscribe                                         0 B                0 B
+├ ƒ /api/reviews/submit                                               0 B                0 B
+├ ƒ /api/stripe/checkout                                              0 B                0 B
+├ ƒ /apply/[id]                                                       7.73 kB         109 kB
+├ ƒ /auth/confirm                                                     0 B                0 B
+├ ƒ /author/[authorSlug]                                              1.55 kB         133 kB
+├ ○ /blog                                                             196 B           124 kB
+├ ƒ /blog/[slug]                                                      939 B           137 kB
+├ ƒ /blog/[slug]/opengraph-image-16v7k9                               0 B                0 B
+├ ƒ /blog/author/[authorSlug]                                         190 B           124 kB
+├ ƒ /blog/category/[categorySlug]                                     224 B          87.6 kB
+├ ○ /blog/rss.xml                                                     0 B                0 B
+├ ƒ /blog/search                                                      190 B           124 kB
+├ ƒ /blog/series/[seriesSlug]                                         223 B          87.6 kB
+├ ƒ /blog/tag/[tagSlug]                                               224 B          87.6 kB
+├ ƒ /blog/topic/[topicSlug]                                           224 B          87.6 kB
+├ ○ /cases                                                            224 B          87.6 kB
+├ ƒ /cases/[slug]                                                     224 B          87.6 kB
+├ ○ /collections                                                      185 B          96.2 kB
+├ ƒ /collections/[slug]                                               193 B           139 kB
+├ ○ /connect                                                          3.04 kB         104 kB
+├ ○ /connect/press-kit                                                3.81 kB         136 kB
+├ ƒ /episodes                                                         3.75 kB         136 kB
+├ ƒ /episodes/[slug]                                                  231 B           136 kB
+├ ○ /events                                                           224 B          87.6 kB
+├ ƒ /events/[slug]                                                    224 B          87.6 kB
+├ ƒ /freaky-register                                                  7.24 kB         108 kB
+├ ƒ /freaky-register/verify                                           0 B                0 B
+├ ƒ /jobs                                                             4.43 kB         106 kB
+├ ƒ /jobs/[id]                                                        2.28 kB        98.3 kB
+├ ○ /manifest.webmanifest                                             0 B                0 B
+├ ○ /meet-the-team                                                    1.26 kB         102 kB
+├ ƒ /merch                                                            192 B           101 kB
+├ ● /merch/[slug]                                                     192 B           101 kB
+├   └ /merch/crotch-dangler
+├ ƒ /merch/success                                                    524 B          96.6 kB
+├ ○ /my-job                                                           1.16 kB        88.5 kB
+├ ƒ /my-job/file                                                      6.92 kB        99.5 kB
+├ ○ /my-job/recover                                                   661 B            88 kB
+├ ○ /patreon                                                          3.19 kB         104 kB
+├ ○ /people                                                           224 B          87.6 kB
+├ ƒ /people/[slug]                                                    224 B          87.6 kB
+├ ƒ /preview/homepage-v2                                              326 B           106 kB
+├ ƒ /reviews                                                          4.76 kB         106 kB
+├ ○ /robots.txt                                                       0 B                0 B
+├ ○ /series                                                           224 B          87.6 kB
+├ ƒ /series/[slug]                                                    224 B          87.6 kB
+├ ○ /sitemap.xml                                                      0 B                0 B
+├ ○ /themes                                                           222 B          87.6 kB
+├ ƒ /themes/[slug]                                                    224 B          87.6 kB
+├ ○ /topics                                                           185 B          96.2 kB
+├ ƒ /topics/[slug]                                                    209 B           139 kB
+├ ƒ /workspace                                                        224 B          87.6 kB
+├ ƒ /workspace/dashboard                                              224 B          87.6 kB
+├ ƒ /workspace/dashboard/analytics                                    224 B          87.6 kB
+├ ƒ /workspace/dashboard/blogs                                        5.58 kB        92.9 kB
+├ ƒ /workspace/dashboard/blogs/[id]                                   211 B           283 kB
+├ ƒ /workspace/dashboard/contacts                                     5.51 kB        92.9 kB
+├ ƒ /workspace/dashboard/episodes                                     8.37 kB         101 kB
+├ ƒ /workspace/dashboard/episodes/[slug]                              211 B           283 kB
+├ ƒ /workspace/dashboard/episodes/drafts/[id]                         2.88 kB         285 kB
+├ ƒ /workspace/dashboard/freaky-register                              6.95 kB         103 kB
+├ ƒ /workspace/dashboard/jobs                                         5.99 kB         102 kB
+├ ƒ /workspace/dashboard/jobs/[jobId]                                 2.94 kB          99 kB
+├ ƒ /workspace/dashboard/jobs/applications/[applicationId]            1.99 kB         110 kB
+├ ƒ /workspace/dashboard/jobs/bulk-import                             1.61 kB        97.7 kB
+├ ƒ /workspace/dashboard/jobs/defaults                                4.31 kB        91.7 kB
+├ ƒ /workspace/dashboard/jobs/exports                                 1.4 kB         88.8 kB
+├ ƒ /workspace/dashboard/jobs/new                                     1.97 kB          98 kB
+├ ○ /workspace/dashboard/jobs/template-existing.csv                   0 B                0 B
+├ ○ /workspace/dashboard/jobs/template.csv                            0 B                0 B
+├ ƒ /workspace/dashboard/media                                        5.6 kB         98.1 kB
+├ ƒ /workspace/dashboard/redirects                                    6.98 kB        94.3 kB
+├ ƒ /workspace/dashboard/reviews                                      6.62 kB          94 kB
+├ ƒ /workspace/dashboard/settings                                     2.41 kB        89.8 kB
+├ ƒ /workspace/dashboard/taxonomies                                   5.61 kB          93 kB
+└ ƒ /workspace/login                                                  1.2 kB         88.6 kB
++ First Load JS shared by all                                         87.4 kB
+  ├ chunks/2117-81bfc066670c93b1.js                                   31.7 kB
+  ├ chunks/fd9d1056-13b21dace7f518b1.js                               53.6 kB
+  └ other shared chunks (total)                                       1.99 kB
+
+
+ƒ Middleware                                                          43.1 kB
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses getStaticProps)
+ƒ  (Dynamic)  server-rendered on demand
+

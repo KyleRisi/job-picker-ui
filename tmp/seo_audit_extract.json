@@ -1,0 +1,3285 @@
+{
+  "auditedAt": "2026-03-26T22:42:28.911Z",
+  "base": "http://localhost:4010",
+  "pages": [
+    {
+      "path": "/topics/true-crime",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics/true-crime",
+      "redirectChain": [
+        {
+          "url": "http://localhost:4010/topics/true-crime",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "robotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "contentLength": null
+      },
+      "metadata": {
+        "title": "True Crime Podcast Episodes | The Compendium",
+        "titleLength": 44,
+        "description": "Explore true crime podcast episodes on murders, disappearances, scams, frauds, and unsolved cases from The Compendium.",
+        "descriptionLength": 118,
+        "robotsMeta": "index, follow",
+        "canonical": "https://www.thecompendiumpodcast.com/topics/true-crime",
+        "ogTitle": "True Crime Podcast Episodes | The Compendium",
+        "ogDescription": "Explore true crime podcast episodes on murders, disappearances, scams, frauds, and unsolved cases from The Compendium.",
+        "ogImage": "https://www.thecompendiumpodcast.com/topic-hub-card-backgrounds/true-crime.avif",
+        "ogUrl": "https://www.thecompendiumpodcast.com/topics/true-crime",
+        "twitterTitle": "True Crime Podcast Episodes | The Compendium",
+        "twitterDescription": "Explore true crime podcast episodes on murders, disappearances, scams, frauds, and unsolved cases from The Compendium.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/topic-hub-card-backgrounds/true-crime.avif"
+      },
+      "headings": {
+        "h1": [
+          "True Crime Episodes True Crime Podcast Episodes"
+        ],
+        "h2": [
+          "3 Essential True Crime Episodes",
+          "Jump to the case style you want first",
+          "British True Crime Cases",
+          "Murders &amp; Serial Killers",
+          "Unsolved Cases &amp; Disappearances",
+          "Scams, Frauds &amp; Cover-Ups",
+          "Case Explainers &amp; Related Articles",
+          "What makes our true crime episodes different",
+          "Frequently Asked Questions",
+          "Keep exploring related stories",
+          "Browse every true crime episode in one place",
+          "Explore",
+          "About",
+          "More",
+          "Listen"
+        ],
+        "h3": [
+          "The Suffolk Strangler: Steve Wright The Man Who Made the Road Home a Nightmare",
+          "West Memphis Three: Paradise Lost, Justice Lost, Innocence Lost",
+          "The 2019 eBay Stalking Scandal: When Tech Giants Become Stalkers",
+          "Lucy Letby: Did She Really Kill These Babies?",
+          "The Millionaire Cough: Britain’s Biggest Game Show Scandal",
+          "Who Killed Jill Dando: The Mystery Behind Her Infamous Murder",
+          "Hillside Strangler: Murder in the Shadows of Los Angeles",
+          "Chaos: Charles Manson and the Manson Murders",
+          "Monster of Florence: The Real-Life Horror Behind an Italian Legend",
+          "Chowchilla Bus Kidnapping: The Day a School Bus Vanished",
+          "Elizabeth Smart: Kidnapped by a Prophet",
+          "Body in Room 348: How a Locked Room Led to an Impossible Answer",
+          "Elizabeth Holmes: Silicon Valley&#x27;s Greatest Fraud",
+          "Rudy Kurniawan: The Man Who Duped the Elite with Fake Fine Wines",
+          "Knoedler Gallery Scandal: The Greatest Art Fraud of the Century",
+          "Morgan Metzer: The True Story Behind Gaslit by My Husband",
+          "Lucy Letby: What Really Happened?",
+          "What are the best true crime episodes to start with?",
+          "Are these episodes serious or comedic?",
+          "What should I listen to after this page?"
+        ],
+        "h1Count": 1,
+        "h2Count": 15,
+        "h3Count": 20
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "BreadcrumbList",
+        "ListItem"
+      ],
+      "htmlBytes": 196451,
+      "links": {
+        "totalAnchors": 69,
+        "sampleAnchors": [
+          {
+            "href": "/",
+            "text": ""
+          },
+          {
+            "href": "/topics",
+            "text": "Topics"
+          },
+          {
+            "href": "/episodes",
+            "text": "Episodes"
+          },
+          {
+            "href": "/reviews",
+            "text": "Reviews"
+          },
+          {
+            "href": "/connect",
+            "text": "Connect"
+          },
+          {
+            "href": "/patreon",
+            "text": "Patreon"
+          },
+          {
+            "href": "#start-here",
+            "text": "Start with the essentials"
+          },
+          {
+            "href": "/episodes?topic=true-crime",
+            "text": "Browse full true crime archive"
+          },
+          {
+            "href": "https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ",
+            "text": "Listen on Spotify"
+          },
+          {
+            "href": "/episodes/the-suffolk-strangler-steve-wright-the-man-who-made-the-road-home-a-nightmare",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/the-suffolk-strangler-steve-wright-the-man-who-made-the-road-home-a-nightmare",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/west-memphis-three-paradise-lost-justice-lost-innocence-lost",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/west-memphis-three-paradise-lost-justice-lost-innocence-lost",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/the-2019-ebay-stalking-scandal-when-tech-giants-become-stalkers",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/the-2019-ebay-stalking-scandal-when-tech-giants-become-stalkers",
+            "text": "Episode page"
+          },
+          {
+            "href": "#murders-serial-killers-notorious-cases",
+            "text": "Murders"
+          },
+          {
+            "href": "#kidnappings-missing-persons-unsolved-cases",
+            "text": "Kidnappings &amp; Missing Persons"
+          },
+          {
+            "href": "#british-true-crime-cases",
+            "text": "British Cases"
+          },
+          {
+            "href": "#scams-cover-ups-corporate-villainy",
+            "text": "Scams &amp; Cover-Ups"
+          },
+          {
+            "href": "/episodes/lucy-letby-did-she-really-kill-these-babies",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/lucy-letby-did-she-really-kill-these-babies",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/the-millionaire-cough-britain-s-biggest-game-show-scandal",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/the-millionaire-cough-britain-s-biggest-game-show-scandal",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/who-killed-jill-dando-the-mystery-behind-her-infamous-murder",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/who-killed-jill-dando-the-mystery-behind-her-infamous-murder",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/hillside-strangler-murder-in-the-shadows-of-los-angeles",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/hillside-strangler-murder-in-the-shadows-of-los-angeles",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/chaos-charles-manson-and-the-manson-murders",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/chaos-charles-manson-and-the-manson-murders",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/monster-of-florence-the-real-life-horror-behind-an-italian-legend",
+            "text": "Listen now"
+          }
+        ],
+        "internalLinks": [
+          "/",
+          "/topics",
+          "/episodes",
+          "/reviews",
+          "/connect",
+          "/patreon",
+          "/episodes?topic=true-crime",
+          "/episodes/the-suffolk-strangler-steve-wright-the-man-who-made-the-road-home-a-nightmare",
+          "/episodes/west-memphis-three-paradise-lost-justice-lost-innocence-lost",
+          "/episodes/the-2019-ebay-stalking-scandal-when-tech-giants-become-stalkers",
+          "/episodes/lucy-letby-did-she-really-kill-these-babies",
+          "/episodes/the-millionaire-cough-britain-s-biggest-game-show-scandal",
+          "/episodes/who-killed-jill-dando-the-mystery-behind-her-infamous-murder",
+          "/episodes/hillside-strangler-murder-in-the-shadows-of-los-angeles",
+          "/episodes/chaos-charles-manson-and-the-manson-murders",
+          "/episodes/monster-of-florence-the-real-life-horror-behind-an-italian-legend",
+          "/episodes/chowchilla-bus-kidnapping-the-day-a-school-bus-vanished",
+          "/episodes/elizabeth-smart-kidnapped-by-a-prophet",
+          "/episodes/body-in-room-348-how-a-locked-room-led-to-an-impossible-answer",
+          "/episodes/elizabeth-holmes-silicon-valley-s-greatest-fraud",
+          "/episodes/rudy-kurniawan-the-man-who-duped-the-elite-with-fake-fine-wines",
+          "/episodes/knoedler-gallery-scandal-the-greatest-art-fraud-of-the-century",
+          "/blog/morgan-metzer-the-true-story-behind-gaslit-by-my-husband",
+          "/blog/author/kyle-risi",
+          "/blog/lucy-letby-what-really-happened",
+          "/topics/history",
+          "/topics/mysteries-unexplained",
+          "/topics/scams-hoaxes-cons",
+          "/topics/true-crime",
+          "/topics/incredible-people",
+          "/about",
+          "/meet-the-team",
+          "/freaky-register",
+          "/jobs"
+        ],
+        "missingHashTargets": []
+      },
+      "canonicalHostProbe": {
+        "status": 200,
+        "finalUrl": "http://localhost:4010/topics/true-crime",
+        "redirectChain": [
+          {
+            "url": "http://localhost:4010/topics/true-crime",
+            "status": 200,
+            "location": null
+          }
+        ],
+        "robotsTag": "noindex, nofollow",
+        "htmlTitle": "True Crime Podcast Episodes | The Compendium",
+        "robotsMeta": "index, follow"
+      }
+    },
+    {
+      "path": "/topics/history",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics/history",
+      "redirectChain": [
+        {
+          "url": "http://localhost:4010/topics/history",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "robotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "contentLength": null
+      },
+      "metadata": {
+        "title": "History Podcast Episodes | Revolutions, Scandals &amp; Turning Points",
+        "titleLength": 69,
+        "description": "Discover history podcast episodes that unpack political turning points, cultural flashpoints, and overlooked historical stories.",
+        "descriptionLength": 128,
+        "robotsMeta": "index, follow",
+        "canonical": "https://www.thecompendiumpodcast.com/topics/history",
+        "ogTitle": "History Podcast Episodes | The Compendium",
+        "ogDescription": "Explore History episodes on political scandals, revolutions, strange social experiments, and the decisions that reshaped the world.",
+        "ogImage": "https://www.thecompendiumpodcast.com/topic-hub-card-backgrounds/history.avif",
+        "ogUrl": "https://www.thecompendiumpodcast.com/topics/history",
+        "twitterTitle": "History Podcast Episodes | The Compendium",
+        "twitterDescription": "Explore History episodes on political scandals, revolutions, strange social experiments, and the decisions that reshaped the world.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/topic-hub-card-backgrounds/history.avif"
+      },
+      "headings": {
+        "h1": [
+          "History Episodes History Podcast Episodes"
+        ],
+        "h2": [
+          "3 Essential History Episodes",
+          "Jump to the historical angle you want first",
+          "Power, Scandals &amp; Revolutions",
+          "Wars, Resistance &amp; Conflict",
+          "Odd History &amp; Social Experiments",
+          "Related Articles &amp; Deeper Reading",
+          "Why our History episodes are worth your time",
+          "Frequently Asked Questions",
+          "Keep exploring adjacent stories",
+          "Browse every History episode in one place",
+          "Explore",
+          "About",
+          "More",
+          "Listen"
+        ],
+        "h3": [
+          "Guy Fawkes: Treason, Torture, and the Birth of Bonfire Night",
+          "The Execution of the Romanovs: From Russia&#x27;s Throne to an Unthinkable Fate",
+          "Bone Wars: The Rivalry That Rewrote Dinosaur History",
+          "Kony 2012: How Social Media Tried to Stop a War",
+          "Billion Dollar Banquet: How One Extravagant Party Sparked the Iranian Revolution",
+          "Imelda Marcos: Corruption, Power, &amp; 6,000 Pairs of Shoes",
+          "Hiroo Onoda: The Last Japanese Soldier Who Kept on Fighting After WW2 had Finished",
+          "The Great Emu War of 1932: Emus, Soldiers, and an Unexpected War",
+          "The Acali Experiment: Science, Sex, and Santiago Genovés’s Bizarre Human Behaviour Study",
+          "Nuns on the Run: How Eight Belgian Nuns Outsmarted the Church",
+          "Nellie Bly: 10 Days in a Mad House to 72 Days Around the World",
+          "Where should I start if I am new to the History hub?",
+          "Are these episodes deep dives or quick overviews?",
+          "What should I listen to next after these picks?"
+        ],
+        "h1Count": 1,
+        "h2Count": 14,
+        "h3Count": 14
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "BreadcrumbList",
+        "ListItem"
+      ],
+      "htmlBytes": 151735,
+      "links": {
+        "totalAnchors": 55,
+        "sampleAnchors": [
+          {
+            "href": "/",
+            "text": ""
+          },
+          {
+            "href": "/topics",
+            "text": "Topics"
+          },
+          {
+            "href": "/episodes",
+            "text": "Episodes"
+          },
+          {
+            "href": "/reviews",
+            "text": "Reviews"
+          },
+          {
+            "href": "/connect",
+            "text": "Connect"
+          },
+          {
+            "href": "/patreon",
+            "text": "Patreon"
+          },
+          {
+            "href": "#start-here",
+            "text": "Start with the essentials"
+          },
+          {
+            "href": "/episodes?topic=history",
+            "text": "Browse full history archive"
+          },
+          {
+            "href": "https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ",
+            "text": "Listen on Spotify"
+          },
+          {
+            "href": "/episodes/guy-fawkes-treason-torture-and-the-birth-of-bonfire-night",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/guy-fawkes-treason-torture-and-the-birth-of-bonfire-night",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/the-execution-of-the-romanovs-from-russia-s-throne-to-an-unthinkable-fate",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/the-execution-of-the-romanovs-from-russia-s-throne-to-an-unthinkable-fate",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/bone-wars-the-rivalry-that-rewrote-dinosaur-history",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/bone-wars-the-rivalry-that-rewrote-dinosaur-history",
+            "text": "Episode page"
+          },
+          {
+            "href": "#power-scandals-revolutions",
+            "text": "Power &amp; Scandals"
+          },
+          {
+            "href": "#wars-resistance-and-conflict",
+            "text": "War &amp; Conflict"
+          },
+          {
+            "href": "#odd-history-and-social-experiments",
+            "text": "Odd History"
+          },
+          {
+            "href": "/episodes/kony-2012-how-social-media-tried-to-stop-a-war",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/kony-2012-how-social-media-tried-to-stop-a-war",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/billion-dollar-banquet-how-one-extravagant-party-sparked-the-iranian-revolution",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/billion-dollar-banquet-how-one-extravagant-party-sparked-the-iranian-revolution",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/imelda-marcos-corruption-power-6-000-pairs-of-shoes",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/imelda-marcos-corruption-power-6-000-pairs-of-shoes",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/hiroo-onoda-the-last-japanese-soldier-who-kept-on-fighting-after-ww2-had-finished",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/hiroo-onoda-the-last-japanese-soldier-who-kept-on-fighting-after-ww2-had-finished",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/the-great-emu-war-of-1932-emus-soldiers-and-an-unexpected-war",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/the-great-emu-war-of-1932-emus-soldiers-and-an-unexpected-war",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/the-acali-experiment-science-sex-and-santiago-genoves-s-bizarre-human-behaviour-study",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/the-acali-experiment-science-sex-and-santiago-genoves-s-bizarre-human-behaviour-study",
+            "text": "Episode page"
+          }
+        ],
+        "internalLinks": [
+          "/",
+          "/topics",
+          "/episodes",
+          "/reviews",
+          "/connect",
+          "/patreon",
+          "/episodes?topic=history",
+          "/episodes/guy-fawkes-treason-torture-and-the-birth-of-bonfire-night",
+          "/episodes/the-execution-of-the-romanovs-from-russia-s-throne-to-an-unthinkable-fate",
+          "/episodes/bone-wars-the-rivalry-that-rewrote-dinosaur-history",
+          "/episodes/kony-2012-how-social-media-tried-to-stop-a-war",
+          "/episodes/billion-dollar-banquet-how-one-extravagant-party-sparked-the-iranian-revolution",
+          "/episodes/imelda-marcos-corruption-power-6-000-pairs-of-shoes",
+          "/episodes/hiroo-onoda-the-last-japanese-soldier-who-kept-on-fighting-after-ww2-had-finished",
+          "/episodes/the-great-emu-war-of-1932-emus-soldiers-and-an-unexpected-war",
+          "/episodes/the-acali-experiment-science-sex-and-santiago-genoves-s-bizarre-human-behaviour-study",
+          "/episodes/nuns-on-the-run-how-eight-belgian-nuns-outsmarted-the-church",
+          "/blog/nellie-bly-10-days-in-a-mad-house-to-72-days-around-the-world",
+          "/blog/author/kyle-risi",
+          "/topics/true-crime",
+          "/topics/incredible-people",
+          "/topics/pop-culture-entertainment",
+          "/topics/history",
+          "/about",
+          "/meet-the-team",
+          "/freaky-register",
+          "/jobs"
+        ],
+        "missingHashTargets": []
+      },
+      "canonicalHostProbe": {
+        "status": 200,
+        "finalUrl": "http://localhost:4010/topics/history",
+        "redirectChain": [
+          {
+            "url": "http://localhost:4010/topics/history",
+            "status": 200,
+            "location": null
+          }
+        ],
+        "robotsTag": "noindex, nofollow",
+        "htmlTitle": "History Podcast Episodes | Revolutions, Scandals &amp; Turning Points",
+        "robotsMeta": "index, follow"
+      }
+    },
+    {
+      "path": "/topics/incredible-people",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics/incredible-people",
+      "redirectChain": [
+        {
+          "url": "http://localhost:4010/topics/incredible-people",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "robotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "contentLength": null
+      },
+      "metadata": {
+        "title": "Incredible People Podcast Episodes | Icons, Rebels &amp; Legends",
+        "titleLength": 64,
+        "description": "Listen to remarkable life stories about iconic figures, unlikely heroes, and people who changed culture and history.",
+        "descriptionLength": 116,
+        "robotsMeta": "index, follow",
+        "canonical": "https://www.thecompendiumpodcast.com/topics/incredible-people",
+        "ogTitle": "Incredible People Podcast Episodes | The Compendium",
+        "ogDescription": "Explore extraordinary lives: icons, outsiders, and rule-breakers whose choices reshaped culture, media, and history.",
+        "ogImage": "https://www.thecompendiumpodcast.com/topic-hub-card-backgrounds/incredible-people.avif",
+        "ogUrl": "https://www.thecompendiumpodcast.com/topics/incredible-people",
+        "twitterTitle": "Incredible People Podcast Episodes | The Compendium",
+        "twitterDescription": "Explore extraordinary lives: icons, outsiders, and rule-breakers whose choices reshaped culture, media, and history.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/topic-hub-card-backgrounds/incredible-people.avif"
+      },
+      "headings": {
+        "h1": [
+          "Incredible People Episodes Incredible People Podcast Episodes"
+        ],
+        "h2": [
+          "3 Essential Incredible People Episodes",
+          "Jump to the kind of person you want first",
+          "Icons, Artists &amp; Cultural Originals",
+          "Princess Diana &amp; Public Scrutiny",
+          "Related Reading",
+          "Why this hub is worth exploring",
+          "Frequently Asked Questions",
+          "Keep exploring adjacent stories",
+          "Browse every Incredible People episode in one place",
+          "Explore",
+          "About",
+          "More",
+          "Listen"
+        ],
+        "h3": [
+          "Nellie Bly: From 10 days in a mad house to 72 days around the world",
+          "Frida Kahlo: Pain, Politics, and the Self-Portraits That Made an Icon",
+          "Terminal Man: The Refugee who waited at an Airport for 18 Years",
+          "Roald Dahl: A Life Shaped by War, Words, and Whimsy",
+          "Dolly Parton: The Legend Behind the Rhinestones",
+          "Sixto Rodriguez: The Sugar Man Who Inspired a Revolution",
+          "Princess Diana Part 1: The Royal Romance That Was Over Before It Began",
+          "Princess Diana Part 2: The Truth Behind Her Divorce from Charles and the Royal Fallout",
+          "Princess Diana Part 3: The Final Year, The Fatal Chase, The Last Goodbye",
+          "Nellie Bly: 10 Days in a Mad House to 72 Days Around the World",
+          "Where should I start with Incredible People?",
+          "What kinds of people are covered here?",
+          "Does this hub include controversial or criminal figures?",
+          "What should I listen to next after this page?"
+        ],
+        "h1Count": 1,
+        "h2Count": 13,
+        "h3Count": 14
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "BreadcrumbList",
+        "ListItem"
+      ],
+      "htmlBytes": 143694,
+      "links": {
+        "totalAnchors": 52,
+        "sampleAnchors": [
+          {
+            "href": "/",
+            "text": ""
+          },
+          {
+            "href": "/topics",
+            "text": "Topics"
+          },
+          {
+            "href": "/episodes",
+            "text": "Episodes"
+          },
+          {
+            "href": "/reviews",
+            "text": "Reviews"
+          },
+          {
+            "href": "/connect",
+            "text": "Connect"
+          },
+          {
+            "href": "/patreon",
+            "text": "Patreon"
+          },
+          {
+            "href": "#start-here",
+            "text": "Start with the essentials"
+          },
+          {
+            "href": "/episodes?topic=incredible-people",
+            "text": "Browse full incredible people archive"
+          },
+          {
+            "href": "https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ",
+            "text": "Listen on Spotify"
+          },
+          {
+            "href": "/episodes/nellie-bly-10-days-in-a-mad-house-to-72-days-around-the-world",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/nellie-bly-10-days-in-a-mad-house-to-72-days-around-the-world",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/frida-kahlo-pain-politics-and-the-self-portraits-that-made-an-icon",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/frida-kahlo-pain-politics-and-the-self-portraits-that-made-an-icon",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/terminal-man-the-refugee-who-waited-at-an-airport-for-18-years",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/terminal-man-the-refugee-who-waited-at-an-airport-for-18-years",
+            "text": "Episode page"
+          },
+          {
+            "href": "#icons-artists-and-cultural-originals",
+            "text": "Icons &amp; Artists"
+          },
+          {
+            "href": "#royals-headlines-and-public-pressure",
+            "text": "Diana &amp; Royals"
+          },
+          {
+            "href": "/episodes/roald-dahl-a-life-shaped-by-war-words-and-whimsy",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/roald-dahl-a-life-shaped-by-war-words-and-whimsy",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/dolly-parton-the-legend-behind-the-rhinestones",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/dolly-parton-the-legend-behind-the-rhinestones",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/sixto-rodriguez-the-sugar-man-who-inspired-a-revolution",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/sixto-rodriguez-the-sugar-man-who-inspired-a-revolution",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/princess-diana-part-1-the-royal-romance-that-was-over-before-it-began",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/princess-diana-part-1-the-royal-romance-that-was-over-before-it-began",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/princess-diana-part-2-the-truth-behind-her-divorce-from-charles-and-the-royal-fallout",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/princess-diana-part-2-the-truth-behind-her-divorce-from-charles-and-the-royal-fallout",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/princess-diana-part-3-the-final-year-the-fatal-chase-the-last-goodbye",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/princess-diana-part-3-the-final-year-the-fatal-chase-the-last-goodbye",
+            "text": "Episode page"
+          },
+          {
+            "href": "/blog/nellie-bly-10-days-in-a-mad-house-to-72-days-around-the-world",
+            "text": ""
+          }
+        ],
+        "internalLinks": [
+          "/",
+          "/topics",
+          "/episodes",
+          "/reviews",
+          "/connect",
+          "/patreon",
+          "/episodes?topic=incredible-people",
+          "/episodes/nellie-bly-10-days-in-a-mad-house-to-72-days-around-the-world",
+          "/episodes/frida-kahlo-pain-politics-and-the-self-portraits-that-made-an-icon",
+          "/episodes/terminal-man-the-refugee-who-waited-at-an-airport-for-18-years",
+          "/episodes/roald-dahl-a-life-shaped-by-war-words-and-whimsy",
+          "/episodes/dolly-parton-the-legend-behind-the-rhinestones",
+          "/episodes/sixto-rodriguez-the-sugar-man-who-inspired-a-revolution",
+          "/episodes/princess-diana-part-1-the-royal-romance-that-was-over-before-it-began",
+          "/episodes/princess-diana-part-2-the-truth-behind-her-divorce-from-charles-and-the-royal-fallout",
+          "/episodes/princess-diana-part-3-the-final-year-the-fatal-chase-the-last-goodbye",
+          "/blog/nellie-bly-10-days-in-a-mad-house-to-72-days-around-the-world",
+          "/blog/author/kyle-risi",
+          "/topics/history",
+          "/topics/true-crime",
+          "/topics/pop-culture-entertainment",
+          "/topics/incredible-people",
+          "/about",
+          "/meet-the-team",
+          "/freaky-register",
+          "/jobs"
+        ],
+        "missingHashTargets": []
+      },
+      "canonicalHostProbe": {
+        "status": 200,
+        "finalUrl": "http://localhost:4010/topics/incredible-people",
+        "redirectChain": [
+          {
+            "url": "http://localhost:4010/topics/incredible-people",
+            "status": 200,
+            "location": null
+          }
+        ],
+        "robotsTag": "noindex, nofollow",
+        "htmlTitle": "Incredible People Podcast Episodes | Icons, Rebels &amp; Legends",
+        "robotsMeta": "index, follow"
+      }
+    },
+    {
+      "path": "/topics/scams-hoaxes-cons",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics/scams-hoaxes-cons",
+      "redirectChain": [
+        {
+          "url": "http://localhost:4010/topics/scams-hoaxes-cons",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "robotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "contentLength": null
+      },
+      "metadata": {
+        "title": "Scams, Hoaxes &amp; Cons Podcast Episodes | Fraud Stories",
+        "titleLength": 57,
+        "description": "Explore scams, hoaxes, and cons episodes on fraud, manipulation, cover-ups, and the fallout when deception goes public.",
+        "descriptionLength": 119,
+        "robotsMeta": "index, follow",
+        "canonical": "https://www.thecompendiumpodcast.com/topics/scams-hoaxes-cons",
+        "ogTitle": "Scams, Hoaxes &amp; Cons Podcast Episodes | The Compendium",
+        "ogDescription": "Listen to scams, hoaxes, and con stories about fraud, media manipulation, fake identities, and institutional deceit.",
+        "ogImage": "https://www.thecompendiumpodcast.com/topic-hub-card-backgrounds/scams.avif",
+        "ogUrl": "https://www.thecompendiumpodcast.com/topics/scams-hoaxes-cons",
+        "twitterTitle": "Scams, Hoaxes &amp; Cons Podcast Episodes | The Compendium",
+        "twitterDescription": "Listen to scams, hoaxes, and con stories about fraud, media manipulation, fake identities, and institutional deceit.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/topic-hub-card-backgrounds/scams.avif"
+      },
+      "headings": {
+        "h1": [
+          "Scams, Hoaxes &amp; Cons Scams, Hoaxes &amp; Cons Podcast Episodes"
+        ],
+        "h2": [
+          "3 Essential Scam &amp; Hoax Episodes",
+          "Jump to the deception style you want first",
+          "Corporate Fraud &amp; Institutional Deceit",
+          "Con Artists &amp; Fake Identities",
+          "Hoaxes, Media Hype &amp; Public Belief",
+          "Heists, Bluffs &amp; High-Stakes Scams",
+          "Why this hub is worth exploring",
+          "Frequently Asked Questions",
+          "Keep exploring adjacent stories",
+          "Browse all scams, hoaxes and cons episodes in one place",
+          "Explore",
+          "About",
+          "More",
+          "Listen"
+        ],
+        "h3": [
+          "McMillions: When America’s Biggest Game Stopped Being a Game",
+          "Belle Gibson: The Fake Cancer Survivor Who Built a Wellness Empire",
+          "Tania Head: The 9/11 Survivor Who Wasn&#x27;t There",
+          "Elizabeth Holmes: Silicon Valley&#x27;s Greatest Fraud",
+          "Knoedler Gallery Scandal: The Greatest Art Fraud of the Century",
+          "Dr. Donald Cline: Conceived in Deceit, the Infamous Fertility Scandal",
+          "Anna Delvey: From Rags to Riches to Rikers, New Yorks Fake Heiress",
+          "Cassie Chadwick: Carnegie&#x27;s Imaginary Heir, Queen of the Con",
+          "Rudy Kurniawan: The Man Who Duped the Elite with Fake Fine Wines",
+          "Balloon Boy Hoax: The Viral Media Circus That Spiraled Out of Control",
+          "Fyre Festival: The Greatest Party That Never Happened",
+          "JT LeRoy: Gender, Deception, and the Ultimate Hoax",
+          "Millennium Dome Diamond Heist: The Plot to Steal the Worlds Most Flawless Diamond",
+          "The Santa Claus Bank Robbery Blunder",
+          "D.B. Tuber: The Most Ridiculous Robbery in American History",
+          "Where should I start on this page?",
+          "What kinds of deception stories are covered?",
+          "Does this include corporate, criminal, and media hoaxes?",
+          "What should I listen to after this hub?"
+        ],
+        "h1Count": 1,
+        "h2Count": 14,
+        "h3Count": 19
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "BreadcrumbList",
+        "ListItem"
+      ],
+      "htmlBytes": 185729,
+      "links": {
+        "totalAnchors": 63,
+        "sampleAnchors": [
+          {
+            "href": "/",
+            "text": ""
+          },
+          {
+            "href": "/topics",
+            "text": "Topics"
+          },
+          {
+            "href": "/episodes",
+            "text": "Episodes"
+          },
+          {
+            "href": "/reviews",
+            "text": "Reviews"
+          },
+          {
+            "href": "/connect",
+            "text": "Connect"
+          },
+          {
+            "href": "/patreon",
+            "text": "Patreon"
+          },
+          {
+            "href": "#start-here",
+            "text": "Start with the essentials"
+          },
+          {
+            "href": "/episodes?topic=scams-hoaxes-cons",
+            "text": "Browse full scams archive"
+          },
+          {
+            "href": "https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ",
+            "text": "Listen on Spotify"
+          },
+          {
+            "href": "/episodes/mcmillions-when-america-s-biggest-game-stopped-being-a-game",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/mcmillions-when-america-s-biggest-game-stopped-being-a-game",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/belle-gibson-the-fake-cancer-survivor-who-built-a-wellness-empire",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/belle-gibson-the-fake-cancer-survivor-who-built-a-wellness-empire",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/tania-head-the-9-11-survivor-who-wasn-t-there",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/tania-head-the-9-11-survivor-who-wasn-t-there",
+            "text": "Episode page"
+          },
+          {
+            "href": "#corporate-fraud-and-institutional-deceit",
+            "text": "Corporate Fraud"
+          },
+          {
+            "href": "#con-artists-and-fake-identities",
+            "text": "Con Artists"
+          },
+          {
+            "href": "#hoaxes-media-hype-and-public-belief",
+            "text": "Public Hoaxes"
+          },
+          {
+            "href": "#heists-bluffs-and-high-stakes-scams",
+            "text": "Heists &amp; Bluffs"
+          },
+          {
+            "href": "/episodes/revisited-elizabeth-holmes-silicon-valley-s-greatest-fraud",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/revisited-elizabeth-holmes-silicon-valley-s-greatest-fraud",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/knoedler-gallery-scandal-the-greatest-art-fraud-of-the-century",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/knoedler-gallery-scandal-the-greatest-art-fraud-of-the-century",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/dr-donald-cline-conceived-in-deceit-the-infamous-fertility-scandal",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/dr-donald-cline-conceived-in-deceit-the-infamous-fertility-scandal",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/anna-delvey-from-rags-to-riches-to-rikers-new-yorks-fake-heiress",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/anna-delvey-from-rags-to-riches-to-rikers-new-yorks-fake-heiress",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/cassie-chadwick-carnegie-s-imaginary-heir-queen-of-the-con",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/cassie-chadwick-carnegie-s-imaginary-heir-queen-of-the-con",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/rudy-kurniawan-the-man-who-duped-the-elite-with-fake-fine-wines",
+            "text": "Listen now"
+          }
+        ],
+        "internalLinks": [
+          "/",
+          "/topics",
+          "/episodes",
+          "/reviews",
+          "/connect",
+          "/patreon",
+          "/episodes?topic=scams-hoaxes-cons",
+          "/episodes/mcmillions-when-america-s-biggest-game-stopped-being-a-game",
+          "/episodes/belle-gibson-the-fake-cancer-survivor-who-built-a-wellness-empire",
+          "/episodes/tania-head-the-9-11-survivor-who-wasn-t-there",
+          "/episodes/revisited-elizabeth-holmes-silicon-valley-s-greatest-fraud",
+          "/episodes/knoedler-gallery-scandal-the-greatest-art-fraud-of-the-century",
+          "/episodes/dr-donald-cline-conceived-in-deceit-the-infamous-fertility-scandal",
+          "/episodes/anna-delvey-from-rags-to-riches-to-rikers-new-yorks-fake-heiress",
+          "/episodes/cassie-chadwick-carnegie-s-imaginary-heir-queen-of-the-con",
+          "/episodes/rudy-kurniawan-the-man-who-duped-the-elite-with-fake-fine-wines",
+          "/episodes/balloon-boy-hoax-the-viral-media-circus-that-spiraled-out-of-control",
+          "/episodes/fyre-festival-the-greatest-party-that-never-happened",
+          "/episodes/jt-leroy-gender-deception-and-the-ultimate-hoax",
+          "/episodes/millennium-dome-diamond-heist-the-plot-to-steal-the-worlds-most-flawless-diamond",
+          "/episodes/the-santa-claus-bank-robbery-blunder",
+          "/episodes/d-b-tuber-the-most-ridiculous-robbery-in-american-history",
+          "/topics/true-crime",
+          "/topics/pop-culture-entertainment",
+          "/topics/history",
+          "/topics/incredible-people",
+          "/about",
+          "/meet-the-team",
+          "/freaky-register",
+          "/jobs"
+        ],
+        "missingHashTargets": []
+      },
+      "canonicalHostProbe": {
+        "status": 200,
+        "finalUrl": "http://localhost:4010/topics/scams-hoaxes-cons",
+        "redirectChain": [
+          {
+            "url": "http://localhost:4010/topics/scams-hoaxes-cons",
+            "status": 200,
+            "location": null
+          }
+        ],
+        "robotsTag": "noindex, nofollow",
+        "htmlTitle": "Scams, Hoaxes &amp; Cons Podcast Episodes | Fraud Stories",
+        "robotsMeta": "index, follow"
+      }
+    },
+    {
+      "path": "/topics/disasters-survival",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics/disasters-survival",
+      "redirectChain": [
+        {
+          "url": "http://localhost:4010/topics/disasters-survival",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "robotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "contentLength": null
+      },
+      "metadata": {
+        "title": "Disasters &amp; Survival Podcast Episodes | Catastrophe Stories",
+        "titleLength": 63,
+        "description": "Explore disasters and survival episodes on catastrophe, rescue efforts, human error, and extraordinary endurance under pressure.",
+        "descriptionLength": 128,
+        "robotsMeta": "index, follow",
+        "canonical": "https://www.thecompendiumpodcast.com/topics/disasters-survival",
+        "ogTitle": "Disasters &amp; Survival Podcast Episodes | The Compendium",
+        "ogDescription": "Listen to stories of catastrophe and endurance, from system failures and maritime disasters to rescue missions and survival against the odds.",
+        "ogImage": "https://www.thecompendiumpodcast.com/topic-hub-card-backgrounds/disasters.avif",
+        "ogUrl": "https://www.thecompendiumpodcast.com/topics/disasters-survival",
+        "twitterTitle": "Disasters &amp; Survival Podcast Episodes | The Compendium",
+        "twitterDescription": "Listen to stories of catastrophe and endurance, from system failures and maritime disasters to rescue missions and survival against the odds.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/topic-hub-card-backgrounds/disasters.avif"
+      },
+      "headings": {
+        "h1": [
+          "Disasters &amp; Survival Disasters &amp; Survival Podcast Episodes"
+        ],
+        "h2": [
+          "3 Essential Disasters &amp; Survival Episodes",
+          "Jump to the kind of disaster story you want first",
+          "System Failures &amp; Collapse",
+          "Maritime Disasters &amp; Survival at Sea",
+          "Survival Under Extreme Pressure",
+          "Entrapment, Rescue &amp; Public Chaos",
+          "Related Reading",
+          "Why this hub is worth exploring",
+          "Frequently Asked Questions",
+          "Keep exploring adjacent stories",
+          "Browse all disasters and survival episodes in one place",
+          "Explore",
+          "About",
+          "More",
+          "Listen"
+        ],
+        "h3": [
+          "The Chernobyl Disaster: What Really Happened at 01:23:40 on April 26th, 1986",
+          "The Miracle of the Andes: The story of a group of survivors of a plane crash in the Andes in 1972.",
+          "Baby Jessica: The Girl who Fell Down a Well and Changed News Forever",
+          "Biosphere 2: The Grand Experiment That Could Not Breathe",
+          "The Challenger Disaster: Christa McAuliffe’s Legacy Beyond the Space Shuttle Explosion",
+          "The Hindenburg Disaster: The Fiery End of the Golden Age of Airships",
+          "Oceangate Titan Disaster: A Billionaire’s Dive into Hubris, History, and Horror",
+          "The Titanic Part 1: The People, The Passions, The Legend!",
+          "The Titanic Part 2: The Voyage, The Iceberg, The Aftermath",
+          "Chris Lemon&#x27;s Last Breath: How He Survived in the North Sea",
+          "Survival at Sea: The Harrowing Tale of the Trashman Yacht Sinking",
+          "When Hippos Attack: Nightmare on the Zambezi and the Miracle Paddle That Saved Their Lives",
+          "Nutty Putty Cave: The John Edward Jones Story That Haunts Cavers to This Day",
+          "Poop Cruise: The Carnival Triumph Disaster That Stranded Thousands Without Toilets",
+          "Balloonfest: Clevelands 1986 Float-tastrophe of Epic Proportions",
+          "Biosphere 2: Why the Experiment Could Not Breathe",
+          "Where should I start with Disasters &amp; Survival?",
+          "What kinds of stories are covered on this page?",
+          "Does this include natural disasters, human error, and survival cases?",
+          "What should I listen to after this page?"
+        ],
+        "h1Count": 1,
+        "h2Count": 15,
+        "h3Count": 20
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "BreadcrumbList",
+        "ListItem"
+      ],
+      "htmlBytes": 194446,
+      "links": {
+        "totalAnchors": 66,
+        "sampleAnchors": [
+          {
+            "href": "/",
+            "text": ""
+          },
+          {
+            "href": "/topics",
+            "text": "Topics"
+          },
+          {
+            "href": "/episodes",
+            "text": "Episodes"
+          },
+          {
+            "href": "/reviews",
+            "text": "Reviews"
+          },
+          {
+            "href": "/connect",
+            "text": "Connect"
+          },
+          {
+            "href": "/patreon",
+            "text": "Patreon"
+          },
+          {
+            "href": "#start-here",
+            "text": "Start with the essentials"
+          },
+          {
+            "href": "/episodes?topic=disasters-survival",
+            "text": "Browse full disasters archive"
+          },
+          {
+            "href": "https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ",
+            "text": "Listen on Spotify"
+          },
+          {
+            "href": "/episodes/the-chernobyl-disaster-what-really-happened-at-01-23-40-on-april-26th-1986",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/the-chernobyl-disaster-what-really-happened-at-01-23-40-on-april-26th-1986",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/revisited-the-miracle-of-the-andes-the-story-of-a-group-of-survivors-of-a-plane-crash-in-the-andes-in-1972",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/revisited-the-miracle-of-the-andes-the-story-of-a-group-of-survivors-of-a-plane-crash-in-the-andes-in-1972",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/baby-jessica-the-girl-who-fell-down-a-well-and-changed-news-forever",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/baby-jessica-the-girl-who-fell-down-a-well-and-changed-news-forever",
+            "text": "Episode page"
+          },
+          {
+            "href": "#system-failures-and-collapse",
+            "text": "System Failures"
+          },
+          {
+            "href": "#maritime-disasters-and-open-water-risk",
+            "text": "Maritime Disasters"
+          },
+          {
+            "href": "#survival-under-extreme-pressure",
+            "text": "Survival Stories"
+          },
+          {
+            "href": "#entrapment-rescue-and-public-chaos",
+            "text": "Rescue &amp; Chaos"
+          },
+          {
+            "href": "/episodes/biosphere-2-the-grand-experiment-that-could-not-breathe",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/biosphere-2-the-grand-experiment-that-could-not-breathe",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/the-challenger-disaster-christa-mcauliffe-s-legacy-beyond-the-space-shuttle-explosion",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/the-challenger-disaster-christa-mcauliffe-s-legacy-beyond-the-space-shuttle-explosion",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/the-hindenburg-disaster-the-fiery-end-of-the-golden-age-of-airships",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/the-hindenburg-disaster-the-fiery-end-of-the-golden-age-of-airships",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/oceangate-titan-disaster-a-billionaire-s-dive-into-hubris-history-and-horror",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/oceangate-titan-disaster-a-billionaire-s-dive-into-hubris-history-and-horror",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/revisited-the-titanic-part-1-the-people-the-passions-the-legend",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/revisited-the-titanic-part-1-the-people-the-passions-the-legend",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/the-titanic-part-2-the-voyage-the-iceberg-the-aftermath",
+            "text": "Listen now"
+          }
+        ],
+        "internalLinks": [
+          "/",
+          "/topics",
+          "/episodes",
+          "/reviews",
+          "/connect",
+          "/patreon",
+          "/episodes?topic=disasters-survival",
+          "/episodes/the-chernobyl-disaster-what-really-happened-at-01-23-40-on-april-26th-1986",
+          "/episodes/revisited-the-miracle-of-the-andes-the-story-of-a-group-of-survivors-of-a-plane-crash-in-the-andes-in-1972",
+          "/episodes/baby-jessica-the-girl-who-fell-down-a-well-and-changed-news-forever",
+          "/episodes/biosphere-2-the-grand-experiment-that-could-not-breathe",
+          "/episodes/the-challenger-disaster-christa-mcauliffe-s-legacy-beyond-the-space-shuttle-explosion",
+          "/episodes/the-hindenburg-disaster-the-fiery-end-of-the-golden-age-of-airships",
+          "/episodes/oceangate-titan-disaster-a-billionaire-s-dive-into-hubris-history-and-horror",
+          "/episodes/revisited-the-titanic-part-1-the-people-the-passions-the-legend",
+          "/episodes/the-titanic-part-2-the-voyage-the-iceberg-the-aftermath",
+          "/episodes/last-breath-the-true-story-of-chris-lemons-near-death-experience-in-the-north-sea",
+          "/episodes/survival-at-sea-the-harrowing-tale-of-the-trashman-yacht-sinking",
+          "/episodes/when-hippos-attack-nightmare-on-the-zambezi-and-the-miracle-paddle-that-saved-their-lives",
+          "/episodes/nutty-putty-cave-the-john-edward-jones-story-that-haunts-cavers-to-this-day",
+          "/episodes/poop-cruise-the-carnival-triumph-disaster-that-stranded-thousands-without-toilets",
+          "/episodes/balloonfest-clevelands-1986-float-tastrophe-of-epic-proportions",
+          "/blog/biosphere-2-why-the-experiment-could-not-breathe",
+          "/blog/author/kyle-risi",
+          "/topics/history",
+          "/topics/true-crime",
+          "/topics/incredible-people",
+          "/about",
+          "/meet-the-team",
+          "/freaky-register",
+          "/jobs"
+        ],
+        "missingHashTargets": []
+      },
+      "canonicalHostProbe": {
+        "status": 200,
+        "finalUrl": "http://localhost:4010/topics/disasters-survival",
+        "redirectChain": [
+          {
+            "url": "http://localhost:4010/topics/disasters-survival",
+            "status": 200,
+            "location": null
+          }
+        ],
+        "robotsTag": "noindex, nofollow",
+        "htmlTitle": "Disasters &amp; Survival Podcast Episodes | Catastrophe Stories",
+        "robotsMeta": "index, follow"
+      }
+    },
+    {
+      "path": "/topics/mysteries-unexplained",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics/mysteries-unexplained",
+      "redirectChain": [
+        {
+          "url": "http://localhost:4010/topics/mysteries-unexplained",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "robotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "contentLength": null
+      },
+      "metadata": {
+        "title": "Mysteries &amp; Unexplained Podcast Episodes | Unsolved Stories",
+        "titleLength": 63,
+        "description": "Explore unsolved mysteries and unexplained stories featuring disappearances, strange evidence, and cases that resist clear answers.",
+        "descriptionLength": 131,
+        "robotsMeta": "index, follow",
+        "canonical": "https://www.thecompendiumpodcast.com/topics/mysteries-unexplained",
+        "ogTitle": "Mysteries &amp; Unexplained Podcast Episodes | The Compendium",
+        "ogDescription": "Listen to unsolved mysteries, unexplained events, and strange timelines where competing theories and missing answers drive the story.",
+        "ogImage": "https://www.thecompendiumpodcast.com/topic-hub-card-backgrounds/Mysteries.avif",
+        "ogUrl": "https://www.thecompendiumpodcast.com/topics/mysteries-unexplained",
+        "twitterTitle": "Mysteries &amp; Unexplained Podcast Episodes | The Compendium",
+        "twitterDescription": "Listen to unsolved mysteries, unexplained events, and strange timelines where competing theories and missing answers drive the story.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/topic-hub-card-backgrounds/Mysteries.avif"
+      },
+      "headings": {
+        "h1": [
+          "Mysteries &amp; Unexplained Mysteries &amp; Unexplained Podcast Episodes"
+        ],
+        "h2": [
+          "3 Essential Mysteries &amp; Unexplained Episodes",
+          "Jump to the mystery style you want first",
+          "Vanishings &amp; Identity Puzzles",
+          "Legends, Hauntings &amp; Paranormal Claims",
+          "Hoaxes &amp; Contested Narratives",
+          "Why this hub is worth exploring",
+          "Frequently Asked Questions",
+          "Keep exploring adjacent stories",
+          "Browse all mysteries and unexplained episodes in one place",
+          "Explore",
+          "About",
+          "More",
+          "Listen"
+        ],
+        "h3": [
+          "Body in Room 348: How a Locked Room Led to an Impossible Answer",
+          "Bobby Dunbar: The Missing Child Case Solved by a Century-Late DNA Test",
+          "The Exorcism of Roland Doe: The True Story Behind The Exorcist",
+          "Jennifer Fairgate and the Oslo Plaza Hotel Mystery",
+          "Lars Mittank: From Airport CCTV to an Unsolved Mystery",
+          "The Alcatraz Escape: The Unbelievable True Story of the Great Prison Break",
+          "The Enfield Poltergeist: Haunting on Green Street",
+          "Annabelle Doll and the Winchester Mystery House",
+          "Exploring Bigfoot: A Myth or Reality?",
+          "The Loch Ness Monster Hoax: How a Man Named Marmaduke Fooled the World",
+          "The Curse of the Cecil: America&#x27;s Most Dangerous Hotel",
+          "Where should I start with Mysteries &amp; Unexplained?",
+          "What kinds of mysteries are covered?",
+          "Does this include unexplained events, disappearances, and unsolved stories?",
+          "What should I explore next after this page?"
+        ],
+        "h1Count": 1,
+        "h2Count": 13,
+        "h3Count": 15
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "BreadcrumbList",
+        "ListItem"
+      ],
+      "htmlBytes": 152901,
+      "links": {
+        "totalAnchors": 54,
+        "sampleAnchors": [
+          {
+            "href": "/",
+            "text": ""
+          },
+          {
+            "href": "/topics",
+            "text": "Topics"
+          },
+          {
+            "href": "/episodes",
+            "text": "Episodes"
+          },
+          {
+            "href": "/reviews",
+            "text": "Reviews"
+          },
+          {
+            "href": "/connect",
+            "text": "Connect"
+          },
+          {
+            "href": "/patreon",
+            "text": "Patreon"
+          },
+          {
+            "href": "#start-here",
+            "text": "Start with the essentials"
+          },
+          {
+            "href": "/episodes?topic=mysteries-unexplained",
+            "text": "Browse full mysteries archive"
+          },
+          {
+            "href": "https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ",
+            "text": "Listen on Spotify"
+          },
+          {
+            "href": "/episodes/body-in-room-348-how-a-locked-room-led-to-an-impossible-answer",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/body-in-room-348-how-a-locked-room-led-to-an-impossible-answer",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/bobby-dunbar-the-missing-child-case-solved-by-a-century-late-dna-test",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/bobby-dunbar-the-missing-child-case-solved-by-a-century-late-dna-test",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/the-exorcism-of-roland-doe-the-true-story-behind-the-exorcist",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/the-exorcism-of-roland-doe-the-true-story-behind-the-exorcist",
+            "text": "Episode page"
+          },
+          {
+            "href": "#vanishings-and-identity-puzzles",
+            "text": "Vanishings"
+          },
+          {
+            "href": "#legends-hauntings-and-paranormal-claims",
+            "text": "Paranormal"
+          },
+          {
+            "href": "#hoaxes-and-contested-narratives",
+            "text": "Hoaxes &amp; Narratives"
+          },
+          {
+            "href": "/episodes/jennifer-fairgate-the-woman-with-no-past",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/jennifer-fairgate-the-woman-with-no-past",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/lars-mittank-from-airport-cctv-to-an-unsolved-mystery",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/lars-mittank-from-airport-cctv-to-an-unsolved-mystery",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/the-alcatraz-escape-the-unbelievable-true-story-of-the-great-prison-break",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/the-alcatraz-escape-the-unbelievable-true-story-of-the-great-prison-break",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/the-enfield-poltergeist-haunting-on-green-street",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/the-enfield-poltergeist-haunting-on-green-street",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/annabelle-doll-and-the-winchester-mystery-house",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/annabelle-doll-and-the-winchester-mystery-house",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/exploring-bigfoot-a-myth-or-reality",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/exploring-bigfoot-a-myth-or-reality",
+            "text": "Episode page"
+          }
+        ],
+        "internalLinks": [
+          "/",
+          "/topics",
+          "/episodes",
+          "/reviews",
+          "/connect",
+          "/patreon",
+          "/episodes?topic=mysteries-unexplained",
+          "/episodes/body-in-room-348-how-a-locked-room-led-to-an-impossible-answer",
+          "/episodes/bobby-dunbar-the-missing-child-case-solved-by-a-century-late-dna-test",
+          "/episodes/the-exorcism-of-roland-doe-the-true-story-behind-the-exorcist",
+          "/episodes/jennifer-fairgate-the-woman-with-no-past",
+          "/episodes/lars-mittank-from-airport-cctv-to-an-unsolved-mystery",
+          "/episodes/the-alcatraz-escape-the-unbelievable-true-story-of-the-great-prison-break",
+          "/episodes/the-enfield-poltergeist-haunting-on-green-street",
+          "/episodes/annabelle-doll-and-the-winchester-mystery-house",
+          "/episodes/exploring-bigfoot-a-myth-or-reality",
+          "/episodes/the-loch-ness-monster-hoax-how-a-man-named-marmaduke-fooled-the-world",
+          "/episodes/the-curse-of-the-cecil-america-s-most-dangerous-hotel",
+          "/topics/true-crime",
+          "/topics/disasters-survival",
+          "/topics/history",
+          "/topics/incredible-people",
+          "/about",
+          "/meet-the-team",
+          "/freaky-register",
+          "/jobs"
+        ],
+        "missingHashTargets": []
+      },
+      "canonicalHostProbe": {
+        "status": 200,
+        "finalUrl": "http://localhost:4010/topics/mysteries-unexplained",
+        "redirectChain": [
+          {
+            "url": "http://localhost:4010/topics/mysteries-unexplained",
+            "status": 200,
+            "location": null
+          }
+        ],
+        "robotsTag": "noindex, nofollow",
+        "htmlTitle": "Mysteries &amp; Unexplained Podcast Episodes | Unsolved Stories",
+        "robotsMeta": "index, follow"
+      }
+    },
+    {
+      "path": "/topics/cults-belief-moral-panics",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics/cults-belief-moral-panics",
+      "redirectChain": [
+        {
+          "url": "http://localhost:4010/topics/cults-belief-moral-panics",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "robotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "contentLength": null
+      },
+      "metadata": {
+        "title": "Cults, Belief &amp; Moral Panics Podcast Episodes | Control",
+        "titleLength": 59,
+        "description": "Explore cults, coercive belief systems, and moral panics where persuasion, fear, and social contagion drove real harm.",
+        "descriptionLength": 118,
+        "robotsMeta": "index, follow",
+        "canonical": "https://www.thecompendiumpodcast.com/topics/cults-belief-moral-panics",
+        "ogTitle": "Cults, Belief &amp; Moral Panics Podcast Episodes | The Compendium",
+        "ogDescription": "Listen to stories about cult leaders, conspiracy thinking, and panic-driven movements that reshaped communities through fear and control.",
+        "ogImage": "https://www.thecompendiumpodcast.com/topic-hub-card-backgrounds/Cults.avif",
+        "ogUrl": "https://www.thecompendiumpodcast.com/topics/cults-belief-moral-panics",
+        "twitterTitle": "Cults, Belief &amp; Moral Panics Podcast Episodes | The Compendium",
+        "twitterDescription": "Listen to stories about cult leaders, conspiracy thinking, and panic-driven movements that reshaped communities through fear and control.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/topic-hub-card-backgrounds/Cults.avif"
+      },
+      "headings": {
+        "h1": [
+          "Cults, Belief &amp; Moral Panics Cults, Belief &amp; Moral Panics Podcast Episodes"
+        ],
+        "h2": [
+          "3 Essential Cults, Belief &amp; Moral Panics Episodes",
+          "More cults, coercion &amp; moral panics",
+          "Why this hub is worth exploring",
+          "Frequently Asked Questions",
+          "Keep exploring adjacent stories",
+          "Browse all cults, belief and moral panics episodes in one place",
+          "Explore",
+          "About",
+          "More",
+          "Listen"
+        ],
+        "h3": [
+          "The Satanic Panic: How the McMartin Preschool Case Fueled 1980s Hysteria",
+          "Patty Hearst: From Kidnapped Heiress to SLA Fugitive",
+          "Scientology: Understanding Their Beliefs, Practices, and Scandals",
+          "Heaven&#x27;s Gate Cult: Between Devotion and Delusion",
+          "Sex Cult: The Story of Bhagwan Rajneesh and His Sex Cult’s Bioterror Plot to Take Over Oregon",
+          "Inside Scientology: The Vanishing of Shelly Miscavige",
+          "Where should I start on this page?",
+          "What kinds of cult, panic, and belief stories are covered?",
+          "Does this include historical and modern cases?",
+          "Does this page cover conspiracies, social contagion, and manipulation?",
+          "What should I listen to after this hub?"
+        ],
+        "h1Count": 1,
+        "h2Count": 10,
+        "h3Count": 11
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "BreadcrumbList",
+        "ListItem"
+      ],
+      "htmlBytes": 110423,
+      "links": {
+        "totalAnchors": 41,
+        "sampleAnchors": [
+          {
+            "href": "/",
+            "text": ""
+          },
+          {
+            "href": "/topics",
+            "text": "Topics"
+          },
+          {
+            "href": "/episodes",
+            "text": "Episodes"
+          },
+          {
+            "href": "/reviews",
+            "text": "Reviews"
+          },
+          {
+            "href": "/connect",
+            "text": "Connect"
+          },
+          {
+            "href": "/patreon",
+            "text": "Patreon"
+          },
+          {
+            "href": "#start-here",
+            "text": "Start with the essentials"
+          },
+          {
+            "href": "/episodes?topic=cults-belief-moral-panics",
+            "text": "Browse full cults archive"
+          },
+          {
+            "href": "https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ",
+            "text": "Listen on Spotify"
+          },
+          {
+            "href": "/episodes/the-satanic-panic-a-deep-dive-into-america-s-biggest-child-abuse-scandal",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/the-satanic-panic-a-deep-dive-into-america-s-biggest-child-abuse-scandal",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/patty-hearst-from-kidnapped-heiress-to-america-s-most-wanted-fugitive",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/patty-hearst-from-kidnapped-heiress-to-america-s-most-wanted-fugitive",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/scientology-understanding-their-beliefs-practices-and-scandals",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/scientology-understanding-their-beliefs-practices-and-scandals",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/heaven-s-gate-cult-between-devotion-and-delusion",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/heaven-s-gate-cult-between-devotion-and-delusion",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/sex-cult-the-story-of-bhagwan-rajneesh-and-his-sex-cult-s-bioterror-plot-to-take-over-oregon",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/sex-cult-the-story-of-bhagwan-rajneesh-and-his-sex-cult-s-bioterror-plot-to-take-over-oregon",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/inside-scientology-david-miscavige-and-the-vanishing-of-shelly-miscavige",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/inside-scientology-david-miscavige-and-the-vanishing-of-shelly-miscavige",
+            "text": "Episode page"
+          },
+          {
+            "href": "/topics/true-crime",
+            "text": "True Crime Investigations where manipulation, motive, and harm are central to the case."
+          },
+          {
+            "href": "/topics/mysteries-unexplained",
+            "text": "Mysteries Stories where uncertainty, belief, and disputed evidence drive competing narratives."
+          },
+          {
+            "href": "/topics/history",
+            "text": "History Historical movements, social fear cycles, and decisions that normalized extreme behavior."
+          },
+          {
+            "href": "/topics",
+            "text": "Browse all topics"
+          },
+          {
+            "href": "/episodes?topic=cults-belief-moral-panics",
+            "text": "Browse all cults, belief &amp; moral panics episodes"
+          },
+          {
+            "href": "https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ",
+            "text": "Listen on Spotify"
+          },
+          {
+            "href": "/episodes",
+            "text": "Episodes"
+          },
+          {
+            "href": "/topics",
+            "text": "Topics"
+          },
+          {
+            "href": "/topics/true-crime",
+            "text": "True Crime"
+          }
+        ],
+        "internalLinks": [
+          "/",
+          "/topics",
+          "/episodes",
+          "/reviews",
+          "/connect",
+          "/patreon",
+          "/episodes?topic=cults-belief-moral-panics",
+          "/episodes/the-satanic-panic-a-deep-dive-into-america-s-biggest-child-abuse-scandal",
+          "/episodes/patty-hearst-from-kidnapped-heiress-to-america-s-most-wanted-fugitive",
+          "/episodes/scientology-understanding-their-beliefs-practices-and-scandals",
+          "/episodes/heaven-s-gate-cult-between-devotion-and-delusion",
+          "/episodes/sex-cult-the-story-of-bhagwan-rajneesh-and-his-sex-cult-s-bioterror-plot-to-take-over-oregon",
+          "/episodes/inside-scientology-david-miscavige-and-the-vanishing-of-shelly-miscavige",
+          "/topics/true-crime",
+          "/topics/mysteries-unexplained",
+          "/topics/history",
+          "/topics/incredible-people",
+          "/about",
+          "/meet-the-team",
+          "/freaky-register",
+          "/jobs"
+        ],
+        "missingHashTargets": []
+      },
+      "canonicalHostProbe": {
+        "status": 200,
+        "finalUrl": "http://localhost:4010/topics/cults-belief-moral-panics",
+        "redirectChain": [
+          {
+            "url": "http://localhost:4010/topics/cults-belief-moral-panics",
+            "status": 200,
+            "location": null
+          }
+        ],
+        "robotsTag": "noindex, nofollow",
+        "htmlTitle": "Cults, Belief &amp; Moral Panics Podcast Episodes | Control",
+        "robotsMeta": "index, follow"
+      }
+    },
+    {
+      "path": "/topics/pop-culture-entertainment",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics/pop-culture-entertainment",
+      "redirectChain": [
+        {
+          "url": "http://localhost:4010/topics/pop-culture-entertainment",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "robotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "contentLength": null
+      },
+      "metadata": {
+        "title": "Pop Culture Podcast Episodes | Fame, Scandals &amp; Media",
+        "titleLength": 57,
+        "description": "Explore pop culture and entertainment episodes on celebrity scandals, media frenzies, iconic performers, and stories that shaped public obsession.",
+        "descriptionLength": 146,
+        "robotsMeta": "index, follow",
+        "canonical": "https://www.thecompendiumpodcast.com/topics/pop-culture-entertainment",
+        "ogTitle": "Pop Culture Podcast Episodes | The Compendium",
+        "ogDescription": "Listen to stories about fame, spectacle, scandals, and entertainment moments that changed what audiences watched and talked about.",
+        "ogImage": "https://www.thecompendiumpodcast.com/topic-hub-card-backgrounds/pop-culture.avif",
+        "ogUrl": "https://www.thecompendiumpodcast.com/topics/pop-culture-entertainment",
+        "twitterTitle": "Pop Culture Podcast Episodes | The Compendium",
+        "twitterDescription": "Listen to stories about fame, spectacle, scandals, and entertainment moments that changed what audiences watched and talked about.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/topic-hub-card-backgrounds/pop-culture.avif"
+      },
+      "headings": {
+        "h1": [
+          "Pop Culture Episodes Pop Culture &amp; Entertainment Podcast Episodes"
+        ],
+        "h2": [
+          "3 Essential Pop Culture Episodes",
+          "Jump to the entertainment angle you want first",
+          "Celebrity Fallout &amp; Image Collapse",
+          "Media Stunts &amp; Television Chaos",
+          "Music, Fame, Fraud &amp; Fandom",
+          "Cultural Oddities &amp; Public Feuds",
+          "Why this hub is worth exploring",
+          "Frequently Asked Questions",
+          "Keep exploring adjacent stories",
+          "Browse all pop culture and entertainment episodes in one place",
+          "Explore",
+          "About",
+          "More",
+          "Listen"
+        ],
+        "h3": [
+          "The Millionaire Cough: Britain’s Biggest Game Show Scandal",
+          "Village People: Disco Beats, Cultural Shifts, and Gay Icons",
+          "Roar: The Story of the Most Dangerous Film Ever Made",
+          "House of Gucci: A Tale of Glamour, Greed, and Grudges",
+          "The Chippendales: A Story of Fame, Money and Murder",
+          "Michael Alig: Glitz, Glamour and Killing for Fame",
+          "Space Cadets: How A British Reality Show Convinced Contestants They Were In Space",
+          "Jerry Springer: Behind the Scenes of TV’s Most Famous Fights",
+          "The 61st Academy Awards: The Worst Oscars Ceremony Ever",
+          "Milli Vanilli: The Real Story Behind Greatest Lip-Sync Scandal in Music History",
+          "Lou Pearlman: Boy Bands, Big Lies, and Bigger Scams.",
+          "The Crazy Story of Tetris: From USSR blocks to USA Stardom",
+          "Secret Mall Apartment: How an Artist Lived in a Mall for 4 Years Without Getting Caught",
+          "Anish Kapoor vs Stuart Semple: The Art World’s Pettiest Feud",
+          "Nuns on the Run: How Eight Belgian Nuns Outsmarted the Church",
+          "Where should I start with Pop Culture &amp; Entertainment?",
+          "What kinds of stories are covered on this page?",
+          "Does this include celebrity scandals, media moments, and cultural icons?",
+          "Does this page mix funny, dark, and strange stories?",
+          "What should I listen to after this hub?"
+        ],
+        "h1Count": 1,
+        "h2Count": 14,
+        "h3Count": 20
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "BreadcrumbList",
+        "ListItem"
+      ],
+      "htmlBytes": 188079,
+      "links": {
+        "totalAnchors": 63,
+        "sampleAnchors": [
+          {
+            "href": "/",
+            "text": ""
+          },
+          {
+            "href": "/topics",
+            "text": "Topics"
+          },
+          {
+            "href": "/episodes",
+            "text": "Episodes"
+          },
+          {
+            "href": "/reviews",
+            "text": "Reviews"
+          },
+          {
+            "href": "/connect",
+            "text": "Connect"
+          },
+          {
+            "href": "/patreon",
+            "text": "Patreon"
+          },
+          {
+            "href": "#start-here",
+            "text": "Start with the essentials"
+          },
+          {
+            "href": "/episodes?topic=pop-culture-entertainment",
+            "text": "Browse full pop culture archive"
+          },
+          {
+            "href": "https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ",
+            "text": "Listen on Spotify"
+          },
+          {
+            "href": "/episodes/the-millionaire-cough-britain-s-biggest-game-show-scandal",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/the-millionaire-cough-britain-s-biggest-game-show-scandal",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/village-people-disco-beats-cultural-shifts-and-gay-icons",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/village-people-disco-beats-cultural-shifts-and-gay-icons",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/roar-the-story-of-the-most-dangerous-film-ever-made",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/roar-the-story-of-the-most-dangerous-film-ever-made",
+            "text": "Episode page"
+          },
+          {
+            "href": "#celebrity-fallout-and-image-collapse",
+            "text": "Celebrity Fallout"
+          },
+          {
+            "href": "#media-stunts-and-television-chaos",
+            "text": "Media Stunts"
+          },
+          {
+            "href": "#music-fame-fraud-and-fandom",
+            "text": "Music &amp; Fame"
+          },
+          {
+            "href": "#culture-oddities-and-industry-feuds",
+            "text": "Oddities &amp; Feuds"
+          },
+          {
+            "href": "/episodes/revisited-house-of-gucci-a-tale-of-glamour-greed-and-grudges",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/revisited-house-of-gucci-a-tale-of-glamour-greed-and-grudges",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/revisited-the-chippendales-a-story-of-fame-money-and-murder",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/revisited-the-chippendales-a-story-of-fame-money-and-murder",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/michael-alig-glitz-glamour-and-killing-for-fame",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/michael-alig-glitz-glamour-and-killing-for-fame",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/space-cadets-how-a-british-reality-show-convinced-contestants-they-were-in-space",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/space-cadets-how-a-british-reality-show-convinced-contestants-they-were-in-space",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/jerry-springer-behind-the-scenes-of-tv-s-most-famous-fights",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/jerry-springer-behind-the-scenes-of-tv-s-most-famous-fights",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/the-61st-academy-awards-the-worst-oscars-ceremony-ever",
+            "text": "Listen now"
+          }
+        ],
+        "internalLinks": [
+          "/",
+          "/topics",
+          "/episodes",
+          "/reviews",
+          "/connect",
+          "/patreon",
+          "/episodes?topic=pop-culture-entertainment",
+          "/episodes/the-millionaire-cough-britain-s-biggest-game-show-scandal",
+          "/episodes/village-people-disco-beats-cultural-shifts-and-gay-icons",
+          "/episodes/roar-the-story-of-the-most-dangerous-film-ever-made",
+          "/episodes/revisited-house-of-gucci-a-tale-of-glamour-greed-and-grudges",
+          "/episodes/revisited-the-chippendales-a-story-of-fame-money-and-murder",
+          "/episodes/michael-alig-glitz-glamour-and-killing-for-fame",
+          "/episodes/space-cadets-how-a-british-reality-show-convinced-contestants-they-were-in-space",
+          "/episodes/jerry-springer-behind-the-scenes-of-tv-s-most-famous-fights",
+          "/episodes/the-61st-academy-awards-the-worst-oscars-ceremony-ever",
+          "/episodes/milli-vanilli-the-real-story-behind-greatest-lip-sync-scandal-in-music-history",
+          "/episodes/lou-pearlman-boy-bands-big-lies-and-bigger-scams",
+          "/episodes/the-crazy-story-of-tetris-from-ussr-blocks-to-usa-stardom",
+          "/episodes/secret-mall-apartment-how-an-artist-lived-in-a-mall-for-4-years-without-getting-caught",
+          "/episodes/anish-kapoor-vs-stuart-semple-the-art-world-s-pettiest-feud",
+          "/episodes/revisited-nuns-on-the-run-how-eight-belgian-nuns-outsmarted-the-church",
+          "/topics/incredible-people",
+          "/topics/scams-hoaxes-cons",
+          "/topics/history",
+          "/topics/true-crime",
+          "/about",
+          "/meet-the-team",
+          "/freaky-register",
+          "/jobs"
+        ],
+        "missingHashTargets": []
+      },
+      "canonicalHostProbe": {
+        "status": 200,
+        "finalUrl": "http://localhost:4010/topics/pop-culture-entertainment",
+        "redirectChain": [
+          {
+            "url": "http://localhost:4010/topics/pop-culture-entertainment",
+            "status": 200,
+            "location": null
+          }
+        ],
+        "robotsTag": "noindex, nofollow",
+        "htmlTitle": "Pop Culture Podcast Episodes | Fame, Scandals &amp; Media",
+        "robotsMeta": "index, follow"
+      }
+    },
+    {
+      "path": "/topics",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics",
+      "redirectChain": [
+        {
+          "url": "http://localhost:4010/topics",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "robotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "s-maxage=300, stale-while-revalidate",
+        "contentLength": null
+      },
+      "metadata": {
+        "title": "Podcast Topics: True Crime, History, Mysteries | The Compendium Podcast | The Compendium Podcast",
+        "titleLength": 96,
+        "description": "Explore The Compendium Podcast by topic, including true crime, history, mysteries, scams, survival stories, and more.",
+        "descriptionLength": 117,
+        "robotsMeta": "index, follow",
+        "canonical": "https://www.thecompendiumpodcast.com/topics",
+        "ogTitle": "The Compendium Podcast",
+        "ogDescription": "The Compendium Podcast site with episodes, blog posts, reviews, merch, and listener resources.",
+        "ogImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg",
+        "ogUrl": "https://www.thecompendiumpodcast.com",
+        "twitterTitle": "The Compendium Podcast",
+        "twitterDescription": "The Compendium Podcast site with episodes, blog posts, reviews, merch, and listener resources.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg"
+      },
+      "headings": {
+        "h1": [
+          "Topic Hubs"
+        ],
+        "h2": [
+          "Choose Your Hub",
+          "True Crime",
+          "History",
+          "Incredible People",
+          "Scams, Hoaxes &amp; Cons",
+          "Disasters &amp; Survival",
+          "Mysteries",
+          "Cults",
+          "Pop Culture",
+          "Not sure where to start?",
+          "Explore",
+          "About",
+          "More",
+          "Listen"
+        ],
+        "h3": [],
+        "h1Count": 1,
+        "h2Count": 14,
+        "h3Count": 0
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization"
+      ],
+      "htmlBytes": 46987,
+      "links": {
+        "totalAnchors": 32,
+        "sampleAnchors": [
+          {
+            "href": "/",
+            "text": ""
+          },
+          {
+            "href": "/topics",
+            "text": "Topics"
+          },
+          {
+            "href": "/episodes",
+            "text": "Episodes"
+          },
+          {
+            "href": "/reviews",
+            "text": "Reviews"
+          },
+          {
+            "href": "/connect",
+            "text": "Connect"
+          },
+          {
+            "href": "/patreon",
+            "text": "Patreon"
+          },
+          {
+            "href": "#topic-hub-cards",
+            "text": "Jump to topic hubs"
+          },
+          {
+            "href": "/episodes",
+            "text": "Browse all episodes"
+          },
+          {
+            "href": "/topics/true-crime",
+            "text": "True Crime Explore true crime stories with verified timelines, key evidence threads, and the details that shaped each investigation."
+          },
+          {
+            "href": "/topics/history",
+            "text": "History Follow pivotal historical events, figures, and decisions that still shape modern culture and politics."
+          },
+          {
+            "href": "/topics/incredible-people",
+            "text": "Incredible People Meet extraordinary people whose choices reshaped music, media, politics, and public imagination."
+          },
+          {
+            "href": "/topics/scams-hoaxes-cons",
+            "text": "Scams, Hoaxes &amp; Cons Investigate the anatomy of major frauds and hoaxes, from public manipulation to financial collapse."
+          },
+          {
+            "href": "/topics/disasters-survival",
+            "text": "Disasters &amp; Survival Follow the decisions, failures, and survival instincts that define high-stakes disasters."
+          },
+          {
+            "href": "/topics/mysteries-unexplained",
+            "text": "Mysteries Dive into unsolved mysteries where timelines clash, identities vanish, and key evidence raises new questions."
+          },
+          {
+            "href": "/topics/cults-belief-moral-panics",
+            "text": "Cults Examine how charismatic leaders, belief systems, and fear campaigns reshape communities."
+          },
+          {
+            "href": "/topics/pop-culture-entertainment",
+            "text": "Pop Culture Track the stories behind headline-grabbing entertainment moments and the people who shaped them."
+          },
+          {
+            "href": "/episodes?sort=latest",
+            "text": "See latest episodes"
+          },
+          {
+            "href": "/episodes",
+            "text": "Browse all episodes"
+          },
+          {
+            "href": "/episodes",
+            "text": "Episodes"
+          },
+          {
+            "href": "/topics",
+            "text": "Topics"
+          },
+          {
+            "href": "/topics/true-crime",
+            "text": "True Crime"
+          },
+          {
+            "href": "/topics/history",
+            "text": "History"
+          },
+          {
+            "href": "/topics/incredible-people",
+            "text": "Incredible People"
+          },
+          {
+            "href": "/about",
+            "text": "About the Show"
+          },
+          {
+            "href": "/meet-the-team",
+            "text": "Hosts"
+          },
+          {
+            "href": "/reviews",
+            "text": "Reviews"
+          },
+          {
+            "href": "/patreon",
+            "text": "Patreon"
+          },
+          {
+            "href": "/freaky-register",
+            "text": "Suggestions"
+          },
+          {
+            "href": "/connect",
+            "text": "Contact"
+          },
+          {
+            "href": "/jobs",
+            "text": "Jobs"
+          }
+        ],
+        "internalLinks": [
+          "/",
+          "/topics",
+          "/episodes",
+          "/reviews",
+          "/connect",
+          "/patreon",
+          "/topics/true-crime",
+          "/topics/history",
+          "/topics/incredible-people",
+          "/topics/scams-hoaxes-cons",
+          "/topics/disasters-survival",
+          "/topics/mysteries-unexplained",
+          "/topics/cults-belief-moral-panics",
+          "/topics/pop-culture-entertainment",
+          "/episodes?sort=latest",
+          "/about",
+          "/meet-the-team",
+          "/freaky-register",
+          "/jobs"
+        ],
+        "missingHashTargets": []
+      },
+      "canonicalHostProbe": {
+        "status": 200,
+        "finalUrl": "http://localhost:4010/topics",
+        "redirectChain": [
+          {
+            "url": "http://localhost:4010/topics",
+            "status": 200,
+            "location": null
+          }
+        ],
+        "robotsTag": "noindex, nofollow",
+        "htmlTitle": "Podcast Topics: True Crime, History, Mysteries | The Compendium Podcast | The Compendium Podcast",
+        "robotsMeta": "index, follow"
+      }
+    },
+    {
+      "path": "/preview/homepage-v2",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/preview/homepage-v2",
+      "redirectChain": [
+        {
+          "url": "http://localhost:4010/preview/homepage-v2",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "robotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate",
+        "contentLength": null
+      },
+      "metadata": {
+        "title": "Homepage V2 Preview | The Compendium Podcast | The Compendium Podcast",
+        "titleLength": 69,
+        "description": "A weekly podcast covering true crime, fascinating history, and incredible people. Start with standout episodes and follow The Compendium on Spotify or Apple Podcasts.",
+        "descriptionLength": 166,
+        "robotsMeta": "noindex, nofollow",
+        "canonical": "http://localhost/preview/homepage-v2",
+        "ogTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "ogDescription": "A weekly podcast covering true crime, fascinating history, and incredible people. Start with standout episodes and follow The Compendium on Spotify or Apple Podcasts.",
+        "ogImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg",
+        "ogUrl": "http://localhost/preview/homepage-v2",
+        "twitterTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "twitterDescription": "A weekly podcast covering true crime, fascinating history, and incredible people. Start with standout episodes and follow The Compendium on Spotify or Apple Podcasts.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg"
+      },
+      "headings": {
+        "h1": [
+          "The Compendium Podcast"
+        ],
+        "h2": [
+          "New to the Circus? Start Here",
+          "Explore the Show",
+          "Why Freaks Keep Coming Back",
+          "Latest Episode",
+          "Popular With Listeners",
+          "What Listeners Are Saying",
+          "Meet the Hosts",
+          "Go Behind the Curtain",
+          "There&#x27;s Always Room Under the Tent",
+          "Never Miss an Episode",
+          "Explore",
+          "About",
+          "More",
+          "Listen"
+        ],
+        "h3": [
+          "The 2019 eBay Stalking Scandal: When Tech Giants Become Stalkers",
+          "Bone Wars: The Rivalry That Rewrote Dinosaur History",
+          "Nellie Bly: From 10 days in a mad house to 72 days around the world",
+          "One story, one satisfying listen",
+          "Variety without chaos",
+          "Sharp storytelling with personality",
+          "Biosphere 2: The Grand Experiment That Could Not Breathe",
+          "The 2019 eBay Stalking Scandal: When Tech Giants Become Stalkers",
+          "West Memphis Three: Paradise Lost, Justice Lost, Innocence Lost",
+          "Bone Wars: The Rivalry That Rewrote Dinosaur History",
+          "Fascinating and intriguing!",
+          "Thank you",
+          "Jemaine Clement? Is that you?",
+          "Kyle Risi",
+          "Adam Cox",
+          "Early access to new episodes",
+          "Ad-free listening on supported tiers",
+          "bonusback catalog",
+          "Keychain perks on eligible tiers"
+        ],
+        "h1Count": 1,
+        "h2Count": 14,
+        "h3Count": 19
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "PodcastSeries",
+        "Person"
+      ],
+      "htmlBytes": 159277,
+      "links": {
+        "totalAnchors": 52,
+        "sampleAnchors": [
+          {
+            "href": "/",
+            "text": ""
+          },
+          {
+            "href": "/topics",
+            "text": "Topics"
+          },
+          {
+            "href": "/episodes",
+            "text": "Episodes"
+          },
+          {
+            "href": "/reviews",
+            "text": "Reviews"
+          },
+          {
+            "href": "/connect",
+            "text": "Connect"
+          },
+          {
+            "href": "/patreon",
+            "text": "Patreon"
+          },
+          {
+            "href": "https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ",
+            "text": "Listen on Spotify"
+          },
+          {
+            "href": "https://podcasts.apple.com/gb/podcast/the-compendium-an-assembly-of-fascinating-things/id1676817109",
+            "text": "Listen on Apple Podcasts"
+          },
+          {
+            "href": "#never-miss",
+            "text": "Get weekly episode updates"
+          },
+          {
+            "href": "/patreon",
+            "text": "Support on Patreon"
+          },
+          {
+            "href": "/episodes/the-2019-ebay-stalking-scandal-when-tech-giants-become-stalkers",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/the-2019-ebay-stalking-scandal-when-tech-giants-become-stalkers",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/bone-wars-the-rivalry-that-rewrote-dinosaur-history",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/bone-wars-the-rivalry-that-rewrote-dinosaur-history",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/nellie-bly-10-days-in-a-mad-house-to-72-days-around-the-world",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/nellie-bly-10-days-in-a-mad-house-to-72-days-around-the-world",
+            "text": "Episode page"
+          },
+          {
+            "href": "/topics/true-crime",
+            "text": "True Crime Case files with clean timelines, key evidence, and the details that actually matter."
+          },
+          {
+            "href": "/topics/history",
+            "text": "History Turning-point moments, strange decisions, and ripple effects still shaping the world now."
+          },
+          {
+            "href": "/topics/incredible-people",
+            "text": "Incredible People Wildly influential people, sharp backstories, and choices that made them unforgettable."
+          },
+          {
+            "href": "/topics",
+            "text": "Browse all topics"
+          },
+          {
+            "href": "https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ",
+            "text": "Listen on Spotify"
+          },
+          {
+            "href": "https://podcasts.apple.com/gb/podcast/the-compendium-an-assembly-of-fascinating-things/id1676817109",
+            "text": "Listen on Apple Podcasts"
+          },
+          {
+            "href": "/episodes/biosphere-2-the-grand-experiment-that-could-not-breathe",
+            "text": "Read episode page"
+          },
+          {
+            "href": "/episodes/the-2019-ebay-stalking-scandal-when-tech-giants-become-stalkers",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/the-2019-ebay-stalking-scandal-when-tech-giants-become-stalkers",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/west-memphis-three-paradise-lost-justice-lost-innocence-lost",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/west-memphis-three-paradise-lost-justice-lost-innocence-lost",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes/bone-wars-the-rivalry-that-rewrote-dinosaur-history",
+            "text": "Listen now"
+          },
+          {
+            "href": "/episodes/bone-wars-the-rivalry-that-rewrote-dinosaur-history",
+            "text": "Episode page"
+          },
+          {
+            "href": "/episodes",
+            "text": "Browse all episodes"
+          }
+        ],
+        "internalLinks": [
+          "/",
+          "/topics",
+          "/episodes",
+          "/reviews",
+          "/connect",
+          "/patreon",
+          "/episodes/the-2019-ebay-stalking-scandal-when-tech-giants-become-stalkers",
+          "/episodes/bone-wars-the-rivalry-that-rewrote-dinosaur-history",
+          "/episodes/nellie-bly-10-days-in-a-mad-house-to-72-days-around-the-world",
+          "/topics/true-crime",
+          "/topics/history",
+          "/topics/incredible-people",
+          "/episodes/biosphere-2-the-grand-experiment-that-could-not-breathe",
+          "/episodes/west-memphis-three-paradise-lost-justice-lost-innocence-lost",
+          "/author/kyle-risi",
+          "/author/adam-cox",
+          "/about",
+          "/meet-the-team",
+          "/freaky-register",
+          "/jobs"
+        ],
+        "missingHashTargets": []
+      },
+      "canonicalHostProbe": {
+        "status": 200,
+        "finalUrl": "http://localhost:4010/preview/homepage-v2",
+        "redirectChain": [
+          {
+            "url": "http://localhost:4010/preview/homepage-v2",
+            "status": 200,
+            "location": null
+          }
+        ],
+        "robotsTag": "noindex, nofollow",
+        "htmlTitle": "Homepage V2 Preview | The Compendium Podcast | The Compendium Podcast",
+        "robotsMeta": "noindex, nofollow"
+      }
+    }
+  ],
+  "sitemap": {
+    "status": 200,
+    "contentType": "application/xml; charset=utf-8",
+    "hasTopics": true,
+    "hasPreviewHomepageV2": false,
+    "hasTopicHubs": {
+      "trueCrime": true,
+      "history": true,
+      "incrediblePeople": true,
+      "scams": true,
+      "disasters": true,
+      "mysteries": true,
+      "cults": true,
+      "popCulture": true
+    },
+    "bytes": 34611
+  },
+  "robots": {
+    "status": 200,
+    "contentType": "text/plain; charset=utf-8",
+    "body": "User-Agent: *\nAllow: /\nDisallow: /admin\nDisallow: /my-job\nDisallow: /apply\nDisallow: /api\n\nSitemap: https://www.thecompendiumpodcast.com/sitemap.xml"
+  },
+  "internalLinkChecks": [
+    {
+      "href": "/",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/",
+      "redirects": 0
+    },
+    {
+      "href": "/topics",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes",
+      "redirects": 0
+    },
+    {
+      "href": "/reviews",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/reviews",
+      "redirects": 0
+    },
+    {
+      "href": "/connect",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/connect",
+      "redirects": 0
+    },
+    {
+      "href": "/patreon",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/patreon",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes?topic=true-crime",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes?topic=true-crime",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-suffolk-strangler-steve-wright-the-man-who-made-the-road-home-a-nightmare",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-suffolk-strangler-steve-wright-the-man-who-made-the-road-home-a-nightmare",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/west-memphis-three-paradise-lost-justice-lost-innocence-lost",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/west-memphis-three-paradise-lost-justice-lost-innocence-lost",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-2019-ebay-stalking-scandal-when-tech-giants-become-stalkers",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-2019-ebay-stalking-scandal-when-tech-giants-become-stalkers",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/lucy-letby-did-she-really-kill-these-babies",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/lucy-letby-did-she-really-kill-these-babies",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-millionaire-cough-britain-s-biggest-game-show-scandal",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-millionaire-cough-britain-s-biggest-game-show-scandal",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/who-killed-jill-dando-the-mystery-behind-her-infamous-murder",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/who-killed-jill-dando-the-mystery-behind-her-infamous-murder",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/hillside-strangler-murder-in-the-shadows-of-los-angeles",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/hillside-strangler-murder-in-the-shadows-of-los-angeles",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/chaos-charles-manson-and-the-manson-murders",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/chaos-charles-manson-and-the-manson-murders",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/monster-of-florence-the-real-life-horror-behind-an-italian-legend",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/monster-of-florence-the-real-life-horror-behind-an-italian-legend",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/chowchilla-bus-kidnapping-the-day-a-school-bus-vanished",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/chowchilla-bus-kidnapping-the-day-a-school-bus-vanished",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/elizabeth-smart-kidnapped-by-a-prophet",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/elizabeth-smart-kidnapped-by-a-prophet",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/body-in-room-348-how-a-locked-room-led-to-an-impossible-answer",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/body-in-room-348-how-a-locked-room-led-to-an-impossible-answer",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/elizabeth-holmes-silicon-valley-s-greatest-fraud",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/elizabeth-holmes-silicon-valley-s-greatest-fraud",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/rudy-kurniawan-the-man-who-duped-the-elite-with-fake-fine-wines",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/rudy-kurniawan-the-man-who-duped-the-elite-with-fake-fine-wines",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/knoedler-gallery-scandal-the-greatest-art-fraud-of-the-century",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/knoedler-gallery-scandal-the-greatest-art-fraud-of-the-century",
+      "redirects": 0
+    },
+    {
+      "href": "/blog/morgan-metzer-the-true-story-behind-gaslit-by-my-husband",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/blog/morgan-metzer-the-true-story-behind-gaslit-by-my-husband",
+      "redirects": 0
+    },
+    {
+      "href": "/blog/author/kyle-risi",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/blog/author/kyle-risi",
+      "redirects": 0
+    },
+    {
+      "href": "/blog/lucy-letby-what-really-happened",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/blog/lucy-letby-what-really-happened",
+      "redirects": 0
+    },
+    {
+      "href": "/topics/history",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics/history",
+      "redirects": 0
+    },
+    {
+      "href": "/topics/mysteries-unexplained",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics/mysteries-unexplained",
+      "redirects": 0
+    },
+    {
+      "href": "/topics/scams-hoaxes-cons",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics/scams-hoaxes-cons",
+      "redirects": 0
+    },
+    {
+      "href": "/topics/true-crime",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics/true-crime",
+      "redirects": 0
+    },
+    {
+      "href": "/topics/incredible-people",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics/incredible-people",
+      "redirects": 0
+    },
+    {
+      "href": "/about",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/",
+      "redirects": 1
+    },
+    {
+      "href": "/meet-the-team",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/meet-the-team",
+      "redirects": 0
+    },
+    {
+      "href": "/freaky-register",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/freaky-register",
+      "redirects": 0
+    },
+    {
+      "href": "/jobs",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/jobs",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes?topic=history",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes?topic=history",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/guy-fawkes-treason-torture-and-the-birth-of-bonfire-night",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/guy-fawkes-treason-torture-and-the-birth-of-bonfire-night",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-execution-of-the-romanovs-from-russia-s-throne-to-an-unthinkable-fate",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-execution-of-the-romanovs-from-russia-s-throne-to-an-unthinkable-fate",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/bone-wars-the-rivalry-that-rewrote-dinosaur-history",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/bone-wars-the-rivalry-that-rewrote-dinosaur-history",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/kony-2012-how-social-media-tried-to-stop-a-war",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/kony-2012-how-social-media-tried-to-stop-a-war",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/billion-dollar-banquet-how-one-extravagant-party-sparked-the-iranian-revolution",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/billion-dollar-banquet-how-one-extravagant-party-sparked-the-iranian-revolution",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/imelda-marcos-corruption-power-6-000-pairs-of-shoes",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/imelda-marcos-corruption-power-6-000-pairs-of-shoes",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/hiroo-onoda-the-last-japanese-soldier-who-kept-on-fighting-after-ww2-had-finished",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/hiroo-onoda-the-last-japanese-soldier-who-kept-on-fighting-after-ww2-had-finished",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-great-emu-war-of-1932-emus-soldiers-and-an-unexpected-war",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-great-emu-war-of-1932-emus-soldiers-and-an-unexpected-war",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-acali-experiment-science-sex-and-santiago-genoves-s-bizarre-human-behaviour-study",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-acali-experiment-science-sex-and-santiago-genoves-s-bizarre-human-behaviour-study",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/nuns-on-the-run-how-eight-belgian-nuns-outsmarted-the-church",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/nuns-on-the-run-how-eight-belgian-nuns-outsmarted-the-church",
+      "redirects": 0
+    },
+    {
+      "href": "/blog/nellie-bly-10-days-in-a-mad-house-to-72-days-around-the-world",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/blog/nellie-bly-10-days-in-a-mad-house-to-72-days-around-the-world",
+      "redirects": 0
+    },
+    {
+      "href": "/topics/pop-culture-entertainment",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics/pop-culture-entertainment",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes?topic=incredible-people",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes?topic=incredible-people",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/nellie-bly-10-days-in-a-mad-house-to-72-days-around-the-world",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/nellie-bly-10-days-in-a-mad-house-to-72-days-around-the-world",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/frida-kahlo-pain-politics-and-the-self-portraits-that-made-an-icon",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/frida-kahlo-pain-politics-and-the-self-portraits-that-made-an-icon",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/terminal-man-the-refugee-who-waited-at-an-airport-for-18-years",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/terminal-man-the-refugee-who-waited-at-an-airport-for-18-years",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/roald-dahl-a-life-shaped-by-war-words-and-whimsy",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/roald-dahl-a-life-shaped-by-war-words-and-whimsy",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/dolly-parton-the-legend-behind-the-rhinestones",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/dolly-parton-the-legend-behind-the-rhinestones",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/sixto-rodriguez-the-sugar-man-who-inspired-a-revolution",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/sixto-rodriguez-the-sugar-man-who-inspired-a-revolution",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/princess-diana-part-1-the-royal-romance-that-was-over-before-it-began",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/princess-diana-part-1-the-royal-romance-that-was-over-before-it-began",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/princess-diana-part-2-the-truth-behind-her-divorce-from-charles-and-the-royal-fallout",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/princess-diana-part-2-the-truth-behind-her-divorce-from-charles-and-the-royal-fallout",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/princess-diana-part-3-the-final-year-the-fatal-chase-the-last-goodbye",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/princess-diana-part-3-the-final-year-the-fatal-chase-the-last-goodbye",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes?topic=scams-hoaxes-cons",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes?topic=scams-hoaxes-cons",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/mcmillions-when-america-s-biggest-game-stopped-being-a-game",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/mcmillions-when-america-s-biggest-game-stopped-being-a-game",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/belle-gibson-the-fake-cancer-survivor-who-built-a-wellness-empire",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/belle-gibson-the-fake-cancer-survivor-who-built-a-wellness-empire",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/tania-head-the-9-11-survivor-who-wasn-t-there",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/tania-head-the-9-11-survivor-who-wasn-t-there",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/revisited-elizabeth-holmes-silicon-valley-s-greatest-fraud",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/revisited-elizabeth-holmes-silicon-valley-s-greatest-fraud",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/dr-donald-cline-conceived-in-deceit-the-infamous-fertility-scandal",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/dr-donald-cline-conceived-in-deceit-the-infamous-fertility-scandal",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/anna-delvey-from-rags-to-riches-to-rikers-new-yorks-fake-heiress",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/anna-delvey-from-rags-to-riches-to-rikers-new-yorks-fake-heiress",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/cassie-chadwick-carnegie-s-imaginary-heir-queen-of-the-con",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/cassie-chadwick-carnegie-s-imaginary-heir-queen-of-the-con",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/balloon-boy-hoax-the-viral-media-circus-that-spiraled-out-of-control",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/balloon-boy-hoax-the-viral-media-circus-that-spiraled-out-of-control",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/fyre-festival-the-greatest-party-that-never-happened",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/fyre-festival-the-greatest-party-that-never-happened",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/jt-leroy-gender-deception-and-the-ultimate-hoax",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/jt-leroy-gender-deception-and-the-ultimate-hoax",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/millennium-dome-diamond-heist-the-plot-to-steal-the-worlds-most-flawless-diamond",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/millennium-dome-diamond-heist-the-plot-to-steal-the-worlds-most-flawless-diamond",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-santa-claus-bank-robbery-blunder",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-santa-claus-bank-robbery-blunder",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/d-b-tuber-the-most-ridiculous-robbery-in-american-history",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/d-b-tuber-the-most-ridiculous-robbery-in-american-history",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes?topic=disasters-survival",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes?topic=disasters-survival",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-chernobyl-disaster-what-really-happened-at-01-23-40-on-april-26th-1986",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-chernobyl-disaster-what-really-happened-at-01-23-40-on-april-26th-1986",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/revisited-the-miracle-of-the-andes-the-story-of-a-group-of-survivors-of-a-plane-crash-in-the-andes-in-1972",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/revisited-the-miracle-of-the-andes-the-story-of-a-group-of-survivors-of-a-plane-crash-in-the-andes-in-1972",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/baby-jessica-the-girl-who-fell-down-a-well-and-changed-news-forever",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/baby-jessica-the-girl-who-fell-down-a-well-and-changed-news-forever",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/biosphere-2-the-grand-experiment-that-could-not-breathe",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/biosphere-2-the-grand-experiment-that-could-not-breathe",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-challenger-disaster-christa-mcauliffe-s-legacy-beyond-the-space-shuttle-explosion",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-challenger-disaster-christa-mcauliffe-s-legacy-beyond-the-space-shuttle-explosion",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-hindenburg-disaster-the-fiery-end-of-the-golden-age-of-airships",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-hindenburg-disaster-the-fiery-end-of-the-golden-age-of-airships",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/oceangate-titan-disaster-a-billionaire-s-dive-into-hubris-history-and-horror",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/oceangate-titan-disaster-a-billionaire-s-dive-into-hubris-history-and-horror",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/revisited-the-titanic-part-1-the-people-the-passions-the-legend",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/revisited-the-titanic-part-1-the-people-the-passions-the-legend",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-titanic-part-2-the-voyage-the-iceberg-the-aftermath",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-titanic-part-2-the-voyage-the-iceberg-the-aftermath",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/last-breath-the-true-story-of-chris-lemons-near-death-experience-in-the-north-sea",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/last-breath-the-true-story-of-chris-lemons-near-death-experience-in-the-north-sea",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/survival-at-sea-the-harrowing-tale-of-the-trashman-yacht-sinking",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/survival-at-sea-the-harrowing-tale-of-the-trashman-yacht-sinking",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/when-hippos-attack-nightmare-on-the-zambezi-and-the-miracle-paddle-that-saved-their-lives",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/when-hippos-attack-nightmare-on-the-zambezi-and-the-miracle-paddle-that-saved-their-lives",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/nutty-putty-cave-the-john-edward-jones-story-that-haunts-cavers-to-this-day",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/nutty-putty-cave-the-john-edward-jones-story-that-haunts-cavers-to-this-day",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/poop-cruise-the-carnival-triumph-disaster-that-stranded-thousands-without-toilets",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/poop-cruise-the-carnival-triumph-disaster-that-stranded-thousands-without-toilets",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/balloonfest-clevelands-1986-float-tastrophe-of-epic-proportions",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/balloonfest-clevelands-1986-float-tastrophe-of-epic-proportions",
+      "redirects": 0
+    },
+    {
+      "href": "/blog/biosphere-2-why-the-experiment-could-not-breathe",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/blog/biosphere-2-why-the-experiment-could-not-breathe",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes?topic=mysteries-unexplained",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes?topic=mysteries-unexplained",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/bobby-dunbar-the-missing-child-case-solved-by-a-century-late-dna-test",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/bobby-dunbar-the-missing-child-case-solved-by-a-century-late-dna-test",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-exorcism-of-roland-doe-the-true-story-behind-the-exorcist",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-exorcism-of-roland-doe-the-true-story-behind-the-exorcist",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/jennifer-fairgate-the-woman-with-no-past",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/jennifer-fairgate-the-woman-with-no-past",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/lars-mittank-from-airport-cctv-to-an-unsolved-mystery",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/lars-mittank-from-airport-cctv-to-an-unsolved-mystery",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-alcatraz-escape-the-unbelievable-true-story-of-the-great-prison-break",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-alcatraz-escape-the-unbelievable-true-story-of-the-great-prison-break",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-enfield-poltergeist-haunting-on-green-street",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-enfield-poltergeist-haunting-on-green-street",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/annabelle-doll-and-the-winchester-mystery-house",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/annabelle-doll-and-the-winchester-mystery-house",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/exploring-bigfoot-a-myth-or-reality",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/exploring-bigfoot-a-myth-or-reality",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-loch-ness-monster-hoax-how-a-man-named-marmaduke-fooled-the-world",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-loch-ness-monster-hoax-how-a-man-named-marmaduke-fooled-the-world",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-curse-of-the-cecil-america-s-most-dangerous-hotel",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-curse-of-the-cecil-america-s-most-dangerous-hotel",
+      "redirects": 0
+    },
+    {
+      "href": "/topics/disasters-survival",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics/disasters-survival",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes?topic=cults-belief-moral-panics",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes?topic=cults-belief-moral-panics",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-satanic-panic-a-deep-dive-into-america-s-biggest-child-abuse-scandal",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-satanic-panic-a-deep-dive-into-america-s-biggest-child-abuse-scandal",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/patty-hearst-from-kidnapped-heiress-to-america-s-most-wanted-fugitive",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/patty-hearst-from-kidnapped-heiress-to-america-s-most-wanted-fugitive",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/scientology-understanding-their-beliefs-practices-and-scandals",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/scientology-understanding-their-beliefs-practices-and-scandals",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/heaven-s-gate-cult-between-devotion-and-delusion",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/heaven-s-gate-cult-between-devotion-and-delusion",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/sex-cult-the-story-of-bhagwan-rajneesh-and-his-sex-cult-s-bioterror-plot-to-take-over-oregon",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/sex-cult-the-story-of-bhagwan-rajneesh-and-his-sex-cult-s-bioterror-plot-to-take-over-oregon",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/inside-scientology-david-miscavige-and-the-vanishing-of-shelly-miscavige",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/inside-scientology-david-miscavige-and-the-vanishing-of-shelly-miscavige",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes?topic=pop-culture-entertainment",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes?topic=pop-culture-entertainment",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/village-people-disco-beats-cultural-shifts-and-gay-icons",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/village-people-disco-beats-cultural-shifts-and-gay-icons",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/roar-the-story-of-the-most-dangerous-film-ever-made",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/roar-the-story-of-the-most-dangerous-film-ever-made",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/revisited-house-of-gucci-a-tale-of-glamour-greed-and-grudges",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/revisited-house-of-gucci-a-tale-of-glamour-greed-and-grudges",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/revisited-the-chippendales-a-story-of-fame-money-and-murder",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/revisited-the-chippendales-a-story-of-fame-money-and-murder",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/michael-alig-glitz-glamour-and-killing-for-fame",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/michael-alig-glitz-glamour-and-killing-for-fame",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/space-cadets-how-a-british-reality-show-convinced-contestants-they-were-in-space",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/space-cadets-how-a-british-reality-show-convinced-contestants-they-were-in-space",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/jerry-springer-behind-the-scenes-of-tv-s-most-famous-fights",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/jerry-springer-behind-the-scenes-of-tv-s-most-famous-fights",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-61st-academy-awards-the-worst-oscars-ceremony-ever",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-61st-academy-awards-the-worst-oscars-ceremony-ever",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/milli-vanilli-the-real-story-behind-greatest-lip-sync-scandal-in-music-history",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/milli-vanilli-the-real-story-behind-greatest-lip-sync-scandal-in-music-history",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/lou-pearlman-boy-bands-big-lies-and-bigger-scams",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/lou-pearlman-boy-bands-big-lies-and-bigger-scams",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/the-crazy-story-of-tetris-from-ussr-blocks-to-usa-stardom",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/the-crazy-story-of-tetris-from-ussr-blocks-to-usa-stardom",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/secret-mall-apartment-how-an-artist-lived-in-a-mall-for-4-years-without-getting-caught",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/secret-mall-apartment-how-an-artist-lived-in-a-mall-for-4-years-without-getting-caught",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/anish-kapoor-vs-stuart-semple-the-art-world-s-pettiest-feud",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/anish-kapoor-vs-stuart-semple-the-art-world-s-pettiest-feud",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes/revisited-nuns-on-the-run-how-eight-belgian-nuns-outsmarted-the-church",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes/revisited-nuns-on-the-run-how-eight-belgian-nuns-outsmarted-the-church",
+      "redirects": 0
+    },
+    {
+      "href": "/topics/cults-belief-moral-panics",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/topics/cults-belief-moral-panics",
+      "redirects": 0
+    },
+    {
+      "href": "/episodes?sort=latest",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/episodes?sort=latest",
+      "redirects": 0
+    },
+    {
+      "href": "/author/kyle-risi",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/author/kyle-risi",
+      "redirects": 0
+    },
+    {
+      "href": "/author/adam-cox",
+      "status": 200,
+      "finalUrl": "http://localhost:4010/author/adam-cox",
+      "redirects": 0
+    }
+  ]
+}

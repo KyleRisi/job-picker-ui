@@ -15,6 +15,7 @@
     "seo:phase1:rollback:restore": "set -a && source .env.local && set +a && node scripts/seo-phase1-rollback-restore.mjs --env staging",
     "seo:phase1:rollback:verify": "set -a && source .env.local && set +a && node scripts/seo-phase1-verify-restore.mjs --env staging",
     "seo:phase1:measure": "set -a && source .env.local && set +a && node scripts/seo-phase1-measure-gsc.mjs",
+    "homepage-v2:launch-gate": "set -a && source .env.local && set +a && node scripts/homepage-v2-launch-gate.mjs --url \"$HOMEPAGE_V2_PREVIEW_URL\"",
     "perf:audit": "node scripts/perf-pagespeed-audit.mjs",
     "perf:audit:prod": "node scripts/perf-pagespeed-audit.mjs --base https://www.thecompendiumpodcast.com --out docs/performance-inventory.md",
     "build": "next build",

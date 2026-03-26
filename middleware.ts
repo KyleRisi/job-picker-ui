@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildRedirectLocation, normalizePath, shouldSkipRedirectLookup } from '@/lib/redirects';
 import { getTaxonomyRoutePolicy } from '@/lib/taxonomy-route-policy';
+import {
+  isHomepageV2CanonicalHost,
+  isHomepageV2NetlifyPreviewHost,
+  isHomepageV2PreviewHostAllowed,
+  normalizeHost
+} from '@/lib/homepage-v2/env';
 
 type ResolveItem = {
   id: string;
@@ -19,7 +25,7 @@ type CacheEntry = {
 const LOOKUP_TIMEOUT_MS = 350;
 const CACHE_TTL_MS = 30_000;
 const cache = new Map<string, CacheEntry>();
-const NETLIFY_DEPLOY_PREVIEW_HOST_RE = /^deploy-preview-\d+--.+\.netlify\.app$/;
+const HOMEPAGE_V2_PREVIEW_PATH = '/preview/homepage-v2';
 const SECURITY_HEADERS: Record<string, string> = {
   'x-content-type-options': 'nosniff',
   'referrer-policy': 'strict-origin-when-cross-origin',
@@ -30,8 +36,11 @@ const SECURITY_HEADERS: Record<string, string> = {
 };
 
 function shouldNoindexHost(req: NextRequest): boolean {
-  const host = (req.headers.get('host') || '').toLowerCase().split(':')[0];
-  return NETLIFY_DEPLOY_PREVIEW_HOST_RE.test(host);
+  const host = normalizeHost(req.headers.get('host') || '');
+  if (!host) return false;
+  if (isHomepageV2CanonicalHost(host)) return false;
+  if (isHomepageV2PreviewHostAllowed(host)) return true;
+  return isHomepageV2NetlifyPreviewHost(host);
 }
 
 function withConditionalNoindex(req: NextRequest, response: NextResponse): NextResponse {
@@ -52,6 +61,39 @@ function withSecurityHeaders(req: NextRequest, response: NextResponse): NextResp
 
 function withBaselineHeaders(req: NextRequest, response: NextResponse): NextResponse {
   return withSecurityHeaders(req, withConditionalNoindex(req, response));
+}
+
+function withHomepageV2Noindex(response: NextResponse): NextResponse {
+  response.headers.set('x-robots-tag', 'noindex, nofollow');
+  return response;
+}
+
+function decodeBasicAuthHeader(value: string): { username: string; password: string } | null {
+  if (!value || !value.startsWith('Basic ')) return null;
+  try {
+    const encoded = value.slice('Basic '.length).trim();
+    const decoded = atob(encoded);
+    const separatorIndex = decoded.indexOf(':');
+    if (separatorIndex < 0) return null;
+    return {
+      username: decoded.slice(0, separatorIndex),
+      password: decoded.slice(separatorIndex + 1)
+    };
+  } catch {
+    return null;
+  }
+}
+
+function isHomepageV2PreviewAuthorized(req: NextRequest): boolean {
+  const expectedUser = `${process.env.HOMEPAGE_V2_PREVIEW_USER || ''}`;
+  const expectedPass = `${process.env.HOMEPAGE_V2_PREVIEW_PASS || ''}`;
+
+  if (!expectedUser && !expectedPass) return true;
+
+  const parsed = decodeBasicAuthHeader(req.headers.get('authorization') || '');
+  if (!parsed) return false;
+
+  return parsed.username === expectedUser && parsed.password === expectedPass;
 }
 
 function readFromCache(path: string): ResolveItem | null | undefined {
@@ -170,6 +212,23 @@ export async function middleware(req: NextRequest) {
 
   const method = req.method.toUpperCase();
   if (method !== 'GET' && method !== 'HEAD') return finalize(NextResponse.next());
+
+  if (normalizedPath === HOMEPAGE_V2_PREVIEW_PATH) {
+    const host = normalizeHost(req.headers.get('host') || '');
+    const rejectWithNotFound = () => finalize(withHomepageV2Noindex(new NextResponse('Not Found', { status: 404 })));
+
+    if (!host) return rejectWithNotFound();
+    if (isHomepageV2CanonicalHost(host)) return rejectWithNotFound();
+    if (!isHomepageV2PreviewHostAllowed(host)) return rejectWithNotFound();
+
+    if (!isHomepageV2PreviewAuthorized(req)) {
+      const unauthorized = new NextResponse('Authentication required.', { status: 401 });
+      unauthorized.headers.set('WWW-Authenticate', 'Basic realm=\"Homepage V2 Preview\", charset=\"UTF-8\"');
+      return finalize(withHomepageV2Noindex(unauthorized));
+    }
+
+    return finalize(withHomepageV2Noindex(NextResponse.next()));
+  }
 
   if (normalizedPath === '/') return finalize(NextResponse.next());
   if (shouldSkipRedirectLookup(normalizedPath)) return finalize(NextResponse.next());

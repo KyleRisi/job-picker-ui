@@ -3,22 +3,37 @@ import type { TopicHubConfig } from '@/lib/topic-hub/topic-hub-types';
 export const TRUE_CRIME_TOPIC_HUB_CONFIG: TopicHubConfig = {
   slug: 'true-crime',
   seoOverride: {
-    titleAbsolute: 'True Crime Podcast Episodes | Murders, Disappearances & Scandals | The Compendium Podcast',
+    titleAbsolute: 'True Crime Podcast Episodes | The Compendium',
     description:
-      'Explore the best true crime podcast episodes from The Compendium, including murders, kidnappings, frauds, disappearances, cover-ups, and unsolved cases.'
+      'Explore true crime podcast episodes on murders, disappearances, scams, frauds, and unsolved cases from The Compendium.',
+    socialTitle: 'True Crime Podcast Episodes | The Compendium',
+    socialDescription:
+      'Explore true crime podcast episodes on murders, disappearances, scams, frauds, and unsolved cases from The Compendium.',
+    socialImageUrl: '/topic-hub-card-backgrounds/true-crime.avif'
   },
   layout: {
     hero: {
       eyebrow: 'Curated Listening Guide',
-      title: 'True Crime Episodes',
+      title: 'True Crime Podcast Episodes',
+      mobileTitle: 'True Crime Episodes',
+      descriptor: 'Murders • Scams • Unsolved Cases',
+      mobileDescriptor: 'Murders • Scams • Unsolved Cases',
       intro:
-        "Explore The Compendium's standout true crime episodes, from murders and missing persons to scams, disappearances, and unsolved cases. Start with our strongest entry-point episodes, then browse by case type or move straight into the full archive.",
+        "Start with The Compendium's standout true crime podcast episodes, covering murders, disappearances, scams, scandals, and unsolved cases. Begin with our essential picks, then browse by case type or jump to the full archive.",
+      mobileIntro:
+        'Start with our standout true crime episodes, then browse by case type or explore the full archive.',
+      cornerArtworkUrl: '/The Compendium Main.jpg',
+      card: {
+        title: 'True Crime',
+        badge: 'Topic Hub',
+        backgroundImageUrl: '/The Compendium Main.jpg'
+      },
       primaryAction: {
-        label: 'Start Here',
+        label: 'Start with the essentials',
         href: '#start-here'
       },
       secondaryAction: {
-        label: 'Browse all true crime episodes',
+        label: 'Browse full true crime archive',
         href: '/episodes?topic=true-crime'
       },
       tertiaryAction: {
@@ -30,7 +45,7 @@ export const TRUE_CRIME_TOPIC_HUB_CONFIG: TopicHubConfig = {
     },
     startHere: {
       eyebrow: 'Start Here',
-      heading: '3 Essential True Crime Episodes for New Listeners',
+      heading: '3 Essential True Crime Episodes',
       intro:
         'If you want the best place to begin, start with these three episodes. They show the range of the show: serial crime, wrongful conviction, and modern corporate stalking.',
       sectionId: 'start-here'
@@ -62,30 +77,24 @@ export const TRUE_CRIME_TOPIC_HUB_CONFIG: TopicHubConfig = {
       minimumItems: 2
     },
     whyListen: {
-      eyebrow: 'Why Listen',
-      heading: 'Why listen to our true crime episodes?',
+      eyebrow: 'WHY THIS PAGE WORKS',
+      heading: 'What makes our true crime episodes different',
       intro:
-        'At The Compendium, we take the facts seriously, even if the delivery occasionally sounds like two people filing an incident report from inside a travelling circus. We focus on what happened, who it affected, and why the case still matters, then tell the story clearly enough that you do not need a pinboard, red string, or a second podcast to keep up.',
+        'At The Compendium, we look beyond the headline. Expect strong storytelling, clear context, and the details that make each case stranger, sadder, or more revealing than it first appears.',
       points: [
-        'Clear chronology, without the fog machine',
-        'Real context, not just the grisly bits',
-        'Conversational storytelling, with the facts intact'
+        'Clear storytelling, without the waffle',
+        'Real context, not just a bag of facts',
+        'Cases chosen for strangeness, impact, or cultural weight'
       ]
     },
     faq: {
       eyebrow: 'FAQ',
       heading: 'Frequently Asked Questions',
-      supportingLine: 'Helpful answers for first-time listeners',
       items: [
         {
           question: 'What are the best true crime episodes to start with?',
           answer:
             "Start with the featured episodes at the top of this page. They're our best first port of call if you'd like the full Compendium experience without immediately needing a corkboard."
-        },
-        {
-          question: 'Do you cover British true crime cases?',
-          answer:
-            'Yes. We cover both British and international cases, from investigations and disappearances to frauds, scandals, and major media-covered crimes.'
         },
         {
           question: 'Are these episodes serious or comedic?',
@@ -95,7 +104,7 @@ export const TRUE_CRIME_TOPIC_HUB_CONFIG: TopicHubConfig = {
         {
           question: 'What should I listen to after this page?',
           answer:
-            "If you'd like more cases, head to the full true crime archive. If you're in the mood for neighbouring oddities, move sideways into History, Mysteries & The Unexplained, or Incredible People."
+            "If you'd like more cases, head to the full true crime archive. If you're in the mood for neighbouring oddities, move sideways into History, Mysteries & The Unexplained, or Scams, Hoaxes & Cons."
         }
       ]
     },
@@ -108,23 +117,27 @@ export const TRUE_CRIME_TOPIC_HUB_CONFIG: TopicHubConfig = {
         {
           href: '/topics/history',
           title: 'History',
-          description: 'For real events, power struggles, and the context around the stories that shaped the world.',
+          description: 'Turning-point moments, strange decisions, and ripple effects still shaping the world now.',
           label: 'Topic Page',
-          ctaLabel: 'Explore topic'
+          ctaLabel: 'Explore topic',
+          backgroundImageUrl: '/topic-hub-card-backgrounds/history.avif'
         },
         {
           href: '/topics/mysteries-unexplained',
           title: 'Mysteries & The Unexplained',
+          displayTitle: 'Mysteries',
           description: 'For unresolved stories, strange disappearances, and the questions that refuse to settle.',
           label: 'Topic Page',
-          ctaLabel: 'Explore topic'
+          ctaLabel: 'Explore topic',
+          backgroundImageUrl: '/topic-hub-card-backgrounds/Mysteries.avif'
         },
         {
-          href: '/topics/incredible-people',
-          title: 'Incredible People',
-          description: 'For lives that veered into obsession, scandal, notoriety, and extraordinary consequences.',
+          href: '/topics/scams-hoaxes-cons',
+          title: 'Scams, Hoaxes & Cons',
+          description: 'Investigate the anatomy of major frauds and hoaxes, from public manipulation to financial collapse.',
           label: 'Topic Page',
-          ctaLabel: 'Explore topic'
+          ctaLabel: 'Explore topic',
+          backgroundImageUrl: '/topic-hub-card-backgrounds/scams.avif'
         }
       ]
     },
@@ -165,12 +178,12 @@ export const TRUE_CRIME_TOPIC_HUB_CONFIG: TopicHubConfig = {
           'the-millionaire-cough-britain-s-biggest-game-show-scandal'
         ],
         styleVariant: 'full-bleed-gold',
-        maxVisibleEpisodes: 4,
+        maxVisibleEpisodes: 3,
         taxonomyCollectionSlug: 'british-cases'
       },
       {
         id: 'murders-serial-killers-notorious-cases',
-        title: 'Murders, Serial Killers & Notorious Cases',
+        title: 'Murders & Serial Killers',
         intro: 'Cases defined by violence, notoriety, and the long trail they leave behind.',
         chipLabel: 'Murders',
         minimumEpisodesToRender: 3,
@@ -180,13 +193,13 @@ export const TRUE_CRIME_TOPIC_HUB_CONFIG: TopicHubConfig = {
           'monster-of-florence-the-real-life-horror-behind-an-italian-legend',
           'chris-watts-inside-the-mind-of-a-family-annihilator-and-the-depth-of-betrayal'
         ],
-        styleVariant: 'plain',
+        styleVariant: 'full-bleed-gold',
         maxVisibleEpisodes: 3
       },
       {
         id: 'kidnappings-missing-persons-unsolved-cases',
-        title: 'Kidnappings, Missing Persons & Unsolved Cases',
-        intro: 'Abductions, disappearances, fractured investigations, and the stories that refused to stay buried.',
+        title: 'Unsolved Cases & Disappearances',
+        intro: 'Missing persons, unexplained disappearances, and cases that still resist answers.',
         chipLabel: 'Kidnappings & Missing Persons',
         minimumEpisodesToRender: 3,
         episodeSlugs: [
@@ -195,13 +208,13 @@ export const TRUE_CRIME_TOPIC_HUB_CONFIG: TopicHubConfig = {
           'body-in-room-348-how-a-locked-room-led-to-an-impossible-answer',
           'jennifer-fairgate-the-woman-with-no-past'
         ],
-        styleVariant: 'mobile-full-bleed-panel',
+        styleVariant: 'full-bleed-gold',
         maxVisibleEpisodes: 3
       },
       {
         id: 'scams-cover-ups-corporate-villainy',
-        title: 'Scams, Cover-Ups & Corporate Villainy',
-        intro: 'Fraud, deception, institutional abuse, and the stories where greed or power warped everything around them.',
+        title: 'Scams, Frauds & Cover-Ups',
+        intro: 'Fraud, deception, abuse of power, and the stories where greed or protection warped the truth.',
         chipLabel: 'Scams & Cover-Ups',
         minimumEpisodesToRender: 3,
         episodeSlugs: [
@@ -210,7 +223,7 @@ export const TRUE_CRIME_TOPIC_HUB_CONFIG: TopicHubConfig = {
           'knoedler-gallery-scandal-the-greatest-art-fraud-of-the-century',
           'dr-donald-cline-conceived-in-deceit-the-infamous-fertility-scandal'
         ],
-        styleVariant: 'plain',
+        styleVariant: 'full-bleed-gold',
         maxVisibleEpisodes: 3
       }
     ]

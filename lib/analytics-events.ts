@@ -99,3 +99,14 @@ export function routeVisitStorageKey(prefix: string): string {
     `${window.location.pathname}${window.location.search}`;
   return `${prefix}:${visitKey}`;
 }
+
+export function isPublicAnalyticsPath(pathname: string | null | undefined): boolean {
+  const path = normalizePath(pathname);
+  if (!path) return false;
+  if (path.startsWith('/admin')) return false;
+  if (path.startsWith('/workspace')) return false;
+  if (path.startsWith('/api')) return false;
+  if (path.startsWith('/_next')) return false;
+  if (path.startsWith('/preview/') && path !== '/preview/homepage-v2') return false;
+  return true;
+}

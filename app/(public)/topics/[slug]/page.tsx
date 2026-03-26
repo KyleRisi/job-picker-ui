@@ -1,17 +1,17 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { DiscoveryHubPage } from '@/components/discovery-hub-page';
-import { TrueCrimeTopicHub } from '@/components/true-crime-topic-hub';
+import { TopicHubLayout } from '@/components/topic-hub/topic-hub-layout';
 import { breadcrumbsToJsonLd } from '@/lib/breadcrumbs';
-import { buildHubBreadcrumbs, getDiscoveryHubPage, getResolvedEpisodes } from '@/lib/episodes';
+import { buildHubBreadcrumbs, getDiscoveryHubPage } from '@/lib/episodes';
 import { compactJsonLd, getPageEntityIds, resolveCanonicalForSchema } from '@/lib/schema-jsonld';
 import { getPublicSiteUrl } from '@/lib/site-url';
 import { getTopicHubConfig } from '@/lib/topic-hub/topic-hub-config';
 import {
-  buildTrueCrimeEditorialGroups,
-  buildTrueCrimeFeaturedSelection,
-  getTrueCrimeTopicEpisodes
-} from '@/lib/true-crime-topic';
+  buildTopicEditorialGroups,
+  buildTopicFeaturedSelection
+} from '@/lib/topic-hub/topic-hub-curation';
+import { getConfiguredTopicHubData } from '@/lib/topic-hub/topic-hub-data';
 
 export const revalidate = 300;
 
@@ -24,27 +24,19 @@ type SearchParams = {
 };
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const hub = await getDiscoveryHubPage('topics', params.slug);
   const topicHubConfig = getTopicHubConfig(params.slug);
-
-  if (!hub) {
-    return {
-      title: 'Topic Not Found | The Compendium Podcast',
-      robots: {
-        index: false,
-        follow: false
-      }
-    };
-  }
-
   const siteUrl = getPublicSiteUrl();
   const canonical = resolveCanonicalForSchema({
-    candidateCanonical: hub.term.path || null,
+    candidateCanonical: null,
     fallbackPath: `/topics/${params.slug}`,
     siteUrl
   });
 
   if (topicHubConfig?.seoOverride) {
+    const socialTitle = topicHubConfig.seoOverride.socialTitle || topicHubConfig.seoOverride.titleAbsolute;
+    const socialDescription = topicHubConfig.seoOverride.socialDescription || topicHubConfig.seoOverride.description;
+    const socialImageUrl = topicHubConfig.seoOverride.socialImageUrl || '/The Compendium Main.jpg';
+
     return {
       title: {
         absolute: topicHubConfig.seoOverride.titleAbsolute
@@ -52,6 +44,35 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
       description: topicHubConfig.seoOverride.description,
       alternates: {
         canonical: canonical.metadataCanonical
+      },
+      openGraph: {
+        title: socialTitle,
+        description: socialDescription,
+        url: canonical.absoluteCanonicalUrl,
+        type: 'website',
+        images: [
+          {
+            url: socialImageUrl,
+            alt: socialTitle
+          }
+        ]
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: socialTitle,
+        description: socialDescription,
+        images: [socialImageUrl]
+      }
+    };
+  }
+
+  const hub = await getDiscoveryHubPage('topics', params.slug);
+  if (!hub) {
+    return {
+      title: 'Topic Not Found | The Compendium Podcast',
+      robots: {
+        index: false,
+        follow: false
       }
     };
   }
@@ -66,6 +87,46 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 export default async function TopicHubPage({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
+  const topicHubConfig = getTopicHubConfig(params.slug);
+  if (topicHubConfig) {
+    const configuredTopicHubData = await getConfiguredTopicHubData(params.slug);
+    if (!configuredTopicHubData) notFound();
+
+    const hub = configuredTopicHubData.hub;
+    const topicEpisodes = configuredTopicHubData.topicEpisodes;
+
+    const siteUrl = getPublicSiteUrl();
+    const canonical = resolveCanonicalForSchema({
+      candidateCanonical: hub.term.path || null,
+      fallbackPath: `/topics/${params.slug}`,
+      siteUrl
+    });
+    const pageEntityIds = getPageEntityIds(canonical.absoluteCanonicalUrl);
+    const breadcrumbJsonLd = compactJsonLd({
+      ...breadcrumbsToJsonLd(buildHubBreadcrumbs('topics', hub.term), siteUrl),
+      '@id': pageEntityIds.breadcrumb
+    });
+
+    const featuredEpisodes = buildTopicFeaturedSelection(topicEpisodes, topicHubConfig.curation.featuredEpisodeSlugs);
+    const groupedSections = buildTopicEditorialGroups({
+      episodes: topicEpisodes,
+      featuredEpisodeIds: new Set(featuredEpisodes.map((episode) => episode.id)),
+      sectionConfigs: topicHubConfig.curation.editorialSections
+    });
+
+    return (
+      <>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+        <TopicHubLayout
+          hub={hub}
+          featuredEpisodes={featuredEpisodes}
+          groupedSections={groupedSections}
+          config={topicHubConfig.layout}
+        />
+      </>
+    );
+  }
+
   const rawPage = Array.isArray(searchParams.page) ? searchParams.page[0] : searchParams.page;
   const parsedPage = Number.parseInt(`${rawPage || '1'}`, 10);
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
@@ -84,26 +145,6 @@ export default async function TopicHubPage({ params, searchParams }: { params: P
     ...breadcrumbsToJsonLd(buildHubBreadcrumbs('topics', hub.term), siteUrl),
     '@id': pageEntityIds.breadcrumb
   });
-
-  if (params.slug === 'true-crime') {
-    const allEpisodes = await getResolvedEpisodes({
-      includeHidden: false,
-      descriptionMaxLength: 220
-    });
-    const trueCrimeEpisodes = getTrueCrimeTopicEpisodes(allEpisodes);
-    const featuredEpisodes = buildTrueCrimeFeaturedSelection(trueCrimeEpisodes);
-    const groupedSections = buildTrueCrimeEditorialGroups({
-      episodes: trueCrimeEpisodes,
-      featuredEpisodeIds: new Set(featuredEpisodes.map((episode) => episode.id))
-    });
-
-    return (
-      <>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-        <TrueCrimeTopicHub hub={hub} featuredEpisodes={featuredEpisodes} groupedSections={groupedSections} />
-      </>
-    );
-  }
 
   return (
     <>

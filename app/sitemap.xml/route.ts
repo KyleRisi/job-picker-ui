@@ -15,6 +15,11 @@ type SitemapEntry = {
   priority: number;
 };
 
+const EXCLUDED_SITEMAP_PATHS = new Set<string>([
+  '/freaky-register',
+  '/preview/homepage-v2'
+]);
+
 function toIsoIfValid(value: string | null | undefined): string | null {
   if (!value) return null;
   const parsed = new Date(value);
@@ -91,6 +96,13 @@ function buildSitemapXml(entries: SitemapEntry[]): string {
   return `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${rows}</urlset>`;
 }
 
+function excludeRoutesFromSitemap(entries: SitemapEntry[]): SitemapEntry[] {
+  return entries.filter((entry) => {
+    const path = new URL(entry.url).pathname;
+    return !EXCLUDED_SITEMAP_PATHS.has(path);
+  });
+}
+
 async function getEntries(): Promise<SitemapEntry[]> {
   const siteUrl = getPublicSiteUrl();
   const approvedTopicSlugs = new Set(getApprovedTopicSlugs());
@@ -129,6 +141,11 @@ async function getEntries(): Promise<SitemapEntry[]> {
     },
     {
       url: `${siteUrl}/reviews`,
+      changeFrequency: 'weekly',
+      priority: 0.7
+    },
+    {
+      url: `${siteUrl}/about`,
       changeFrequency: 'weekly',
       priority: 0.7
     },
@@ -246,9 +263,9 @@ async function getEntries(): Promise<SitemapEntry[]> {
       }))
     ];
 
-    return [...staticRoutes, ...episodeRoutes, ...blogRoutes, ...archiveRoutes];
+    return excludeRoutesFromSitemap([...staticRoutes, ...episodeRoutes, ...blogRoutes, ...archiveRoutes]);
   } catch {
-    return stableStaticRoutes;
+    return excludeRoutesFromSitemap(stableStaticRoutes);
   }
 }
 

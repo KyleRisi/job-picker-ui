@@ -1,0 +1,573 @@
+[
+  {
+    "path": "/topics/true-crime",
+    "sampleCount": 8,
+    "probes": [
+      {
+        "u": "/_next/image?url=%2Fcompendium-logo.png&w=1920&q=75",
+        "status": 200,
+        "bytes": 151575,
+        "type": "image/png",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=%2FThe%20Compendium%20Main.jpg&w=1920&q=72",
+        "status": 200,
+        "bytes": 155465,
+        "type": "image/jpeg",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F5cc43c25-3eb7-4ff7-b170-81b88bc2db32%2F3000x3000%2Fthe-suffolk-strangler.jpg%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 175639,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F38d61b56-b6f7-4565-8ad9-4049e7378a01%2F3000x3000%2Fwest-memphis-three.jpg%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 284152,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Ffde17d26-41cd-4ce4-b410-3785701f958c%2F3000x3000%2Febay-stalking-scandal-1.jpg%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 415365,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F55da7285-04d3-431d-b455-f47660f819a1%2F3000x3000%2Flucy-letby.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 200267,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Fcbee034d-ebae-4f86-9564-8630c98feb89%2F3000x3000%2Fcoughing-scandal.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 200493,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Fb36daee4-75b4-4773-b2e9-2bc4cce8e007%2F3000x3000%2Fqueen-instagram-post-2-100.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 204965,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      }
+    ]
+  },
+  {
+    "path": "/topics/history",
+    "sampleCount": 8,
+    "probes": [
+      {
+        "u": "/_next/image?url=%2Fcompendium-logo.png&w=1920&q=75",
+        "status": 200,
+        "bytes": 151575,
+        "type": "image/png",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=%2Ftopic-hub-card-backgrounds%2Fhistory.avif&w=1920&q=72",
+        "status": 200,
+        "bytes": 173989,
+        "type": "image/jpeg",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F865d6f4f-ab5f-41cb-abfa-bc41a61b9e89%2F3000x3000%2Fguy-fawkes.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 176679,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Fb87e31c2-f8df-40ca-aac6-499577b1550e%2F3000x3000%2Fromanovs.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 241342,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Ff2c4debb-d493-464f-93d9-c2aa350aecaf%2F3000x3000%2Fbone-wars.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 226444,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F1d357597-4f69-439d-b054-790f01a25f2e%2F3000x3000%2Fkony-2012.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 259781,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F7da3b85b-0044-41be-af52-8ee5ada70c40%2F3000x3000%2Fqueen-instagram-post-2-84.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 225746,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F908aee3f-8428-4310-8c8f-078621f4da4a%2F3000x3000%2Fqueen-instagram-post-2-91.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 260690,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      }
+    ]
+  },
+  {
+    "path": "/topics/incredible-people",
+    "sampleCount": 8,
+    "probes": [
+      {
+        "u": "/_next/image?url=%2Fcompendium-logo.png&w=1920&q=75",
+        "status": 200,
+        "bytes": 151575,
+        "type": "image/png",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=%2Ftopic-hub-card-backgrounds%2Fincredible-people.avif&w=1920&q=72",
+        "status": 200,
+        "bytes": 79837,
+        "type": "image/jpeg",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F2050d64f-a652-4bbb-865c-d45da4e4b8bc%2F3000x3000%2Fnellie-bly-1.jpg%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 339769,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Ff62ef000-eeff-4a26-920f-d92232c33880%2F3000x3000%2Ffrida-kahlo.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 170916,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Fd3a49d1d-2c79-4513-935f-45bd2520d55c%2F3000x3000%2Fqueen-instagram-post-2-87.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 190476,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F41e124ef-9e73-4212-9e9b-5305b38b00d5%2F3000x3000%2Froald-dahl.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 226618,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F81ddc7ee-6dd0-4fd9-9ff6-da967c423a6b%2F3000x3000%2Fdolly-parton.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 245273,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F069828b4-2095-45b3-a9c1-7ded1e2689b9%2F3000x3000%2Fsixto-rodriguez-1.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 172390,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      }
+    ]
+  },
+  {
+    "path": "/topics/scams-hoaxes-cons",
+    "sampleCount": 8,
+    "probes": [
+      {
+        "u": "/_next/image?url=%2Fcompendium-logo.png&w=1920&q=75",
+        "status": 200,
+        "bytes": 151575,
+        "type": "image/png",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=%2Ftopic-hub-card-backgrounds%2Fscams.avif&w=1920&q=72",
+        "status": 200,
+        "bytes": 183390,
+        "type": "image/jpeg",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F003af679-94fb-43a2-842a-997f8a7ec817%2F3000x3000%2Fmcdonalds-monopoly-scam.jpg%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 380254,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Ff5ee801d-f90c-48df-87d5-3e2506b5387f%2F3000x3000%2Fqueen-instagram-post-2-79.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 252720,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Fb2798721-8787-4d4a-99c4-da17d8d115e4%2F3000x3000%2Fqueen-instagram-post-2-82.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 214730,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F1ea0324f-9464-4122-a302-424a221b15f5%2F3000x3000%2Felizabeth-holmes-revisited.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 205618,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Fd789f188-30b8-446a-8c39-545c88c73f13%2F3000x3000%2Fqueen-instagram-post-2-101.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 171554,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Fd7247d63-d879-4caf-bba5-58882b683f84%2F3000x3000%2Fdonald-cline.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 191708,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      }
+    ]
+  },
+  {
+    "path": "/topics/disasters-survival",
+    "sampleCount": 8,
+    "probes": [
+      {
+        "u": "/_next/image?url=%2Fcompendium-logo.png&w=1920&q=75",
+        "status": 200,
+        "bytes": 151575,
+        "type": "image/png",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=%2Ftopic-hub-card-backgrounds%2Fdisasters.avif&w=1920&q=72",
+        "status": 200,
+        "bytes": 137425,
+        "type": "image/jpeg",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Ffd64fadd-0d3e-486c-8fbf-29c6d95754b4%2F3000x3000%2Fchernobyl-disaster.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 174144,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Fca31c292-675b-4304-89c0-66b1c62672d8%2F3000x3000%2Fmiracle-of-the-andes-revisited.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 207584,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F9a4d7da3-2769-4c96-a92b-630d1f43b8dd%2F3000x3000%2Fbaby-jessica-1.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 216903,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fzqbogxbfhdxpfjzezzuk.supabase.co%2Fstorage%2Fv1%2Fobject%2Fpublic%2Fblog-media%2Fuploads%2F2026-03-23%2Fbc458854d98c-abb7833e-7b78-416e-b1bd-327f075d594a.jpg&w=1920&q=75",
+        "status": 200,
+        "bytes": 165822,
+        "type": "image/jpeg",
+        "cache": "public, max-age=3600, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F7c38a788-727e-4544-839c-dccf68e945c6%2F3000x3000%2Fqueen-instagram-post-2-92.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 189548,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Fec91860f-d697-4b1e-b3c1-b5dfd4d10a58%2F3000x3000%2Fhindenburg-disaster.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 230620,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      }
+    ]
+  },
+  {
+    "path": "/topics/mysteries-unexplained",
+    "sampleCount": 8,
+    "probes": [
+      {
+        "u": "/_next/image?url=%2Fcompendium-logo.png&w=1920&q=75",
+        "status": 200,
+        "bytes": 151575,
+        "type": "image/png",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=%2Ftopic-hub-card-backgrounds%2FMysteries.avif&w=1920&q=72",
+        "status": 200,
+        "bytes": 107184,
+        "type": "image/jpeg",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F70b8d48e-b956-4ced-857d-65242a6f0f4c%2F3000x3000%2Fbody-in-room-348.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 177888,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Fb9dc4020-5c56-4f41-9eaa-fb3441ed67cd%2F3000x3000%2Fbobby-dunbar.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 193209,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Fe5201f1c-9414-4061-a964-1f3f540572fc%2F3000x3000%2Fqueen-instagram-post-2-99.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 239854,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F0fe530f9-0d5a-4c4f-b0b9-ae7a772e0b8a%2F3000x3000%2Fjennifer-fairgate.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 247572,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F051a71bf-e189-4154-a552-538f95e06957%2F3000x3000%2Flars-mittank.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 202869,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F3c764abc-ae4f-4bf3-92e7-0a55020a0f2f%2F3000x3000%2Fescape-from-alcatraz.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 253064,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      }
+    ]
+  },
+  {
+    "path": "/topics/cults-belief-moral-panics",
+    "sampleCount": 8,
+    "probes": [
+      {
+        "u": "/_next/image?url=%2Fcompendium-logo.png&w=1920&q=75",
+        "status": 200,
+        "bytes": 151575,
+        "type": "image/png",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=%2Ftopic-hub-card-backgrounds%2FCults.avif&w=1920&q=72",
+        "status": 200,
+        "bytes": 122287,
+        "type": "image/jpeg",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F30d3424b-256e-49b1-8479-b84d73a362f9%2F3000x3000%2Fthe-satanic-panic.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 184718,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F032135b9-6c9d-4584-ad78-b0e39f57341a%2F3000x3000%2Fqueen-instagram-post-2-102.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 216185,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Fb46f768d-aa22-4197-b898-16c14bd37397%2F3000x3000%2Fscientology.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 208778,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Fedd00a59-a543-46a6-8aea-75502ad2963e%2F3000x3000%2Fheavens-gate-cult.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 259157,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F00634978-dbdd-4604-97a2-8cb20ab95d59%2F3000x3000%2Fqueen-instagram-post-2-95.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 247558,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F3886256a-fa5e-4cdc-9475-f7f3cb0aa76a%2F3000x3000%2Fqueen-instagram-post-2-97.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 199456,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      }
+    ]
+  },
+  {
+    "path": "/topics/pop-culture-entertainment",
+    "sampleCount": 8,
+    "probes": [
+      {
+        "u": "/_next/image?url=%2Fcompendium-logo.png&w=1920&q=75",
+        "status": 200,
+        "bytes": 151575,
+        "type": "image/png",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=%2Ftopic-hub-card-backgrounds%2Fpop-culture.avif&w=1920&q=72",
+        "status": 200,
+        "bytes": 142275,
+        "type": "image/jpeg",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Fcbee034d-ebae-4f86-9564-8630c98feb89%2F3000x3000%2Fcoughing-scandal.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 200493,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F3ea1f205-688c-45d2-ad81-3bb222ad08a4%2F3000x3000%2Fvillage-people.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 252404,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F530af489-6ab4-452f-96ba-bf66d4b1db39%2F3000x3000%2Fqueen-instagram-post-2-89.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 214968,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Fd1c84f63-d275-418a-a58b-fd6a17fd42b8%2F3000x3000%2Fhouse-of-gucci-revisited.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 193712,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F4fe9de0f-cf53-4bd2-b8d9-ae6aacc1f9b4%2F3000x3000%2Fchippendales-revisited.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 261491,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F14d1cafa-70f8-4ac1-abf7-8cec77b79952%2F3000x3000%2Fqueen-instagram-post-2-74.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 227171,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      }
+    ]
+  },
+  {
+    "path": "/topics",
+    "sampleCount": 1,
+    "probes": [
+      {
+        "u": "/_next/image?url=%2Fcompendium-logo.png&w=1920&q=75",
+        "status": 200,
+        "bytes": 151575,
+        "type": "image/png",
+        "cache": "public, max-age=60, must-revalidate"
+      }
+    ]
+  },
+  {
+    "path": "/preview/homepage-v2",
+    "sampleCount": 8,
+    "probes": [
+      {
+        "u": "/_next/image?url=%2Fcompendium-logo.png&w=1920&q=75",
+        "status": 200,
+        "bytes": 151575,
+        "type": "image/png",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=%2FThe%20Compendium%20Main.jpg&w=1920&q=75",
+        "status": 200,
+        "bytes": 165297,
+        "type": "image/jpeg",
+        "cache": "public, max-age=60, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Ffde17d26-41cd-4ce4-b410-3785701f958c%2F3000x3000%2Febay-stalking-scandal-1.jpg%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 415365,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2Ff2c4debb-d493-464f-93d9-c2aa350aecaf%2F3000x3000%2Fbone-wars.png%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 226444,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F2050d64f-a652-4bbb-865c-d45da4e4b8bc%2F3000x3000%2Fnellie-bly-1.jpg%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 339769,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fzqbogxbfhdxpfjzezzuk.supabase.co%2Fstorage%2Fv1%2Fobject%2Fpublic%2Fblog-media%2Fuploads%2F2026-03-23%2Fbc458854d98c-abb7833e-7b78-416e-b1bd-327f075d594a.jpg&w=1920&q=75",
+        "status": 200,
+        "bytes": 165822,
+        "type": "image/jpeg",
+        "cache": "public, max-age=3600, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=https%3A%2F%2Fimage.simplecastcdn.com%2Fimages%2F6215cda8-011d-4ccd-9fe8-c389912a62af%2F38d61b56-b6f7-4565-8ad9-4049e7378a01%2F3000x3000%2Fwest-memphis-three.jpg%3Faid%3Drss_feed&w=1920&q=75",
+        "status": 200,
+        "bytes": 284152,
+        "type": "image/jpeg",
+        "cache": "public, max-age=31536000, must-revalidate"
+      },
+      {
+        "u": "/_next/image?url=%2Fwebsite.png&w=48&q=75",
+        "status": 200,
+        "bytes": 6128,
+        "type": "image/png",
+        "cache": "public, max-age=60, must-revalidate"
+      }
+    ]
+  }
+]

@@ -1,0 +1,566 @@
+{
+  "canonical": {
+    "/": {
+      "status": 200,
+      "finalUrl": "http://localhost:4031/",
+      "chain": [
+        {
+          "url": "http://localhost:4031/",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "xRobotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "s-maxage=300, stale-while-revalidate"
+      },
+      "metadata": {
+        "title": "The Compendium Podcast | The Compendium Podcast",
+        "description": "A weekly variety podcast covering true crime, forgotten historical events, and incredible people. Hosted by Kyle Risi and Adam Cox. Listen on Spotify, Apple Podcasts, and more.",
+        "robotsMeta": "index, follow",
+        "canonical": "https://www.thecompendiumpodcast.com",
+        "ogTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "ogDescription": "A weekly variety podcast covering true crime, forgotten historical events, and incredible people. New episodes every week.",
+        "ogImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg",
+        "ogUrl": "https://www.thecompendiumpodcast.com",
+        "twitterTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "twitterDescription": "True crime, historical events, and incredible people — a new episode every week.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg"
+      },
+      "markers": {
+        "hasHomepageV2RootMarker": false,
+        "hasV1HeroCopy": true,
+        "hasV2HeroCopy": true
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "PodcastSeries",
+        "Person"
+      ],
+      "htmlBytes": 594339,
+      "linkSummary": {
+        "totalAnchors": 42,
+        "hasTopics": true,
+        "hasEpisodes": true,
+        "hasPatreon": true,
+        "hasPreviewLink": false
+      }
+    },
+    "/preview/homepage-v2": {
+      "status": 200,
+      "finalUrl": "http://localhost:4031/preview/homepage-v2",
+      "chain": [
+        {
+          "url": "http://localhost:4031/preview/homepage-v2",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "xRobotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate"
+      },
+      "metadata": {
+        "title": "Homepage V2 Preview | The Compendium Podcast | The Compendium Podcast",
+        "description": "A weekly podcast covering true crime, fascinating history, and incredible people. Start with standout episodes and follow The Compendium on Spotify or Apple Podcasts.",
+        "robotsMeta": "noindex, nofollow",
+        "canonical": "http://localhost/preview/homepage-v2",
+        "ogTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "ogDescription": "A weekly podcast covering true crime, fascinating history, and incredible people. Start with standout episodes and follow The Compendium on Spotify or Apple Podcasts.",
+        "ogImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg",
+        "ogUrl": "http://localhost/preview/homepage-v2",
+        "twitterTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "twitterDescription": "A weekly podcast covering true crime, fascinating history, and incredible people. Start with standout episodes and follow The Compendium on Spotify or Apple Podcasts.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg"
+      },
+      "markers": {
+        "hasHomepageV2RootMarker": true,
+        "hasV1HeroCopy": true,
+        "hasV2HeroCopy": true
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "PodcastSeries",
+        "Person"
+      ],
+      "htmlBytes": 152378,
+      "linkSummary": {
+        "totalAnchors": 38,
+        "hasTopics": true,
+        "hasEpisodes": true,
+        "hasPatreon": true,
+        "hasPreviewLink": false
+      }
+    },
+    "/sitemap.xml": {
+      "status": 200,
+      "finalUrl": "http://localhost:4031/sitemap.xml",
+      "chain": [
+        {
+          "url": "http://localhost:4031/sitemap.xml",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "xRobotsTag": null,
+        "contentType": "application/xml; charset=utf-8",
+        "cacheControl": "public, max-age=0, must-revalidate"
+      },
+      "sitemap": {
+        "hasRoot": true,
+        "hasPreview": false,
+        "bytes": 34611
+      }
+    },
+    "/robots.txt": {
+      "status": 200,
+      "finalUrl": "http://localhost:4031/robots.txt",
+      "chain": [
+        {
+          "url": "http://localhost:4031/robots.txt",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "xRobotsTag": null,
+        "contentType": "text/plain; charset=utf-8",
+        "cacheControl": "public, max-age=300"
+      },
+      "robotsTxt": {
+        "sitemapLine": "Sitemap: https://www.thecompendiumpodcast.com/sitemap.xml",
+        "hasDisallowApi": true
+      }
+    }
+  },
+  "apex": {
+    "/": {
+      "status": 200,
+      "finalUrl": "http://localhost:4031/",
+      "chain": [
+        {
+          "url": "http://localhost:4031/",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "xRobotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "s-maxage=300, stale-while-revalidate"
+      },
+      "metadata": {
+        "title": "The Compendium Podcast | The Compendium Podcast",
+        "description": "A weekly variety podcast covering true crime, forgotten historical events, and incredible people. Hosted by Kyle Risi and Adam Cox. Listen on Spotify, Apple Podcasts, and more.",
+        "robotsMeta": "index, follow",
+        "canonical": "https://www.thecompendiumpodcast.com",
+        "ogTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "ogDescription": "A weekly variety podcast covering true crime, forgotten historical events, and incredible people. New episodes every week.",
+        "ogImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg",
+        "ogUrl": "https://www.thecompendiumpodcast.com",
+        "twitterTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "twitterDescription": "True crime, historical events, and incredible people — a new episode every week.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg"
+      },
+      "markers": {
+        "hasHomepageV2RootMarker": false,
+        "hasV1HeroCopy": true,
+        "hasV2HeroCopy": true
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "PodcastSeries",
+        "Person"
+      ],
+      "htmlBytes": 594339,
+      "linkSummary": {
+        "totalAnchors": 42,
+        "hasTopics": true,
+        "hasEpisodes": true,
+        "hasPatreon": true,
+        "hasPreviewLink": false
+      }
+    },
+    "/preview/homepage-v2": {
+      "status": 200,
+      "finalUrl": "http://localhost:4031/preview/homepage-v2",
+      "chain": [
+        {
+          "url": "http://localhost:4031/preview/homepage-v2",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "xRobotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate"
+      },
+      "metadata": {
+        "title": "Homepage V2 Preview | The Compendium Podcast | The Compendium Podcast",
+        "description": "A weekly podcast covering true crime, fascinating history, and incredible people. Start with standout episodes and follow The Compendium on Spotify or Apple Podcasts.",
+        "robotsMeta": "noindex, nofollow",
+        "canonical": "http://localhost/preview/homepage-v2",
+        "ogTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "ogDescription": "A weekly podcast covering true crime, fascinating history, and incredible people. Start with standout episodes and follow The Compendium on Spotify or Apple Podcasts.",
+        "ogImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg",
+        "ogUrl": "http://localhost/preview/homepage-v2",
+        "twitterTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "twitterDescription": "A weekly podcast covering true crime, fascinating history, and incredible people. Start with standout episodes and follow The Compendium on Spotify or Apple Podcasts.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg"
+      },
+      "markers": {
+        "hasHomepageV2RootMarker": true,
+        "hasV1HeroCopy": true,
+        "hasV2HeroCopy": true
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "PodcastSeries",
+        "Person"
+      ],
+      "htmlBytes": 152378,
+      "linkSummary": {
+        "totalAnchors": 38,
+        "hasTopics": true,
+        "hasEpisodes": true,
+        "hasPatreon": true,
+        "hasPreviewLink": false
+      }
+    },
+    "/sitemap.xml": {
+      "status": 200,
+      "finalUrl": "http://localhost:4031/sitemap.xml",
+      "chain": [
+        {
+          "url": "http://localhost:4031/sitemap.xml",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "xRobotsTag": null,
+        "contentType": "application/xml; charset=utf-8",
+        "cacheControl": "public, max-age=0, must-revalidate"
+      },
+      "sitemap": {
+        "hasRoot": true,
+        "hasPreview": false,
+        "bytes": 34611
+      }
+    },
+    "/robots.txt": {
+      "status": 200,
+      "finalUrl": "http://localhost:4031/robots.txt",
+      "chain": [
+        {
+          "url": "http://localhost:4031/robots.txt",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "xRobotsTag": null,
+        "contentType": "text/plain; charset=utf-8",
+        "cacheControl": "public, max-age=300"
+      },
+      "robotsTxt": {
+        "sitemapLine": "Sitemap: https://www.thecompendiumpodcast.com/sitemap.xml",
+        "hasDisallowApi": true
+      }
+    }
+  },
+  "localhost": {
+    "/": {
+      "status": 200,
+      "finalUrl": "http://localhost:4031/",
+      "chain": [
+        {
+          "url": "http://localhost:4031/",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "xRobotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "s-maxage=300, stale-while-revalidate"
+      },
+      "metadata": {
+        "title": "The Compendium Podcast | The Compendium Podcast",
+        "description": "A weekly variety podcast covering true crime, forgotten historical events, and incredible people. Hosted by Kyle Risi and Adam Cox. Listen on Spotify, Apple Podcasts, and more.",
+        "robotsMeta": "index, follow",
+        "canonical": "https://www.thecompendiumpodcast.com",
+        "ogTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "ogDescription": "A weekly variety podcast covering true crime, forgotten historical events, and incredible people. New episodes every week.",
+        "ogImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg",
+        "ogUrl": "https://www.thecompendiumpodcast.com",
+        "twitterTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "twitterDescription": "True crime, historical events, and incredible people — a new episode every week.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg"
+      },
+      "markers": {
+        "hasHomepageV2RootMarker": false,
+        "hasV1HeroCopy": true,
+        "hasV2HeroCopy": true
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "PodcastSeries",
+        "Person"
+      ],
+      "htmlBytes": 594339,
+      "linkSummary": {
+        "totalAnchors": 42,
+        "hasTopics": true,
+        "hasEpisodes": true,
+        "hasPatreon": true,
+        "hasPreviewLink": false
+      }
+    },
+    "/preview/homepage-v2": {
+      "status": 200,
+      "finalUrl": "http://localhost:4031/preview/homepage-v2",
+      "chain": [
+        {
+          "url": "http://localhost:4031/preview/homepage-v2",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "xRobotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate"
+      },
+      "metadata": {
+        "title": "Homepage V2 Preview | The Compendium Podcast | The Compendium Podcast",
+        "description": "A weekly podcast covering true crime, fascinating history, and incredible people. Start with standout episodes and follow The Compendium on Spotify or Apple Podcasts.",
+        "robotsMeta": "noindex, nofollow",
+        "canonical": "http://localhost/preview/homepage-v2",
+        "ogTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "ogDescription": "A weekly podcast covering true crime, fascinating history, and incredible people. Start with standout episodes and follow The Compendium on Spotify or Apple Podcasts.",
+        "ogImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg",
+        "ogUrl": "http://localhost/preview/homepage-v2",
+        "twitterTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "twitterDescription": "A weekly podcast covering true crime, fascinating history, and incredible people. Start with standout episodes and follow The Compendium on Spotify or Apple Podcasts.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg"
+      },
+      "markers": {
+        "hasHomepageV2RootMarker": true,
+        "hasV1HeroCopy": true,
+        "hasV2HeroCopy": true
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "PodcastSeries",
+        "Person"
+      ],
+      "htmlBytes": 152378,
+      "linkSummary": {
+        "totalAnchors": 38,
+        "hasTopics": true,
+        "hasEpisodes": true,
+        "hasPatreon": true,
+        "hasPreviewLink": false
+      }
+    },
+    "/sitemap.xml": {
+      "status": 200,
+      "finalUrl": "http://localhost:4031/sitemap.xml",
+      "chain": [
+        {
+          "url": "http://localhost:4031/sitemap.xml",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "xRobotsTag": null,
+        "contentType": "application/xml; charset=utf-8",
+        "cacheControl": "public, max-age=0, must-revalidate"
+      },
+      "sitemap": {
+        "hasRoot": true,
+        "hasPreview": false,
+        "bytes": 34611
+      }
+    },
+    "/robots.txt": {
+      "status": 200,
+      "finalUrl": "http://localhost:4031/robots.txt",
+      "chain": [
+        {
+          "url": "http://localhost:4031/robots.txt",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "xRobotsTag": null,
+        "contentType": "text/plain; charset=utf-8",
+        "cacheControl": "public, max-age=300"
+      },
+      "robotsTxt": {
+        "sitemapLine": "Sitemap: https://www.thecompendiumpodcast.com/sitemap.xml",
+        "hasDisallowApi": true
+      }
+    }
+  },
+  "preview": {
+    "/": {
+      "status": 200,
+      "finalUrl": "http://localhost:4031/",
+      "chain": [
+        {
+          "url": "http://localhost:4031/",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "xRobotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "s-maxage=300, stale-while-revalidate"
+      },
+      "metadata": {
+        "title": "The Compendium Podcast | The Compendium Podcast",
+        "description": "A weekly variety podcast covering true crime, forgotten historical events, and incredible people. Hosted by Kyle Risi and Adam Cox. Listen on Spotify, Apple Podcasts, and more.",
+        "robotsMeta": "index, follow",
+        "canonical": "https://www.thecompendiumpodcast.com",
+        "ogTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "ogDescription": "A weekly variety podcast covering true crime, forgotten historical events, and incredible people. New episodes every week.",
+        "ogImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg",
+        "ogUrl": "https://www.thecompendiumpodcast.com",
+        "twitterTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "twitterDescription": "True crime, historical events, and incredible people — a new episode every week.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg"
+      },
+      "markers": {
+        "hasHomepageV2RootMarker": false,
+        "hasV1HeroCopy": true,
+        "hasV2HeroCopy": true
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "PodcastSeries",
+        "Person"
+      ],
+      "htmlBytes": 594339,
+      "linkSummary": {
+        "totalAnchors": 42,
+        "hasTopics": true,
+        "hasEpisodes": true,
+        "hasPatreon": true,
+        "hasPreviewLink": false
+      }
+    },
+    "/preview/homepage-v2": {
+      "status": 200,
+      "finalUrl": "http://localhost:4031/preview/homepage-v2",
+      "chain": [
+        {
+          "url": "http://localhost:4031/preview/homepage-v2",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "xRobotsTag": "noindex, nofollow",
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "private, no-cache, no-store, max-age=0, must-revalidate"
+      },
+      "metadata": {
+        "title": "Homepage V2 Preview | The Compendium Podcast | The Compendium Podcast",
+        "description": "A weekly podcast covering true crime, fascinating history, and incredible people. Start with standout episodes and follow The Compendium on Spotify or Apple Podcasts.",
+        "robotsMeta": "noindex, nofollow",
+        "canonical": "http://localhost/preview/homepage-v2",
+        "ogTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "ogDescription": "A weekly podcast covering true crime, fascinating history, and incredible people. Start with standout episodes and follow The Compendium on Spotify or Apple Podcasts.",
+        "ogImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg",
+        "ogUrl": "http://localhost/preview/homepage-v2",
+        "twitterTitle": "The Compendium Podcast | True Crime, History &amp; Incredible People",
+        "twitterDescription": "A weekly podcast covering true crime, fascinating history, and incredible people. Start with standout episodes and follow The Compendium on Spotify or Apple Podcasts.",
+        "twitterImage": "https://www.thecompendiumpodcast.com/The%20Compendium%20Main.jpg"
+      },
+      "markers": {
+        "hasHomepageV2RootMarker": true,
+        "hasV1HeroCopy": true,
+        "hasV2HeroCopy": true
+      },
+      "schemaTypes": [
+        "WebSite",
+        "SearchAction",
+        "Organization",
+        "PodcastSeries",
+        "Person"
+      ],
+      "htmlBytes": 152378,
+      "linkSummary": {
+        "totalAnchors": 38,
+        "hasTopics": true,
+        "hasEpisodes": true,
+        "hasPatreon": true,
+        "hasPreviewLink": false
+      }
+    },
+    "/sitemap.xml": {
+      "status": 200,
+      "finalUrl": "http://localhost:4031/sitemap.xml",
+      "chain": [
+        {
+          "url": "http://localhost:4031/sitemap.xml",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "xRobotsTag": null,
+        "contentType": "application/xml; charset=utf-8",
+        "cacheControl": "public, max-age=0, must-revalidate"
+      },
+      "sitemap": {
+        "hasRoot": true,
+        "hasPreview": false,
+        "bytes": 34611
+      }
+    },
+    "/robots.txt": {
+      "status": 200,
+      "finalUrl": "http://localhost:4031/robots.txt",
+      "chain": [
+        {
+          "url": "http://localhost:4031/robots.txt",
+          "status": 200,
+          "location": null
+        }
+      ],
+      "headers": {
+        "xRobotsTag": null,
+        "contentType": "text/plain; charset=utf-8",
+        "cacheControl": "public, max-age=300"
+      },
+      "robotsTxt": {
+        "sitemapLine": "Sitemap: https://www.thecompendiumpodcast.com/sitemap.xml",
+        "hasDisallowApi": true
+      }
+    }
+  }
+}

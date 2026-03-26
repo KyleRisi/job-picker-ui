@@ -12,10 +12,22 @@ export type TopicHubAction = {
   external?: boolean;
 };
 
+export type TopicHubHeroCard = {
+  title: string;
+  badge?: string;
+  backgroundImageUrl: string;
+};
+
 export type TopicHubHeroConfig = {
   eyebrow: string;
   title: string;
+  mobileTitle?: string;
+  descriptor?: string;
+  mobileDescriptor?: string;
   intro: string;
+  mobileIntro?: string;
+  cornerArtworkUrl?: string;
+  card?: TopicHubHeroCard;
   trustStripItems?: string[];
   primaryAction: TopicHubAction;
   secondaryAction: TopicHubAction;
@@ -71,9 +83,11 @@ export type TopicHubFaqConfig = {
 export type TopicHubRelatedTopic = {
   href: string;
   title: string;
+  displayTitle?: string;
   description: string;
   label: string;
   ctaLabel: string;
+  backgroundImageUrl?: string;
 };
 
 export type TopicHubRelatedTopicsConfig = {
@@ -127,6 +141,9 @@ export type TopicHubCurationConfig = {
 export type TopicHubSeoOverride = {
   titleAbsolute: string;
   description: string;
+  socialTitle?: string;
+  socialDescription?: string;
+  socialImageUrl?: string;
 };
 
 export type TopicHubConfig = {

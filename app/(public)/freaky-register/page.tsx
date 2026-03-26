@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { FreakyRegisterPage } from '@/components/freaky-register-page';
 import { listFreakySuggestions } from '@/lib/freaky';
-import { ROBOTS_NOINDEX_NOFOLLOW } from '@/lib/seo';
+import { ROBOTS_NOINDEX_FOLLOW } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 60;
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: 'Freaky Register',
   description: 'Suggest episode ideas and back topics you want covered by The Compendium Podcast.',
   alternates: { canonical: '/freaky-register' },
-  robots: ROBOTS_NOINDEX_NOFOLLOW,
+  robots: ROBOTS_NOINDEX_FOLLOW,
   openGraph: {
     title: 'Freaky Register | The Compendium Podcast',
     description: 'Suggest an episode topic and upvote the stories you want us to cover.',

@@ -166,6 +166,9 @@ export function SiteFooter({ showTopBorder = true }: { showTopBorder?: boolean }
                 <li><Link href="/episodes" className={footerLinkClassName()}>Episodes</Link></li>
                 <li><Link href="/topics" className={footerLinkClassName()}>Topics</Link></li>
                 <li><Link href="/reviews" className={footerLinkClassName()}>Reviews</Link></li>
+                <li><Link href="/jobs" className={footerLinkClassName()}>Jobs</Link></li>
+                <li><Link href="/meet-the-team" className={footerLinkClassName()}>Meet the Team</Link></li>
+                <li><Link href="/connect/press-kit" className={footerLinkClassName()}>Press Kit</Link></li>
               </ul>
             </nav>
 

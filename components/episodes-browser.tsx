@@ -846,7 +846,7 @@ export function EpisodesBrowser({
     <div
       className={
         mobileSortLeft
-          ? `flex w-full items-center ${showSortToggle ? 'justify-between' : 'justify-end'} min-[820px]:ml-auto min-[820px]:w-auto min-[820px]:justify-end min-[820px]:gap-2`
+          ? `flex items-center ${showSearch ? 'shrink-0 gap-2' : `w-full ${showSortToggle ? 'justify-between' : 'justify-end'}`} min-[820px]:ml-auto min-[820px]:w-auto min-[820px]:justify-end min-[820px]:gap-2`
           : 'ml-auto flex items-center gap-2'
       }
     >
@@ -918,16 +918,20 @@ export function EpisodesBrowser({
     <div className="flex flex-col gap-2 min-[820px]:flex-row min-[820px]:items-center">
       {topicFilterControl}
       {showSearch ? (
-        <LiveSearchInput
-          id="episode-search"
-          value={query}
-          onChange={setQuery}
-          placeholder="Search episodes"
-          ariaLabel="Search episodes"
-          className="min-[820px]:flex-1"
-        />
-      ) : null}
-      {sortAndViewControls}
+        <div className="flex w-full min-w-0 items-center gap-2 min-[820px]:flex-1">
+          <LiveSearchInput
+            id="episode-search"
+            value={query}
+            onChange={setQuery}
+            placeholder="Search episodes"
+            ariaLabel="Search episodes"
+            className="min-w-0 flex-1"
+          />
+          {sortAndViewControls}
+        </div>
+      ) : (
+        sortAndViewControls
+      )}
     </div>
   );
   useEffect(() => {

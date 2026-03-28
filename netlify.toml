@@ -9,6 +9,18 @@
   package = "@netlify/plugin-lighthouse"
 
 [[redirects]]
+  from = "http://thecompendiumpodcast.com/AlzaSyBX9irUGTrJ0gdcx66qnQDH2EbMw2mZcLA.txt"
+  to = "/AlzaSyBX9irUGTrJ0gdcx66qnQDH2EbMw2mZcLA.txt"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "https://thecompendiumpodcast.com/AlzaSyBX9irUGTrJ0gdcx66qnQDH2EbMw2mZcLA.txt"
+  to = "/AlzaSyBX9irUGTrJ0gdcx66qnQDH2EbMw2mZcLA.txt"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "https://compendium-circus-hr.netlify.app/*"
   to = "https://www.thecompendiumpodcast.com/:splat"
   status = 301

@@ -9,14 +9,14 @@
   package = "@netlify/plugin-lighthouse"
 
 [[redirects]]
-  from = "http://thecompendiumpodcast.com/AlzaSyBX9irUGTrJ0gdcx66qnQDH2EbMw2mZcLA.txt"
-  to = "/AlzaSyBX9irUGTrJ0gdcx66qnQDH2EbMw2mZcLA.txt"
+  from = "http://thecompendiumpodcast.com/AIzaSyBX9irUGTrJ0gdcx66qnQDH2EbMw2mZclA.txt"
+  to = "/AIzaSyBX9irUGTrJ0gdcx66qnQDH2EbMw2mZclA.txt"
   status = 200
   force = true
 
 [[redirects]]
-  from = "https://thecompendiumpodcast.com/AlzaSyBX9irUGTrJ0gdcx66qnQDH2EbMw2mZcLA.txt"
-  to = "/AlzaSyBX9irUGTrJ0gdcx66qnQDH2EbMw2mZcLA.txt"
+  from = "https://thecompendiumpodcast.com/AIzaSyBX9irUGTrJ0gdcx66qnQDH2EbMw2mZclA.txt"
+  to = "/AIzaSyBX9irUGTrJ0gdcx66qnQDH2EbMw2mZclA.txt"
   status = 200
   force = true
 

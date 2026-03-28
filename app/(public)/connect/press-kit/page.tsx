@@ -6,6 +6,7 @@ import { getPodcastEpisodes, type PodcastEpisode } from '@/lib/podcast';
 import { ReviewsSection } from '@/components/reviews-section';
 import { getVisibleReviews, getVisibleReviewsCount, type PublicReview } from '@/lib/reviews';
 import { TrackedExternalCtaLink } from '@/components/tracked-external-cta-link';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 
 const SPOTIFY_URL = 'https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ';
 const APPLE_PODCASTS_URL = 'https://podcasts.apple.com/gb/podcast/the-compendium-an-assembly-of-fascinating-things/id1676817109';
@@ -39,12 +40,17 @@ export const metadata: Metadata = {
     absolute: 'Press Kit | The Compendium Podcast'
   },
   description: 'Official press kit for The Compendium Podcast with show boilerplate, media-ready stats, featured episodes, and press enquiries.',
-  alternates: { canonical: '/connect/press-kit' },
-  openGraph: {
+  ...buildCanonicalAndSocialMetadata({
     title: 'Press Kit | The Compendium Podcast',
     description: 'Official press kit for The Compendium Podcast with show boilerplate, media-ready stats, featured episodes, and press enquiries.',
-    url: '/connect/press-kit'
-  }
+    twitterTitle: 'Press Kit | The Compendium Podcast',
+    twitterDescription: 'Official press kit for The Compendium Podcast with show boilerplate, media-ready stats, featured episodes, and press enquiries.',
+    canonicalCandidate: '/connect/press-kit',
+    fallbackPath: '/connect/press-kit',
+    openGraphType: 'website',
+    imageUrl: '/The Compendium Main.jpg',
+    imageAlt: 'The Compendium Podcast press kit'
+  })
 };
 
 function selectStarterEpisodes(episodes: PodcastEpisode[]): PodcastEpisode[] {

@@ -1,16 +1,22 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { MerchPurchaseTracker } from '@/components/merch-purchase-tracker';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 
 export const metadata: Metadata = {
   title: 'Order Confirmed | Merch',
   description: 'Your Compendium merch order has been placed successfully.',
-  alternates: { canonical: '/merch/success' },
-  openGraph: {
+  ...buildCanonicalAndSocialMetadata({
     title: 'Order Confirmed | Merch',
     description: 'Your Compendium merch order has been placed successfully.',
-    url: '/merch/success'
-  }
+    twitterTitle: 'Order Confirmed | Merch',
+    twitterDescription: 'Your Compendium merch order has been placed successfully.',
+    canonicalCandidate: '/merch/success',
+    fallbackPath: '/merch/success',
+    openGraphType: 'website',
+    imageUrl: '/The Compendium Main.jpg',
+    imageAlt: 'The Compendium Podcast merch order confirmation'
+  })
 };
 
 export default function MerchSuccessPage({

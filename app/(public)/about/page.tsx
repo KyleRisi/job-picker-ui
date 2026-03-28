@@ -1,11 +1,25 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
+
+const ABOUT_TITLE = 'About the Show';
+const ABOUT_DESCRIPTION =
+  'Learn about The Compendium Podcast, the weekly show exploring true crime, history, and incredible people.';
 
 export const metadata: Metadata = {
-  title: 'About the Show',
-  description:
-    'Learn about The Compendium Podcast, the weekly show exploring true crime, history, and incredible people.',
-  alternates: { canonical: '/about' }
+  title: ABOUT_TITLE,
+  description: ABOUT_DESCRIPTION,
+  ...buildCanonicalAndSocialMetadata({
+    title: 'About the Show | The Compendium Podcast',
+    description: ABOUT_DESCRIPTION,
+    twitterTitle: 'About the Show | The Compendium Podcast',
+    twitterDescription: ABOUT_DESCRIPTION,
+    canonicalCandidate: '/about',
+    fallbackPath: '/about',
+    openGraphType: 'website',
+    imageUrl: '/The Compendium Main.jpg',
+    imageAlt: 'About The Compendium Podcast'
+  })
 };
 
 export default function AboutPage() {

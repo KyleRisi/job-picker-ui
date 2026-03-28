@@ -5,28 +5,30 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getJobsForPublic, getSettings } from '@/lib/data';
 import { JobsListingsViewedTracker } from '@/components/jobs-analytics-trackers';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
+
+const JOBS_TITLE = 'Jobs | The Compendium Podcast';
+const JOBS_DESCRIPTION =
+  'Browse open and rehiring roles at The Compendium Podcast and apply to join The Compendium universe.';
+const JOBS_SOCIAL_TITLE = 'Circus Openings | The Compendium Podcast';
+const jobsSocialMetadata = buildCanonicalAndSocialMetadata({
+  title: JOBS_SOCIAL_TITLE,
+  description: JOBS_DESCRIPTION,
+  twitterTitle: JOBS_SOCIAL_TITLE,
+  twitterDescription: JOBS_DESCRIPTION,
+  canonicalCandidate: '/jobs',
+  fallbackPath: '/jobs',
+  openGraphType: 'website',
+  imageUrl: '/The Compendium Main.jpg',
+  imageAlt: 'Jobs at The Compendium Podcast'
+});
 
 export const metadata: Metadata = {
   title: {
-    absolute: 'Jobs | The Compendium Podcast'
+    absolute: JOBS_TITLE
   },
-  description:
-    'Browse open and rehiring roles at The Compendium Podcast and apply to join The Compendium universe.',
-  alternates: {
-    canonical: '/jobs'
-  },
-  openGraph: {
-    title: 'Circus Openings | The Compendium Podcast',
-    description:
-      'Browse open and rehiring roles at The Compendium Podcast and apply to join The Compendium universe.',
-    url: '/jobs'
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Circus Openings | The Compendium Podcast',
-    description:
-      'Browse open and rehiring roles at The Compendium Podcast and apply to join The Compendium universe.'
-  }
+  description: JOBS_DESCRIPTION,
+  ...jobsSocialMetadata
 };
 
 export const dynamic = 'force-dynamic';

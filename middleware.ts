@@ -19,12 +19,46 @@ type ResolveItem = {
 
 type CacheEntry = {
   expiresAt: number;
-  item: ResolveItem;
+  item: ResolveItem | null;
 };
 
 const LOOKUP_TIMEOUT_MS = 350;
 const CACHE_TTL_MS = 30_000;
 const cache = new Map<string, CacheEntry>();
+const DEFAULT_REDIRECT_LOOKUP_PREFIXES = [
+  '/episode',
+  '/podcast',
+  '/topics',
+  '/themes',
+  '/people',
+  '/cases',
+  '/events',
+  '/collections',
+  '/series',
+  '/blog/author',
+  '/blog/tag',
+  '/blog/series',
+  '/blog/topic',
+  '/blog/label'
+];
+const REDIRECT_LOOKUP_PREFIXES = (() => {
+  const raw = `${process.env.REDIRECT_LOOKUP_PREFIXES || ''}`.trim();
+  const source = raw
+    ? raw.split(',').map((value) => normalizePath(value)).filter((value) => value !== '/')
+    : DEFAULT_REDIRECT_LOOKUP_PREFIXES;
+  return [...new Set(source)];
+})();
+const REDIRECT_LOOKUP_EXACT_PATHS = new Set(['/about']);
+const REDIRECT_LOOKUP_LOG_EVERY = Number.parseInt(process.env.REDIRECT_LOOKUP_LOG_EVERY || '250', 10);
+const redirectLookupStats = {
+  skippedByPattern: 0,
+  cacheHits: 0,
+  cacheMisses: 0,
+  remoteCalls: 0,
+  remoteHits: 0,
+  remoteMisses: 0,
+  remoteErrors: 0
+};
 const HOMEPAGE_V2_PREVIEW_PATH = '/preview/homepage-v2';
 const SECURITY_HEADERS: Record<string, string> = {
   'x-content-type-options': 'nosniff',
@@ -106,9 +140,25 @@ function readFromCache(path: string): ResolveItem | null | undefined {
   return existing.item;
 }
 
-function writeToCache(path: string, item: ResolveItem) {
+function writeToCache(path: string, item: ResolveItem | null) {
   if (cache.size > 5000) cache.clear();
   cache.set(path, { item, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+function incrementRedirectLookupStat(name: keyof typeof redirectLookupStats) {
+  redirectLookupStats[name] += 1;
+  const total = Object.values(redirectLookupStats).reduce((sum, value) => sum + value, 0);
+  if (!Number.isFinite(REDIRECT_LOOKUP_LOG_EVERY) || REDIRECT_LOOKUP_LOG_EVERY < 1) return;
+  if (total % REDIRECT_LOOKUP_LOG_EVERY !== 0) return;
+  console.info('[redirect lookup stats]', JSON.stringify({
+    ...redirectLookupStats,
+    cacheSize: cache.size
+  }));
+}
+
+function shouldAttemptDynamicRedirectLookup(pathname: string): boolean {
+  if (REDIRECT_LOOKUP_EXACT_PATHS.has(pathname)) return true;
+  return REDIRECT_LOOKUP_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
 function normalizeEpisodeSlugCandidate(value: string): string {
@@ -152,7 +202,11 @@ function getDeterministicLegacyEpisodeTarget(pathname: string): string | null {
 
 async function resolveRedirect(req: NextRequest, normalizedPath: string): Promise<ResolveItem | null> {
   const cached = readFromCache(normalizedPath);
-  if (cached !== undefined) return cached;
+  if (cached !== undefined) {
+    incrementRedirectLookupStat('cacheHits');
+    return cached;
+  }
+  incrementRedirectLookupStat('cacheMisses');
 
   const secret = process.env.REDIRECT_RESOLVE_SECRET || '';
   if (!secret) {
@@ -166,6 +220,7 @@ async function resolveRedirect(req: NextRequest, normalizedPath: string): Promis
   try {
     const url = new URL('/api/internal/redirects/resolve', req.url);
     url.searchParams.set('path', normalizedPath);
+    incrementRedirectLookupStat('remoteCalls');
 
     const response = await fetch(url.toString(), {
       method: 'GET',
@@ -176,13 +231,22 @@ async function resolveRedirect(req: NextRequest, normalizedPath: string): Promis
       signal: controller.signal
     });
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      incrementRedirectLookupStat('remoteErrors');
+      return null;
+    }
 
     const payload = (await response.json()) as { item?: ResolveItem | null };
     const item = payload.item || null;
-    if (item) writeToCache(normalizedPath, item);
+    writeToCache(normalizedPath, item);
+    if (item) {
+      incrementRedirectLookupStat('remoteHits');
+    } else {
+      incrementRedirectLookupStat('remoteMisses');
+    }
     return item;
   } catch {
+    incrementRedirectLookupStat('remoteErrors');
     return null;
   } finally {
     clearTimeout(timeout);
@@ -257,6 +321,10 @@ export async function middleware(req: NextRequest) {
     const response = finalize(NextResponse.next());
     response.headers.set('x-robots-tag', 'noindex, follow');
     return response;
+  }
+  if (!shouldAttemptDynamicRedirectLookup(normalizedPath)) {
+    incrementRedirectLookupStat('skippedByPattern');
+    return finalize(NextResponse.next());
   }
 
   const redirectLookupStart = performance.now();

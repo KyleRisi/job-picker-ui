@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { getActiveTeamMembers, getJobsForPublic } from '@/lib/data';
 import { FreaksGrid, type FreakMember } from '@/components/freaks-grid';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 
 type TeamMember = {
   name: string;
@@ -20,13 +21,19 @@ export const metadata: Metadata = {
   title: 'Meet the Team',
   description:
     'Meet the core Compendium Podcast team and the additional freaks behind the scenes.',
-  alternates: { canonical: '/meet-the-team' },
-  openGraph: {
+  ...buildCanonicalAndSocialMetadata({
     title: 'Meet the Team | The Compendium Podcast',
     description:
       'Meet the core Compendium Podcast team and the additional freaks behind the scenes.',
-    url: '/meet-the-team'
-  }
+    twitterTitle: 'Meet the Team | The Compendium Podcast',
+    twitterDescription:
+      'Meet the core Compendium Podcast team and the additional freaks behind the scenes.',
+    canonicalCandidate: '/meet-the-team',
+    fallbackPath: '/meet-the-team',
+    openGraphType: 'website',
+    imageUrl: '/The Compendium Main.jpg',
+    imageAlt: 'Meet the team at The Compendium Podcast'
+  })
 };
 
 function getLondonDayKey(): string {

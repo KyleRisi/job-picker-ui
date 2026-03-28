@@ -4,6 +4,7 @@ import { BrokenHealthEpisodesTracker } from '@/components/broken-health-episodes
 import { JoinPatreonCta } from '@/components/join-patreon-cta';
 import { getEpisodesLandingPageData } from '@/lib/episodes';
 import { getPodcastEpisodes, type PodcastEpisode } from '@/lib/podcast';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 import { getPublicSiteUrl } from '@/lib/site-url';
 import { compactJsonLd, getPageEntityIds, resolveCanonicalForSchema, toAbsoluteSchemaUrl } from '@/lib/schema-jsonld';
 
@@ -21,27 +22,27 @@ const ARCHIVED_PATREON_EPISODE_BASELINE = 19;
 
 export const revalidate = 300;
 
+const EPISODES_TITLE = 'All Episodes | The Compendium Podcast';
+const EPISODES_DESCRIPTION =
+  'Browse every Compendium podcast episode in one place. Search by title or episode number, discover curated collections, and open full episode notes.';
+const episodesSocialMetadata = buildCanonicalAndSocialMetadata({
+  title: EPISODES_TITLE,
+  description: EPISODES_DESCRIPTION,
+  twitterTitle: EPISODES_TITLE,
+  twitterDescription: EPISODES_DESCRIPTION,
+  canonicalCandidate: '/episodes',
+  fallbackPath: '/episodes',
+  openGraphType: 'website',
+  imageUrl: '/The Compendium Main.jpg',
+  imageAlt: 'The Compendium Podcast episode archive'
+});
+
 export const metadata: Metadata = {
   title: {
-    absolute: 'All Episodes | The Compendium Podcast'
+    absolute: EPISODES_TITLE
   },
-  description:
-    'Browse every Compendium podcast episode in one place. Search by title or episode number, discover curated collections, and open full episode notes.',
-  alternates: {
-    canonical: '/episodes'
-  },
-  openGraph: {
-    title: 'All Episodes | The Compendium Podcast',
-    description:
-      'Browse every Compendium podcast episode in one place. Search by title or episode number, discover curated collections, and open full episode notes.',
-    url: '/episodes'
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'All Episodes | The Compendium Podcast',
-    description:
-      'Browse every Compendium podcast episode in one place. Search by title or episode number, discover curated collections, and open full episode notes.'
-  }
+  description: EPISODES_DESCRIPTION,
+  ...episodesSocialMetadata
 };
 
 function normalizeSingleValue(value: string | string[] | undefined): string {

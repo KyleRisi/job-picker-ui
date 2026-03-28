@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { MerchBuyNowForm } from '@/components/merch-buy-now-form';
 import { getMerchProducts } from '@/lib/merch';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 
 type MerchPageProps = {
   searchParams?: {
@@ -13,12 +14,17 @@ type MerchPageProps = {
 export const metadata: Metadata = {
   title: 'Merch | The Compendium Podcast',
   description: 'Official The Compendium Podcast merchandise. Shop the Crotch Dangler keychain.',
-  alternates: { canonical: '/merch' },
-  openGraph: {
+  ...buildCanonicalAndSocialMetadata({
     title: 'Merch | The Compendium Podcast',
     description: 'Official The Compendium Podcast merchandise. Shop the Crotch Dangler keychain.',
-    url: '/merch'
-  }
+    twitterTitle: 'Merch | The Compendium Podcast',
+    twitterDescription: 'Official The Compendium Podcast merchandise. Shop the Crotch Dangler keychain.',
+    canonicalCandidate: '/merch',
+    fallbackPath: '/merch',
+    openGraphType: 'website',
+    imageUrl: '/The Compendium Main.jpg',
+    imageAlt: 'The Compendium Podcast merch'
+  })
 };
 
 export default function MerchPage({ searchParams }: MerchPageProps) {

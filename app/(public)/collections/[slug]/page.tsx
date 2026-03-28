@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { DiscoveryHubPage } from '@/components/discovery-hub-page';
 import { getDiscoveryHubPage } from '@/lib/episodes';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 
 export const revalidate = 300;
 
@@ -26,12 +27,23 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     };
   }
 
+  const title = `${hub.term.seoTitle || hub.term.name} | Collections`;
+  const description = hub.term.metaDescription || hub.term.description || `Explore episodes in ${hub.term.name}.`;
+
   return {
-    title: `${hub.term.seoTitle || hub.term.name} | Collections`,
-    description: hub.term.metaDescription || hub.term.description || `Explore episodes in ${hub.term.name}.`,
-    alternates: {
-      canonical: `/collections/${params.slug}`
-    }
+    title,
+    description,
+    ...buildCanonicalAndSocialMetadata({
+      title,
+      description,
+      twitterTitle: title,
+      twitterDescription: description,
+      canonicalCandidate: `/collections/${params.slug}`,
+      fallbackPath: `/collections/${params.slug}`,
+      openGraphType: 'website',
+      imageUrl: '/The Compendium Main.jpg',
+      imageAlt: `${hub.term.name} collections hub`
+    })
   };
 }
 

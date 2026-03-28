@@ -10,6 +10,7 @@ import { CompactEpisodeRow, EpisodeCard } from '@/components/episodes-browser';
 import { JoinPatreonCta } from '@/components/join-patreon-cta';
 import { listAuthorArchive } from '@/lib/blog/data';
 import { getAuthorEpisodeList, type AuthorEpisodeListItem } from '@/lib/episodes';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 import { createSupabaseAdminClient } from '@/lib/supabase';
 
 export const revalidate = 300;
@@ -154,9 +155,17 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return {
     title: `${name} | Author | The Compendium Podcast`,
     description: archive.author.bio || `Explore episodes and posts by ${name}.`,
-    alternates: {
-      canonical: `/author/${params.authorSlug}`
-    }
+    ...buildCanonicalAndSocialMetadata({
+      title: `${name} | Author | The Compendium Podcast`,
+      description: archive.author.bio || `Explore episodes and posts by ${name}.`,
+      twitterTitle: `${name} | Author | The Compendium Podcast`,
+      twitterDescription: archive.author.bio || `Explore episodes and posts by ${name}.`,
+      canonicalCandidate: `/author/${params.authorSlug}`,
+      fallbackPath: `/author/${params.authorSlug}`,
+      openGraphType: 'website',
+      imageUrl: archive.author.image_url || '/The Compendium Main.jpg',
+      imageAlt: `${name} author archive`
+    })
   };
 }
 

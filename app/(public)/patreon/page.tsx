@@ -5,6 +5,7 @@ import { PatreonMembershipGrid } from '@/components/patreon/patreon-membership-g
 import { TrackedPatreonCtaLink } from '@/components/tracked-patreon-cta-link';
 import { PATREON_URL } from '@/lib/patreon-links';
 import type { PatreonTier } from '@/lib/patreon-content';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 
 const PATREON_UTM_BASE = `${PATREON_URL}?utm_source=site&utm_medium=cta&utm_campaign=evergreen_membership`;
 
@@ -238,19 +239,19 @@ export const metadata: Metadata = {
   title: 'Patreon | The Compendium Podcast',
   description:
     'Join The Compendium Patreon for early access, ad-free listening, bonus back catalogue episodes, supporter perks and private podcast listening. Compare every membership option.',
-  alternates: { canonical: '/patreon' },
-  openGraph: {
+  ...buildCanonicalAndSocialMetadata({
     title: 'Support The Compendium Podcast on Patreon | Early Access, Bonus Episodes & More',
     description:
       'Join The Compendium Patreon for early access, ad-free listening, bonus back catalogue episodes, supporter perks and private podcast listening. Compare every membership option.',
-    url: '/patreon'
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Support The Compendium Podcast on Patreon | Early Access, Bonus Episodes & More',
-    description:
-      'Join The Compendium Patreon for early access, ad-free listening, bonus back catalogue episodes, supporter perks and private podcast listening. Compare every membership option.'
-  }
+    twitterTitle: 'Support The Compendium Podcast on Patreon | Early Access, Bonus Episodes & More',
+    twitterDescription:
+      'Join The Compendium Patreon for early access, ad-free listening, bonus back catalogue episodes, supporter perks and private podcast listening. Compare every membership option.',
+    canonicalCandidate: '/patreon',
+    fallbackPath: '/patreon',
+    openGraphType: 'website',
+    imageUrl: '/The Compendium Main.jpg',
+    imageAlt: 'Support The Compendium Podcast on Patreon'
+  })
 };
 
 export default function PatreonPage() {

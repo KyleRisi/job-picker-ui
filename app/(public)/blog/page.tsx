@@ -2,11 +2,22 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { BlogListingPage } from '@/components/blog/blog-listing-page';
 import { listFeaturedBlogPosts, listPublishedBlogPostsFeed } from '@/lib/blog/data';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 
 export const metadata: Metadata = {
   title: 'Blog',
   description: 'SEO-focused articles from The Compendium podcast, linked to episodes, transcripts, and listener resources.',
-  alternates: { canonical: '/blog' }
+  ...buildCanonicalAndSocialMetadata({
+    title: 'Blog | The Compendium Podcast',
+    description: 'SEO-focused articles from The Compendium podcast, linked to episodes, transcripts, and listener resources.',
+    twitterTitle: 'Blog | The Compendium Podcast',
+    twitterDescription: 'SEO-focused articles from The Compendium podcast, linked to episodes, transcripts, and listener resources.',
+    canonicalCandidate: '/blog',
+    fallbackPath: '/blog',
+    openGraphType: 'website',
+    imageUrl: '/The Compendium Main.jpg',
+    imageAlt: 'The Compendium Podcast blog'
+  })
 };
 
 export const revalidate = 300;

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MerchBuyNowForm } from '@/components/merch-buy-now-form';
 import { getMerchProductBySlug, getMerchProducts } from '@/lib/merch';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 
 type MerchDetailPageProps = {
   params: {
@@ -26,12 +27,17 @@ export async function generateMetadata({ params }: MerchDetailPageProps): Promis
   return {
     title: `${product.name} | Merch`,
     description: product.briefDescription,
-    alternates: { canonical: `/merch/${product.slug}` },
-    openGraph: {
+    ...buildCanonicalAndSocialMetadata({
       title: `${product.name} | Merch`,
       description: product.briefDescription,
-      url: `/merch/${product.slug}`
-    }
+      twitterTitle: `${product.name} | Merch`,
+      twitterDescription: product.briefDescription,
+      canonicalCandidate: `/merch/${product.slug}`,
+      fallbackPath: `/merch/${params.slug}`,
+      openGraphType: 'website',
+      imageUrl: product.imageSrc,
+      imageAlt: product.imageAlt
+    })
   };
 }
 

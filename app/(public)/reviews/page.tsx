@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { ReviewsPage } from '@/components/reviews-page';
 import { getVisibleReviewsPage } from '@/lib/reviews';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,13 +9,19 @@ export const metadata: Metadata = {
   title: 'Reviews',
   description:
     'Read what listeners around the world are saying about The Compendium Podcast, and leave your own review.',
-  alternates: { canonical: '/reviews' },
-  openGraph: {
+  ...buildCanonicalAndSocialMetadata({
     title: 'Listener Reviews | The Compendium Podcast',
     description:
       'Read what listeners around the world are saying about The Compendium Podcast, and leave your own review.',
-    url: '/reviews',
-  },
+    twitterTitle: 'Listener Reviews | The Compendium Podcast',
+    twitterDescription:
+      'Read what listeners around the world are saying about The Compendium Podcast, and leave your own review.',
+    canonicalCandidate: '/reviews',
+    fallbackPath: '/reviews',
+    openGraphType: 'website',
+    imageUrl: '/The Compendium Main.jpg',
+    imageAlt: 'The Compendium Podcast listener reviews'
+  })
 };
 
 type SearchParams = {

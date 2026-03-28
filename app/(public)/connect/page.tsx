@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ConnectForm } from '@/components/forms/connect-form';
 import { TrackedExternalCtaLink } from '@/components/tracked-external-cta-link';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/thecompendiumpodcast/';
 const PATREON_URL = 'https://www.patreon.com/cw/TheCompendiumPodcast';
@@ -19,12 +20,17 @@ const SOCIALS = [
 export const metadata: Metadata = {
   title: 'Connect | The Compendium Podcast',
   description: 'Get in touch with The Compendium Podcast, find our socials, and access press information.',
-  alternates: { canonical: '/connect' },
-  openGraph: {
+  ...buildCanonicalAndSocialMetadata({
     title: 'Connect | The Compendium Podcast',
     description: 'Contact us, follow us, and get press info for The Compendium Podcast.',
-    url: '/connect'
-  }
+    twitterTitle: 'Connect | The Compendium Podcast',
+    twitterDescription: 'Contact us, follow us, and get press info for The Compendium Podcast.',
+    canonicalCandidate: '/connect',
+    fallbackPath: '/connect',
+    openGraphType: 'website',
+    imageUrl: '/The Compendium Main.jpg',
+    imageAlt: 'Connect with The Compendium Podcast'
+  })
 };
 
 export default function ConnectPage() {

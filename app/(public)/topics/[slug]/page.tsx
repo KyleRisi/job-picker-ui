@@ -64,7 +64,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     };
   }
 
-  const title = `${hub.term.seoTitle || hub.term.name} | Topics | The Compendium Podcast`;
+  const title = `${hub.term.seoTitle || hub.term.name} | Topics`;
   const description = hub.term.metaDescription || hub.term.description || `Explore episodes in ${hub.term.name}.`;
   const socialMetadata = buildCanonicalAndSocialMetadata({
     title,

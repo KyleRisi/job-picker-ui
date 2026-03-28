@@ -21,6 +21,7 @@
     "build": "next build",
     "start": "next start -p 3000",
     "test:seo:episode-title": "node scripts/assert-episode-metadata-title-no-suffix.mjs",
+    "test:seo:metadata-helper": "node --experimental-strip-types scripts/assert-seo-metadata-helper-phase1-contract.mjs",
     "lint": "next lint",
     "taxonomy:validate": "set -a && source .env.local && set +a && node scripts/validate-taxonomy-route-policies.mjs",
     "taxonomy:sync": "set -a && source .env.local && set +a && node scripts/sync-taxonomy-route-policy.mjs",

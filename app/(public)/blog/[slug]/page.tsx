@@ -18,6 +18,7 @@ import type { PodcastEpisode } from '@/lib/podcast-shared';
 import { getPublicSiteUrl } from '@/lib/site-url';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
 import { TrackedPatreonCtaLink } from '@/components/tracked-patreon-cta-link';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 
 export const revalidate = 300;
 
@@ -87,33 +88,29 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     : post.featured_image
       ? getStoragePublicUrl(post.featured_image.storage_path)
       : '/The Compendium Main.jpg';
+  const socialTitle = post.social_title || post.seo_title || post.title;
+  const socialDescription = post.social_description || description;
+  const socialMetadata = buildCanonicalAndSocialMetadata({
+    title: socialTitle,
+    description: socialDescription,
+    twitterTitle: post.social_title || post.title,
+    twitterDescription: socialDescription,
+    canonicalCandidate: canonicalValue,
+    fallbackPath: `/blog/${post.slug}`,
+    openGraphType: 'article',
+    imageUrl,
+    imageAlt: post.title,
+    allowOffDomainCanonical: true
+  });
+
   return {
     title: post.title,
     description,
-    alternates: { canonical: canonicalValue },
     robots: {
       index: !post.noindex,
       follow: !post.nofollow
     },
-    openGraph: {
-      title: post.social_title || post.seo_title || post.title,
-      description: post.social_description || description,
-      url: canonicalValue,
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: post.title
-        }
-      ]
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: post.social_title || post.title,
-      description: post.social_description || description,
-      images: [imageUrl]
-    }
+    ...socialMetadata
   };
 }
 

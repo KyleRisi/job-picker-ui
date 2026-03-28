@@ -6,13 +6,13 @@ import path from 'node:path';
 const filePath = path.resolve(process.cwd(), 'app/(public)/episodes/[slug]/page.tsx');
 const source = fs.readFileSync(filePath, 'utf8');
 
-const metadataReturnMatch = source.match(/return\s*{[\s\S]*?twitter:\s*{[\s\S]*?}\s*};/);
-if (!metadataReturnMatch) {
-  console.error('FAIL: Could not find generateMetadata return block in episode page.');
+const generateMetadataMatch = source.match(/export\s+async\s+function\s+generateMetadata[\s\S]*?^}/m);
+if (!generateMetadataMatch) {
+  console.error('FAIL: Could not find generateMetadata function in episode page.');
   process.exit(1);
 }
 
-const metadataBlock = metadataReturnMatch[0];
+const metadataBlock = generateMetadataMatch[0];
 const titleAbsoluteMatch = metadataBlock.match(/title:\s*{\s*absolute:\s*([^}\n]+)\s*}/);
 if (!titleAbsoluteMatch) {
   console.error('FAIL: Episode metadata title is not using `title.absolute`.');

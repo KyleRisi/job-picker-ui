@@ -22,6 +22,7 @@ import { getPublicSiteUrl } from '@/lib/site-url';
 import { PATREON_INTERNAL_PATH } from '@/lib/patreon-links';
 import { isTaxonomyPublicDisplayable } from '@/lib/taxonomy-route-policy';
 import { resolveEpisodeSummary } from '@/lib/seo-page-copy';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 
 export const revalidate = 900;
 
@@ -52,39 +53,33 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     };
   }
 
+  const pageTitle = episode.seoTitle || episode.title;
+  const description = episode.metaDescription || undefined;
+  const socialTitle = episode.editorial?.socialTitle || pageTitle;
+  const socialDescription = episode.editorial?.socialDescription || description;
+  const socialImageUrl = episode.editorial?.socialImageUrl || episode.heroImageUrl || null;
+  const socialMetadata = buildCanonicalAndSocialMetadata({
+    title: socialTitle,
+    description: socialDescription,
+    twitterTitle: socialTitle,
+    twitterDescription: socialDescription,
+    canonicalCandidate: episode.canonicalUrl,
+    fallbackPath: `/episodes/${episode.slug}`,
+    openGraphType: 'article',
+    imageUrl: socialImageUrl,
+    imageAlt: `Artwork for ${episode.title}`
+  });
+
   return {
     title: {
-      absolute: episode.seoTitle || episode.title
+      absolute: pageTitle
     },
-    description: episode.metaDescription || undefined,
-    alternates: {
-      canonical: episode.canonicalUrl
-    },
+    description,
     robots: {
       index: !episode.noindex,
       follow: !episode.nofollow
     },
-    openGraph: {
-      title: episode.editorial?.socialTitle || episode.seoTitle,
-      description: episode.editorial?.socialDescription || episode.metaDescription || undefined,
-      url: episode.canonicalUrl,
-      images: episode.heroImageUrl
-        ? [
-            {
-              url: episode.editorial?.socialImageUrl || episode.heroImageUrl,
-              width: 1200,
-              height: 1200,
-              alt: `Artwork for ${episode.title}`
-            }
-          ]
-        : undefined
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: episode.editorial?.socialTitle || episode.seoTitle,
-      description: episode.editorial?.socialDescription || episode.metaDescription || undefined,
-      images: episode.editorial?.socialImageUrl ? [episode.editorial.socialImageUrl] : episode.heroImageUrl ? [episode.heroImageUrl] : undefined
-    }
+    ...socialMetadata
   };
 }
 

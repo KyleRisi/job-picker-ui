@@ -6,6 +6,7 @@ import { breadcrumbsToJsonLd } from '@/lib/breadcrumbs';
 import { buildHubBreadcrumbs, getDiscoveryHubPage } from '@/lib/episodes';
 import { compactJsonLd, getPageEntityIds, resolveCanonicalForSchema } from '@/lib/schema-jsonld';
 import { getPublicSiteUrl } from '@/lib/site-url';
+import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 import { getTopicHubConfig } from '@/lib/topic-hub/topic-hub-config';
 import {
   buildTopicEditorialGroups,
@@ -25,44 +26,30 @@ type SearchParams = {
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const topicHubConfig = getTopicHubConfig(params.slug);
-  const siteUrl = getPublicSiteUrl();
-  const canonical = resolveCanonicalForSchema({
-    candidateCanonical: null,
-    fallbackPath: `/topics/${params.slug}`,
-    siteUrl
-  });
+  const fallbackPath = `/topics/${params.slug}`;
 
   if (topicHubConfig?.seoOverride) {
     const socialTitle = topicHubConfig.seoOverride.socialTitle || topicHubConfig.seoOverride.titleAbsolute;
     const socialDescription = topicHubConfig.seoOverride.socialDescription || topicHubConfig.seoOverride.description;
     const socialImageUrl = topicHubConfig.seoOverride.socialImageUrl || '/The Compendium Main.jpg';
+    const socialMetadata = buildCanonicalAndSocialMetadata({
+      title: socialTitle,
+      description: socialDescription,
+      twitterTitle: socialTitle,
+      twitterDescription: socialDescription,
+      canonicalCandidate: fallbackPath,
+      fallbackPath,
+      openGraphType: 'website',
+      imageUrl: socialImageUrl,
+      imageAlt: socialTitle
+    });
 
     return {
       title: {
         absolute: topicHubConfig.seoOverride.titleAbsolute
       },
       description: topicHubConfig.seoOverride.description,
-      alternates: {
-        canonical: canonical.metadataCanonical
-      },
-      openGraph: {
-        title: socialTitle,
-        description: socialDescription,
-        url: canonical.absoluteCanonicalUrl,
-        type: 'website',
-        images: [
-          {
-            url: socialImageUrl,
-            alt: socialTitle
-          }
-        ]
-      },
-      twitter: {
-        card: 'summary_large_image',
-        title: socialTitle,
-        description: socialDescription,
-        images: [socialImageUrl]
-      }
+      ...socialMetadata
     };
   }
 
@@ -77,12 +64,23 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     };
   }
 
+  const title = `${hub.term.seoTitle || hub.term.name} | Topics | The Compendium Podcast`;
+  const description = hub.term.metaDescription || hub.term.description || `Explore episodes in ${hub.term.name}.`;
+  const socialMetadata = buildCanonicalAndSocialMetadata({
+    title,
+    description,
+    twitterTitle: title,
+    twitterDescription: description,
+    canonicalCandidate: fallbackPath,
+    fallbackPath,
+    openGraphType: 'website',
+    imageAlt: title
+  });
+
   return {
-    title: `${hub.term.seoTitle || hub.term.name} | Topics | The Compendium Podcast`,
-    description: hub.term.metaDescription || hub.term.description || `Explore episodes in ${hub.term.name}.`,
-    alternates: {
-      canonical: canonical.metadataCanonical
-    }
+    title,
+    description,
+    ...socialMetadata
   };
 }
 

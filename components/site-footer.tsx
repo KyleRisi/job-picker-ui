@@ -18,8 +18,6 @@ const PRIVACY_URL = '/connect';
 const TERMS_URL = '/connect';
 const COOKIE_POLICY_URL = '/connect';
 
-const BRAND_DESCRIPTOR = "Fascinating stories, strange lives, and the things people can't stop talking about.";
-
 function footerLinkClassName() {
   return 'text-[0.93rem] font-medium text-white/76 transition hover:text-carnival-gold focus-visible:text-carnival-gold';
 }
@@ -79,8 +77,8 @@ export function SiteFooter({ showTopBorder = true }: { showTopBorder?: boolean }
       <div className="relative mx-auto max-w-6xl px-4">
         <h2 id="site-footer-heading" className="sr-only">Site footer</h2>
 
-        <div className="grid gap-10 border-b border-white/14 pb-9 lg:grid-cols-[1.25fr_2fr] lg:gap-12">
-          <section aria-labelledby="footer-brand-title" className="max-w-md">
+        <div className="grid gap-10 border-b border-white/14 pb-9 lg:grid-cols-[1fr_2.2fr] lg:gap-8">
+          <section aria-labelledby="footer-brand-title" className="max-w-sm">
             <Link href="/" className="inline-flex" aria-label="The Compendium Podcast home">
               <Image
                 src="/thecompendiumlogowhite.svg"
@@ -92,7 +90,9 @@ export function SiteFooter({ showTopBorder = true }: { showTopBorder?: boolean }
               />
             </Link>
             <p id="footer-brand-title" className="mt-4 text-sm leading-relaxed text-white/83">
-              {BRAND_DESCRIPTOR}
+              Fascinating stories, strange lives, and
+              <br />
+              things people can&apos;t stop talking about.
             </p>
 
             <div className="relative mt-6 inline-flex flex-col items-start">
@@ -127,7 +127,7 @@ export function SiteFooter({ showTopBorder = true }: { showTopBorder?: boolean }
                   ref={chooserRef}
                   role="dialog"
                   aria-label="Choose listening platform"
-                  className="absolute left-0 top-[calc(100%+0.7rem)] z-20 w-[270px] rounded-xl border border-white/20 bg-[#1a2232] p-3 shadow-[0_16px_38px_rgba(0,0,0,0.45)]"
+                  className="absolute bottom-[calc(100%+0.7rem)] left-0 z-20 w-[270px] rounded-xl border border-white/20 bg-[#1a2232] p-3 shadow-[0_16px_38px_rgba(0,0,0,0.45)]"
                 >
                   <p className="mb-2 text-sm font-semibold text-white/90">Choose your preferred app</p>
                   <div className="space-y-2">
@@ -159,35 +159,42 @@ export function SiteFooter({ showTopBorder = true }: { showTopBorder?: boolean }
             </div>
           </section>
 
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
             <nav aria-labelledby="footer-explore-heading">
               <p id="footer-explore-heading" className={footerHeadingClassName()}>Explore</p>
               <ul className="mt-3 space-y-2.5">
                 <li><Link href="/episodes" className={footerLinkClassName()}>Episodes</Link></li>
                 <li><Link href="/topics" className={footerLinkClassName()}>Topics</Link></li>
-                <li><Link href="/reviews" className={footerLinkClassName()}>Reviews</Link></li>
-                <li><Link href="/jobs" className={footerLinkClassName()}>Jobs</Link></li>
-                <li><Link href="/meet-the-team" className={footerLinkClassName()}>Meet the Team</Link></li>
-                <li><Link href="/connect/press-kit" className={footerLinkClassName()}>Press Kit</Link></li>
-              </ul>
-            </nav>
-
-            <nav aria-labelledby="footer-topics-heading">
-              <p id="footer-topics-heading" className={footerHeadingClassName()}>Topics</p>
-              <ul className="mt-3 space-y-2.5">
                 <li><Link href="/topics/true-crime" className={footerLinkClassName()}>True Crime</Link></li>
                 <li><Link href="/topics/history" className={footerLinkClassName()}>History</Link></li>
                 <li><Link href="/topics/incredible-people" className={footerLinkClassName()}>Incredible People</Link></li>
               </ul>
             </nav>
 
-            <nav aria-labelledby="footer-connect-heading">
-              <p id="footer-connect-heading" className={footerHeadingClassName()}>Connect</p>
+            <nav aria-labelledby="footer-community-heading">
+              <p id="footer-community-heading" className={footerHeadingClassName()}>Community</p>
               <ul className="mt-3 space-y-2.5">
-                <li><Link href={PATREON_URL} className={footerLinkClassName()}>Patreon</Link></li>
                 <li><Link href={SUGGESTIONS_URL} className={footerLinkClassName()}>Suggestions</Link></li>
+                <li><Link href="/jobs" className={footerLinkClassName()}>Jobs</Link></li>
+                <li><Link href="/reviews" className={footerLinkClassName()}>Reviews</Link></li>
+                <li><Link href="/merch" className={footerLinkClassName()}>Merch</Link></li>
+              </ul>
+            </nav>
+
+            <nav aria-labelledby="footer-about-heading">
+              <p id="footer-about-heading" className={footerHeadingClassName()}>About</p>
+              <ul className="mt-3 space-y-2.5">
+                <li><Link href="/meet-the-team" className={footerLinkClassName()}>Meet the Team</Link></li>
+                <li><Link href="/connect/press-kit" className={footerLinkClassName()}>Press Kit</Link></li>
                 <li><Link href={CONTACT_URL} className={footerLinkClassName()}>Contact</Link></li>
                 <li><a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className={footerLinkClassName()}>Instagram</a></li>
+              </ul>
+            </nav>
+
+            <nav aria-labelledby="footer-support-heading">
+              <p id="footer-support-heading" className={footerHeadingClassName()}>Support</p>
+              <ul className="mt-3 space-y-2.5">
+                <li><Link href={PATREON_URL} className={footerLinkClassName()}>Patreon</Link></li>
               </ul>
             </nav>
 

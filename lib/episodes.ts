@@ -213,6 +213,60 @@ type MediaAssetSummaryRow = {
 
 type SupabaseAdminClient = Awaited<ReturnType<typeof getSupabaseAdmin>>;
 
+const PODCAST_EPISODE_LIST_SELECT = [
+  'id',
+  'rss_guid',
+  'title',
+  'slug',
+  'description_plain',
+  'description_html',
+  'published_at',
+  'audio_url',
+  'artwork_url',
+  'show_notes',
+  'is_visible',
+  'is_archived',
+  'last_synced_at',
+  'created_at',
+  'updated_at',
+  'episode_number',
+  'season_number',
+  'duration_seconds',
+  'source_url',
+  'missing_from_feed_at'
+].join(',');
+const PODCAST_EPISODE_DETAIL_SELECT = [PODCAST_EPISODE_LIST_SELECT, 'transcript'].join(',');
+const PODCAST_EPISODE_EDITORIAL_LIST_SELECT = [
+  'id',
+  'episode_id',
+  'author_id',
+  'web_title',
+  'web_slug',
+  'excerpt',
+  'hero_image_url',
+  'hero_image_storage_path',
+  'seo_title',
+  'meta_description',
+  'canonical_url_override',
+  'social_title',
+  'social_description',
+  'social_image_url',
+  'noindex',
+  'nofollow',
+  'is_featured',
+  'is_visible',
+  'is_archived',
+  'created_at',
+  'updated_at'
+].join(',');
+const PODCAST_EPISODE_EDITORIAL_DETAIL_SELECT = [
+  PODCAST_EPISODE_EDITORIAL_LIST_SELECT,
+  'body_json',
+  'body_markdown',
+  'editorial_notes',
+  'focus_keyword'
+].join(',');
+
 function isMissingRelationError(error: unknown) {
   return Boolean(error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === 'PGRST205');
 }
@@ -844,17 +898,22 @@ async function loadRelatedPostsForEpisodes(
   return map;
 }
 
-async function loadEditorialRows(supabase: SupabaseAdminClient, episodeIds: string[]) {
+async function loadEditorialRows(
+  supabase: SupabaseAdminClient,
+  episodeIds: string[],
+  options?: { includeBody?: boolean }
+) {
   if (!episodeIds.length) return new Map<string, PodcastEpisodeEditorialRow>();
+  const includeBody = Boolean(options?.includeBody);
   const { data, error } = await supabase
     .from('podcast_episode_editorial')
-    .select('*')
+    .select(includeBody ? PODCAST_EPISODE_EDITORIAL_DETAIL_SELECT : PODCAST_EPISODE_EDITORIAL_LIST_SELECT)
     .in('episode_id', episodeIds);
   if (error) {
     if (isMissingRelationError(error)) return new Map();
     throw error;
   }
-  return new Map(((data || []) as PodcastEpisodeEditorialRow[]).map((row) => [row.episode_id, row]));
+  return new Map(((data || []) as unknown as PodcastEpisodeEditorialRow[]).map((row) => [row.episode_id, row]));
 }
 
 function episodeBaseFromResolved(episode: ResolvedPodcastEpisode): PodcastEpisode {
@@ -882,13 +941,14 @@ async function resolveEpisodesFromRows(
   options?: {
     includeHidden?: boolean;
     descriptionMaxLength?: number | null;
+    includeBody?: boolean;
   }
 ): Promise<ResolvedPodcastEpisode[]> {
   if (!rows.length) return [];
   const supabase = await getSupabaseAdmin();
   const episodeIds = rows.map((row) => row.id);
   const [editorialMap, discoveryTermsMap, relationshipsMap, relatedPostsMap] = await Promise.all([
-    loadEditorialRows(supabase, episodeIds),
+    loadEditorialRows(supabase, episodeIds, { includeBody: options?.includeBody }),
     loadDiscoveryTermsForEpisodes(supabase, episodeIds),
     loadRelatedEpisodesForSources(supabase, episodeIds),
     loadRelatedPostsForEpisodes(supabase, episodeIds)
@@ -901,11 +961,11 @@ async function resolveEpisodesFromRows(
   if (targetEpisodeIds.length) {
     const { data: targetRows, error: targetRowsError } = await supabase
       .from('podcast_episodes')
-      .select('*')
+      .select(PODCAST_EPISODE_LIST_SELECT)
       .in('id', targetEpisodeIds);
     if (targetRowsError) throw targetRowsError;
     const targetEditorialMap = await loadEditorialRows(supabase, targetEpisodeIds);
-    ((targetRows || []) as PodcastEpisodeRow[]).forEach((row) => {
+    ((targetRows || []) as unknown as PodcastEpisodeRow[]).forEach((row) => {
       const editorial = targetEditorialMap.get(row.id);
       const source = mapSource(row);
       targetEpisodesMap.set(row.id, {
@@ -997,9 +1057,14 @@ async function queryEpisodeRows(params?: {
   ids?: string[];
   q?: string;
   limit?: number;
+  includeBody?: boolean;
 }): Promise<PodcastEpisodeRow[]> {
   const supabase = await getSupabaseAdmin();
-  let query = supabase.from('podcast_episodes').select('*').order('published_at', { ascending: false });
+  const includeBody = Boolean(params?.includeBody);
+  let query = supabase
+    .from('podcast_episodes')
+    .select(includeBody ? PODCAST_EPISODE_DETAIL_SELECT : PODCAST_EPISODE_LIST_SELECT)
+    .order('published_at', { ascending: false });
   if (params?.ids?.length) query = query.in('id', params.ids);
   if (params?.q?.trim()) {
     const q = params.q.trim().replace(/[%_"]/g, '');
@@ -1008,7 +1073,7 @@ async function queryEpisodeRows(params?: {
   if (params?.limit && params.limit > 0) query = query.limit(params.limit);
   const { data, error } = await query;
   if (error) throw error;
-  return (data || []) as PodcastEpisodeRow[];
+  return (data || []) as unknown as PodcastEpisodeRow[];
 }
 
 async function queryAuthorEpisodeListRows(ids: string[]): Promise<AuthorEpisodeListRow[]> {
@@ -1099,21 +1164,29 @@ export async function getResolvedEpisodes(options?: {
   descriptionMaxLength?: number | null;
   q?: string;
   ids?: string[];
+  includeBody?: boolean;
 }): Promise<ResolvedPodcastEpisode[]> {
   const rows = await queryEpisodeRows({
     ids: options?.ids,
     q: options?.q,
-    limit: options?.limit ?? undefined
+    limit: options?.limit ?? undefined,
+    includeBody: options?.includeBody
   });
   return resolveEpisodesFromRows(rows, {
     includeHidden: options?.includeHidden,
-    descriptionMaxLength: options?.descriptionMaxLength
+    descriptionMaxLength: options?.descriptionMaxLength,
+    includeBody: options?.includeBody
   });
 }
 
-export async function getResolvedEpisodeById(id: string, options?: { includeHidden?: boolean }) {
-  const rows = await queryEpisodeRows({ ids: [id], limit: 1 });
-  const items = await resolveEpisodesFromRows(rows, { includeHidden: options?.includeHidden, descriptionMaxLength: null });
+export async function getResolvedEpisodeById(id: string, options?: { includeHidden?: boolean; includeBody?: boolean }) {
+  const includeBody = options?.includeBody ?? true;
+  const rows = await queryEpisodeRows({ ids: [id], limit: 1, includeBody });
+  const items = await resolveEpisodesFromRows(rows, {
+    includeHidden: options?.includeHidden,
+    descriptionMaxLength: null,
+    includeBody
+  });
   return items[0] || null;
 }
 
@@ -1146,7 +1219,7 @@ export async function resolveEpisodeSlugRedirect(slug: string): Promise<EpisodeS
   };
 }
 
-export async function getResolvedEpisodeBySlug(slug: string, options?: { includeHidden?: boolean }) {
+export async function getResolvedEpisodeBySlug(slug: string, options?: { includeHidden?: boolean; includeBody?: boolean }) {
   const normalizedSlug = slugifyEpisodeText(slug);
   if (!normalizedSlug) return null;
   const supabase = await getSupabaseAdmin();

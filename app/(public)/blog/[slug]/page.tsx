@@ -50,6 +50,14 @@ async function loadPost(slug: string, includeDraft: boolean) {
   };
 }
 
+async function loadPostForMetadata(slug: string, includeDraft: boolean) {
+  return getBlogPostBySlug(slug, {
+    includeDraft,
+    includeHeavyFields: false,
+    includeRelatedPosts: false
+  });
+}
+
 function resolveBlogCanonicalValue(postSlug: string, canonicalUrl: string | null): string {
   const fallbackPath = `/blog/${postSlug}`;
   const raw = `${canonicalUrl || ''}`.trim();
@@ -73,14 +81,13 @@ function resolveBlogCanonicalValue(postSlug: string, canonicalUrl: string | null
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const includeDraft = draftMode().isEnabled;
-  const loaded = await loadPost(params.slug, includeDraft);
-  if (!loaded) {
+  const post = await loadPostForMetadata(params.slug, includeDraft);
+  if (!post) {
     return {
       title: 'Post not found',
       robots: { index: false, follow: false }
     };
   }
-  const { post } = loaded;
   const description = post.seo_description || post.excerpt || post.excerpt_auto || 'Read the latest article from The Compendium.';
   const canonicalValue = resolveBlogCanonicalValue(post.slug, post.canonical_url);
   const imageUrl = post.og_image

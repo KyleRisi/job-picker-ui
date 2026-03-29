@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { badRequest, getErrorMessage, ok } from '@/lib/server';
 import { listPublishedBlogPostsFeed } from '@/lib/blog/data';
 
+export const revalidate = 300;
+
 function parseStrictInteger(raw: string | null): number | null {
   if (raw == null) return null;
   const value = raw.trim();

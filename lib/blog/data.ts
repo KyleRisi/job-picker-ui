@@ -175,6 +175,52 @@ type DiscoveryTermRow = {
 
 const PATREON_URL = 'https://www.patreon.com/cw/TheCompendiumPodcast';
 const SEARCH_PAGE_SIZE = 12;
+const BLOG_POST_PUBLIC_LIST_SELECT = [
+  'id',
+  'title',
+  'slug',
+  'excerpt',
+  'excerpt_auto',
+  'featured_image_id',
+  'author_id',
+  'published_at',
+  'reading_time_minutes',
+  'is_featured',
+  'created_at'
+].join(',');
+
+const BLOG_POST_PUBLIC_METADATA_SELECT = [
+  BLOG_POST_PUBLIC_LIST_SELECT,
+  'status',
+  'excerpt_plain',
+  'scheduled_at',
+  'archived_at',
+  'primary_category_id',
+  'canonical_url',
+  'noindex',
+  'nofollow',
+  'seo_title',
+  'seo_description',
+  'social_title',
+  'social_description',
+  'og_image_id',
+  'focus_keyword',
+  'seo_score',
+  'schema_type',
+  'deleted_at',
+  'updated_at'
+].join(',');
+
+const BLOG_POST_PUBLIC_DETAIL_BASE_SELECT = BLOG_POST_PUBLIC_METADATA_SELECT;
+const BLOG_POST_PUBLIC_DETAIL_SELECT = [
+  BLOG_POST_PUBLIC_DETAIL_BASE_SELECT,
+  'content_json',
+  'content_markdown',
+  'toc_json',
+  'heading_outline',
+  'seo_warnings',
+  'search_plaintext'
+].join(',');
 
 const TAXONOMY_CONFIG: Record<TaxonomyKind, { table: string; joinTable: string; idColumn: string }> = {
   categories: { table: 'categories', joinTable: 'blog_post_categories', idColumn: 'category_id' },
@@ -1574,7 +1620,7 @@ export async function listBlogPostsAdmin(params?: {
 
   const { data, error } = await request;
   if (error) throw error;
-  const items = await hydratePosts((data || []) as BlogPostRecord[]);
+  const items = await hydratePosts((data || []) as unknown as BlogPostRecord[]);
   return {
     items,
     pagination
@@ -1591,7 +1637,7 @@ export async function getBlogPostAdminById(id: string) {
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const [post] = await hydratePosts([data as BlogPostRecord]);
+  const [post] = await hydratePosts([data as unknown as BlogPostRecord]);
   const { data: revisions, error: revisionsError } = await supabase
     .from('blog_post_revisions')
     .select('*')
@@ -1982,7 +2028,7 @@ export async function listPublishedBlogPosts(params?: { page?: number; limit?: n
 
   const { data, error } = await supabase
     .from('blog_posts')
-    .select('*')
+    .select(BLOG_POST_PUBLIC_LIST_SELECT)
     .is('deleted_at', null)
     .eq('status', 'published')
     .lte('published_at', new Date().toISOString())
@@ -1991,7 +2037,7 @@ export async function listPublishedBlogPosts(params?: { page?: number; limit?: n
     .range(range.from, range.to);
   if (error) throw error;
 
-  const items = await hydratePosts((data || []) as BlogPostRecord[]);
+  const items = await hydratePosts((data || []) as unknown as BlogPostRecord[]);
   return {
     items,
     pagination
@@ -2029,7 +2075,7 @@ export async function listFeaturedBlogPosts(params?: { limit?: number }) {
   const limit = Math.max(1, Math.min(12, params?.limit || 6));
   const { data, error } = await supabase
     .from('blog_posts')
-    .select('*')
+    .select(BLOG_POST_PUBLIC_LIST_SELECT)
     .is('deleted_at', null)
     .eq('status', 'published')
     .eq('is_featured', true)
@@ -2037,7 +2083,7 @@ export async function listFeaturedBlogPosts(params?: { limit?: number }) {
     .order('published_at', { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return hydratePosts((data || []) as BlogPostRecord[]);
+  return hydratePosts((data || []) as unknown as BlogPostRecord[]);
 }
 
 export async function listPublishedBlogPostsFeed(params?: {
@@ -2108,7 +2154,7 @@ export async function listPublishedBlogPostsFeed(params?: {
 
   let query = supabase
     .from('blog_posts')
-    .select('*')
+    .select(BLOG_POST_PUBLIC_LIST_SELECT)
     .is('deleted_at', null)
     .eq('status', 'published')
     .lte('published_at', nowIso)
@@ -2121,7 +2167,7 @@ export async function listPublishedBlogPostsFeed(params?: {
   const { data, error } = await query;
   if (error) throw error;
 
-  const items = await hydratePosts((data || []) as BlogPostRecord[]);
+  const items = await hydratePosts((data || []) as unknown as BlogPostRecord[]);
   const nextOffset = Math.min(total, offset + items.length);
 
   return {
@@ -2132,17 +2178,27 @@ export async function listPublishedBlogPostsFeed(params?: {
   };
 }
 
-export async function getBlogPostBySlug(slug: string, options?: { includeDraft?: boolean }) {
+export async function getBlogPostBySlug(slug: string, options?: {
+  includeDraft?: boolean;
+  includeHeavyFields?: boolean;
+  includeRelatedPosts?: boolean;
+}) {
   const supabase = getSupabase();
-  let query = supabase.from('blog_posts').select('*').eq('slug', slug).is('deleted_at', null);
+  const includeHeavyFields = options?.includeHeavyFields ?? true;
+  const includeRelatedPosts = options?.includeRelatedPosts ?? true;
+  let query = supabase
+    .from('blog_posts')
+    .select(includeHeavyFields ? BLOG_POST_PUBLIC_DETAIL_SELECT : BLOG_POST_PUBLIC_METADATA_SELECT)
+    .eq('slug', slug)
+    .is('deleted_at', null);
   if (!options?.includeDraft) {
     query = query.eq('status', 'published').lte('published_at', new Date().toISOString());
   }
   const { data, error } = await query.maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const [post] = await hydratePosts([data as BlogPostRecord]);
-  const related = await getRelatedPostsForPost(post.id);
+  const [post] = await hydratePosts([data as unknown as BlogPostRecord]);
+  const related = includeRelatedPosts ? await getRelatedPostsForPost(post.id) : [];
   return {
     ...post,
     related_posts: related
@@ -2186,12 +2242,12 @@ async function getRelatedPostsForPost(postId: string) {
   if (overrideIds.length) {
     const { data: posts, error } = await supabase
       .from('blog_posts')
-      .select('*')
+      .select(BLOG_POST_PUBLIC_LIST_SELECT)
       .in('id', overrideIds)
       .eq('status', 'published')
       .is('deleted_at', null);
     if (error) throw error;
-    return hydratePosts((posts || []) as BlogPostRecord[]);
+    return hydratePosts((posts || []) as unknown as BlogPostRecord[]);
   }
 
   const current = await getBlogPostAdminById(postId);
@@ -2213,14 +2269,14 @@ async function getRelatedPostsForPost(postId: string) {
 
   const { data: posts, error } = await supabase
     .from('blog_posts')
-    .select('*')
+    .select(BLOG_POST_PUBLIC_LIST_SELECT)
     .in('id', [...candidateIds])
     .eq('status', 'published')
     .is('deleted_at', null)
     .order('published_at', { ascending: false })
     .limit(3);
   if (error) throw error;
-  return hydratePosts((posts || []) as BlogPostRecord[]);
+  return hydratePosts((posts || []) as unknown as BlogPostRecord[]);
 }
 
 export async function listTaxonomyArchive(kind: TaxonomyKind, slug: string, page = 1) {
@@ -2272,7 +2328,7 @@ export async function listTaxonomyArchive(kind: TaxonomyKind, slug: string, page
 
   const { data, error } = await supabase
     .from('blog_posts')
-    .select('*')
+    .select(BLOG_POST_PUBLIC_LIST_SELECT)
     .in('id', postIds)
     .eq('status', 'published')
     .is('deleted_at', null)
@@ -2281,7 +2337,7 @@ export async function listTaxonomyArchive(kind: TaxonomyKind, slug: string, page
   if (error) throw error;
   return {
     term,
-    items: await hydratePosts((data || []) as BlogPostRecord[]),
+    items: await hydratePosts((data || []) as unknown as BlogPostRecord[]),
     pagination
   };
 }
@@ -2337,7 +2393,7 @@ export async function listAuthorArchive(slug: string, page = 1) {
 
   const { data, error } = await supabase
     .from('blog_posts')
-    .select('*')
+    .select(BLOG_POST_PUBLIC_LIST_SELECT)
     .eq('author_id', author.id)
     .eq('status', 'published')
     .is('deleted_at', null)
@@ -2346,7 +2402,7 @@ export async function listAuthorArchive(slug: string, page = 1) {
   if (error) throw error;
   return {
     author,
-    items: await hydratePosts((data || []) as BlogPostRecord[]),
+    items: await hydratePosts((data || []) as unknown as BlogPostRecord[]),
     pagination
   };
 }
@@ -2366,9 +2422,12 @@ export async function searchBlogPosts(query: string, page = 1) {
   if (!ids.length) {
     return { items: [], pagination: { page: normalizedPage, pageSize: limit, total: 0, totalPages: 1 } };
   }
-  const { data: posts, error: postsError } = await supabase.from('blog_posts').select('*').in('id', ids);
+  const { data: posts, error: postsError } = await supabase
+    .from('blog_posts')
+    .select(BLOG_POST_PUBLIC_LIST_SELECT)
+    .in('id', ids);
   if (postsError) throw postsError;
-  const hydrated = await hydratePosts((posts || []) as BlogPostRecord[]);
+  const hydrated = await hydratePosts((posts || []) as unknown as BlogPostRecord[]);
   const byId = new Map(hydrated.map((item) => [item.id, item]));
   const items = rows.map((row: { id: string; rank: number; similarity: number }) => ({
     ...byId.get(row.id),

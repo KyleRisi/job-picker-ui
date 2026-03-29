@@ -41,7 +41,7 @@ function getApplePodcastsEpisodeUrl(title: string): string {
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const episode = await getResolvedEpisodeBySlug(params.slug, { includeHidden: false });
+  const episode = await getResolvedEpisodeBySlug(params.slug, { includeHidden: false, includeBody: false });
 
   if (!episode) {
     return {
@@ -84,7 +84,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 export default async function EpisodeDetailPage({ params }: { params: Params }) {
-  let episode = await getResolvedEpisodeBySlug(params.slug, { includeHidden: false });
+  let episode = await getResolvedEpisodeBySlug(params.slug, { includeHidden: false, includeBody: true });
 
   if (!episode) {
     const redirectMatch = await resolveEpisodeSlugRedirect(params.slug);

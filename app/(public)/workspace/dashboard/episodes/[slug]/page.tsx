@@ -109,7 +109,7 @@ function htmlToEditorSeedMarkdown(value: string) {
 export default async function EpisodeEditorPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const [episode, episodeRows, postRows, discoveryTerms, authorRows] = await Promise.all([
-    getResolvedEpisodeBySlug(slug, { includeHidden: true }),
+    getResolvedEpisodeBySlug(slug, { includeHidden: true, includeBody: true }),
     listPodcastEpisodes({ includeHidden: true }),
     listBlogPostsAdmin({ pageSize: 100, includeDeleted: false, sort: 'updated' }),
     listActiveDiscoveryTerms(),

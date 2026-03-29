@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { badRequest, getErrorMessage, ok } from '@/lib/server';
 import { normalizePageNumber, searchBlogPosts } from '@/lib/blog/data';
 
+export const revalidate = 60;
+
 export async function GET(req: NextRequest) {
   try {
     const q = req.nextUrl.searchParams.get('q') || '';

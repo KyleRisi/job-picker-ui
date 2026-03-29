@@ -9,7 +9,11 @@ export const size = {
 export const contentType = 'image/png';
 
 export default async function OgImage({ params }: { params: { slug: string } }) {
-  const post = await getBlogPostBySlug(params.slug, { includeDraft: false });
+  const post = await getBlogPostBySlug(params.slug, {
+    includeDraft: false,
+    includeHeavyFields: false,
+    includeRelatedPosts: false
+  });
   const title = post?.title || 'The Compendium Blog';
 
   return new ImageResponse(

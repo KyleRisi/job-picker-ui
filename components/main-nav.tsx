@@ -11,10 +11,11 @@ const SPOTIFY_URL = 'https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ';
 const APPLE_PODCASTS_URL = 'https://podcasts.apple.com/gb/podcast/the-compendium-an-assembly-of-fascinating-things/id1676817109';
 
 const NAV_ITEMS = [
-  { href: '/topics', label: 'Topics', prefetch: true },
   { href: '/episodes', label: 'Episodes', prefetch: false },
+  { href: '/topics', label: 'Topics', prefetch: true },
   { href: '/reviews', label: 'Reviews', prefetch: false },
   { href: '/connect', label: 'Connect', prefetch: true },
+  { href: '/merch', label: 'Merch', prefetch: true },
   { href: '/patreon', label: 'Patreon', prefetch: true }
 ] as const;
 
@@ -172,7 +173,7 @@ export function MainNav() {
                   }}
                   className="inline-flex items-center rounded-md bg-carnival-red px-4 py-2 text-sm font-black uppercase tracking-wide text-white transition hover:brightness-110"
                 >
-                  Listen Now
+                  Follow
                 </button>
                 {listenChooserOpen ? (
                   <div
@@ -331,7 +332,7 @@ export function MainNav() {
                   });
                 }}
               >
-                Listen Now
+                Follow
               </button>
             </div>
 

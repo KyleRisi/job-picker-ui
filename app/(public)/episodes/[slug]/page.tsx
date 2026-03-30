@@ -48,7 +48,12 @@ function getApplePodcastsEpisodeUrl(title: string): string {
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const episode = await getResolvedEpisodeBySlug(params.slug, { includeHidden: false, includeBody: false });
+  let episode: Awaited<ReturnType<typeof getResolvedEpisodeBySlug>> = null;
+  try {
+    episode = await getResolvedEpisodeBySlug(params.slug, { includeHidden: false, includeBody: false });
+  } catch (error) {
+    console.error(`[episodes] metadata resolver failed for slug "${params.slug}":`, error);
+  }
 
   if (!episode) {
     return {
@@ -91,10 +96,20 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 export default async function EpisodeDetailPage({ params }: { params: Params }) {
-  let episode = await getResolvedEpisodeBySlug(params.slug, { includeHidden: false, includeBody: true });
+  let episode: Awaited<ReturnType<typeof getResolvedEpisodeBySlug>> = null;
+  try {
+    episode = await getResolvedEpisodeBySlug(params.slug, { includeHidden: false, includeBody: true });
+  } catch (error) {
+    console.error(`[episodes] page resolver failed for slug "${params.slug}":`, error);
+  }
 
   if (!episode) {
-    const redirectMatch = await resolveEpisodeSlugRedirect(params.slug);
+    let redirectMatch = null;
+    try {
+      redirectMatch = await resolveEpisodeSlugRedirect(params.slug);
+    } catch (error) {
+      console.error(`[episodes] redirect resolver failed for slug "${params.slug}":`, error);
+    }
     if (redirectMatch) {
       permanentRedirect(redirectMatch.targetPath);
     }

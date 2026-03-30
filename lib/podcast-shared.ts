@@ -170,6 +170,7 @@ export function formatEpisodeDate(isoDate: string): string {
   if (Number.isNaN(parsed.getTime())) return 'Unknown date';
 
   return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'UTC',
     day: 'numeric',
     month: 'long',
     year: 'numeric'

@@ -1320,8 +1320,13 @@ export async function getResolvedEpisodeBySlug(slug: string, options?: { include
 
 const getCachedPublishedEpisodeSlugs = unstable_cache(
   async (): Promise<string[]> => {
-    const episodes = await getResolvedEpisodes({ includeHidden: false, descriptionMaxLength: 120 });
-    return [...new Set(episodes.map((episode) => `${episode.slug || ''}`.trim()).filter(Boolean))];
+    try {
+      const episodes = await getResolvedEpisodes({ includeHidden: false, descriptionMaxLength: 120 });
+      return [...new Set(episodes.map((episode) => `${episode.slug || ''}`.trim()).filter(Boolean))];
+    } catch (error) {
+      console.error('[episodes] failed to list published slugs for static generation:', error);
+      return [];
+    }
   },
   ['published-episode-slugs-v1'],
   {

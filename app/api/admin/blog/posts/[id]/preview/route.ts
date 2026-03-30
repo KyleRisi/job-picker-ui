@@ -18,7 +18,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       return badRequest('Post not found.', 404);
     }
     draftMode().enable();
-    return NextResponse.redirect(new URL(`/blog/${post.slug}?preview=1`, getPublicSiteUrl()));
+    return NextResponse.redirect(new URL(`/preview/blog/${post.slug}`, getPublicSiteUrl()));
   } catch {
     return NextResponse.redirect(new URL('/workspace/dashboard/blogs?error=preview-failed', getPublicSiteUrl()));
   }

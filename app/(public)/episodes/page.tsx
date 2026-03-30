@@ -8,15 +8,6 @@ import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 import { getPublicSiteUrl } from '@/lib/site-url';
 import { compactJsonLd, getPageEntityIds, resolveCanonicalForSchema, toAbsoluteSchemaUrl } from '@/lib/schema-jsonld';
 
-type EpisodesPageProps = {
-  searchParams?: {
-    view?: string | string[];
-    page?: string | string[];
-    topic?: string | string[];
-  };
-};
-
-type ViewMode = 'grid' | 'compact';
 const EPISODES_PAGE_SIZE = 12;
 const ARCHIVED_PATREON_EPISODE_BASELINE = 19;
 
@@ -48,20 +39,6 @@ export const metadata: Metadata = {
 function normalizeSingleValue(value: string | string[] | undefined): string {
   if (Array.isArray(value)) return `${value[0] || ''}`.trim().toLowerCase();
   return `${value || ''}`.trim().toLowerCase();
-}
-
-function normalizeViewMode(value: string | string[] | undefined): ViewMode | undefined {
-  const normalized = normalizeSingleValue(value);
-  if (normalized === 'grid' || normalized === 'compact') return normalized;
-  return undefined;
-}
-
-function normalizePageNumber(value: string | string[] | undefined): number {
-  const normalized = normalizeSingleValue(value);
-  if (!normalized) return 1;
-  const parsed = Number.parseInt(normalized, 10);
-  if (!Number.isFinite(parsed) || parsed < 1) return 1;
-  return parsed;
 }
 
 function normalizeTopicFilter(value: string | string[] | undefined): string | null {
@@ -97,32 +74,15 @@ function buildTopicToggleOptions(
   return [{ label: 'All episodes', value: null }, ...fallbackOptions];
 }
 
-function toPreservedSearchParams({
-  view,
-  topic
-}: {
-  view?: ViewMode;
-  topic: string | null;
-}): URLSearchParams | undefined {
-  const nextParams = new URLSearchParams();
-  if (view) nextParams.set('view', view);
-  if (topic) nextParams.set('topic', topic);
-  return nextParams.size ? nextParams : undefined;
+function sortByPublishedAtDesc(episodes: PodcastEpisode[]): PodcastEpisode[] {
+  return [...episodes].sort((a, b) => {
+    const left = Date.parse(a.publishedAt || '') || 0;
+    const right = Date.parse(b.publishedAt || '') || 0;
+    return right - left;
+  });
 }
 
-function validateTopicFilter(
-  requestedTopic: string | null,
-  topicToggleOptions: Array<{ label: string; value: string | null }>
-): string | null {
-  if (!requestedTopic) return null;
-  if (topicToggleOptions.some((option) => option.value === requestedTopic)) return requestedTopic;
-  return null;
-}
-
-export default async function EpisodesPage({ searchParams }: EpisodesPageProps) {
-  const initialViewMode = normalizeViewMode(searchParams?.view);
-  const requestedTopicFilter = normalizeTopicFilter(searchParams?.topic);
-  const requestedPage = normalizePageNumber(searchParams?.page);
+export default async function EpisodesPage() {
   const siteUrl = getPublicSiteUrl();
   const canonical = resolveCanonicalForSchema({
     candidateCanonical: '/episodes',
@@ -157,28 +117,8 @@ export default async function EpisodesPage({ searchParams }: EpisodesPageProps) 
   }
 
   const topicToggleOptions = buildTopicToggleOptions(episodes);
-  const topicFilter = validateTopicFilter(requestedTopicFilter, topicToggleOptions);
-  const preservedSearchParams = toPreservedSearchParams({
-    view: initialViewMode,
-    topic: topicFilter
-  });
-  const hasTopicCoverage = episodes.some((episode) => Boolean(episode.primaryTopicSlug));
-  const filteredByTopicEpisodes = topicFilter && hasTopicCoverage
-    ? episodes.filter((episode) => episode.primaryTopicSlug === topicFilter)
-    : episodes;
-  const sortedEpisodes = [...filteredByTopicEpisodes].sort((a, b) => {
-    const left = Date.parse(a.publishedAt || '') || 0;
-    const right = Date.parse(b.publishedAt || '') || 0;
-    return right - left;
-  });
-  const sortedSearchEpisodes = [...episodes].sort((a, b) => {
-    const left = Date.parse(a.publishedAt || '') || 0;
-    const right = Date.parse(b.publishedAt || '') || 0;
-    return right - left;
-  });
-
+  const sortedEpisodes = sortByPublishedAtDesc(episodes);
   const totalPages = Math.max(1, Math.ceil(sortedEpisodes.length / EPISODES_PAGE_SIZE));
-  const page = Math.min(requestedPage, totalPages);
   const displayedEpisodeCount = episodes.length + ARCHIVED_PATREON_EPISODE_BASELINE;
   const hasUnexpectedMissingPrimaryContent = !hasFeedError && episodes.length === 0;
 
@@ -221,17 +161,14 @@ export default async function EpisodesPage({ searchParams }: EpisodesPageProps) 
 
             <EpisodesBrowser
               episodes={sortedEpisodes}
-              searchEpisodes={sortedSearchEpisodes}
-              initialViewMode={initialViewMode}
+              searchEpisodes={sortedEpisodes}
               showSortToggle={false}
               mobileSortLeft
-              topicFilter={topicFilter}
               topicToggleOptions={topicToggleOptions}
               sectionId="catalogue"
               showFeaturedEpisode={false}
-              pagination={{ page, totalPages, pageSize: EPISODES_PAGE_SIZE }}
+              pagination={{ page: 1, totalPages, pageSize: EPISODES_PAGE_SIZE }}
               basePath="/episodes"
-              preservedSearchParams={preservedSearchParams}
             />
           </div>
         </section>

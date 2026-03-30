@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { type PodcastEpisode, formatEpisodeDate } from '@/lib/podcast-shared';
 import { usePodcastPlayback } from '@/components/podcast-playback-provider';
 import { LiveSearchInput } from '@/components/live-search-input';
@@ -58,8 +58,7 @@ function CardAudioPlayer({
   episode: EpisodeListItem;
 }) {
   const playButtonRef = useRef<HTMLButtonElement | null>(null);
-  const pathname = usePathname();
-  const sourcePageType = resolveSourcePageType(pathname);
+  const sourcePageType = resolveSourcePageType(typeof window === 'undefined' ? null : window.location.pathname);
   const { activeEpisode, isPlaying, duration, currentTime, playEpisode, togglePlayPause, seekTo, skipBy } = usePodcastPlayback();
   const isActive = activeEpisode?.slug === episode.slug;
   const playing = isActive && isPlaying;
@@ -173,9 +172,8 @@ export function EpisodeCard({
   detailCtaLabel?: string;
   minimalCard?: boolean;
 }) {
-  const pathname = usePathname();
-  const sourcePageType = resolveSourcePageType(pathname);
-  const sourcePagePath = typeof window === 'undefined' ? (pathname || '/') : `${window.location.pathname}${window.location.search || ''}`;
+  const sourcePageType = resolveSourcePageType(typeof window === 'undefined' ? null : window.location.pathname);
+  const sourcePagePath = currentPathWithSearch();
   const excerpt = toExcerpt(episode.description, featured ? 480 : 220);
   const resolvedDetailHref = detailHref || `/episodes/${episode.slug}`;
   const spotifyEpisodeUrl = getSpotifyEpisodeUrl(episode.title);
@@ -411,6 +409,37 @@ function isViewMode(value: string): value is ViewMode {
   return value === 'grid' || value === 'compact';
 }
 
+function normalizePageQueryParam(value: string | null): number {
+  const normalized = `${value || ''}`.trim().toLowerCase();
+  if (!normalized) return 1;
+  const parsed = Number.parseInt(normalized, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return 1;
+  return parsed;
+}
+
+function normalizeTopicQueryParam(value: string | null): string | null {
+  const normalized = `${value || ''}`.trim().toLowerCase();
+  if (!normalized) return null;
+  if (!/^[a-z0-9-]+$/.test(normalized)) return null;
+  return normalized;
+}
+
+function parseEpisodesQueryState(
+  search: string,
+  topicToggleOptions: Array<{ label: string; value: string | null }>
+): { viewMode: ViewMode | null; topicFilter: string | null; page: number } {
+  const params = new URLSearchParams(search);
+  const viewValue = `${params.get('view') || ''}`.trim().toLowerCase();
+  const viewMode = isViewMode(viewValue) ? viewValue : null;
+  const topicValue = normalizeTopicQueryParam(params.get('topic'));
+  const topicFilter = topicValue && topicToggleOptions.some((option) => option.value === topicValue)
+    ? topicValue
+    : null;
+  const page = normalizePageQueryParam(params.get('page'));
+
+  return { viewMode, topicFilter, page };
+}
+
 function byPublishedDate(order: SortOrder) {
   return (a: PodcastEpisode, b: PodcastEpisode) => {
     const aTime = new Date(a.publishedAt).getTime() || 0;
@@ -429,8 +458,7 @@ export function CompactEpisodeRow({
   detailHref?: string;
 }) {
   const artworkButtonRef = useRef<HTMLButtonElement | null>(null);
-  const pathname = usePathname();
-  const sourcePageType = resolveSourcePageType(pathname);
+  const sourcePageType = resolveSourcePageType(typeof window === 'undefined' ? null : window.location.pathname);
   const router = useRouter();
   const { activeEpisode, isPlaying, playEpisode, togglePlayPause } = usePodcastPlayback();
   const isActive = activeEpisode?.slug === episode.slug;
@@ -646,6 +674,15 @@ export function EpisodesBrowser({
   const [topicDropdownOpen, setTopicDropdownOpen] = useState(false);
   const topicDropdownRef = useRef<HTMLDivElement | null>(null);
   const lastTrackedSearchRef = useRef('');
+  const supportsUrlQueryState = basePath === '/episodes' && Boolean(pagination);
+  const [urlQueryState, setUrlQueryState] = useState<{ viewMode: ViewMode | null; topicFilter: string | null; page: number }>({
+    viewMode: null,
+    topicFilter: null,
+    page: pagination?.page || 1
+  });
+  const effectiveTopicFilter = supportsUrlQueryState
+    ? urlQueryState.topicFilter
+    : (topicFilter || null);
 
   const handleSortOrderChange = (nextOrder: SortOrder) => {
     if (nextOrder === sortOrder) return;
@@ -706,10 +743,54 @@ export function EpisodesBrowser({
     }
   }, [viewMode, viewModeReady]);
 
+  useEffect(() => {
+    if (!supportsUrlQueryState || typeof window === 'undefined') return;
+
+    const urlChangeEventName = 'compendium:url-query-change';
+    const syncFromWindowLocation = () => {
+      setUrlQueryState(parseEpisodesQueryState(window.location.search, topicToggleOptions));
+    };
+    const originalPushState = window.history.pushState.bind(window.history);
+    const originalReplaceState = window.history.replaceState.bind(window.history);
+
+    window.history.pushState = ((...args: Parameters<History['pushState']>) => {
+      originalPushState(...args);
+      window.dispatchEvent(new Event(urlChangeEventName));
+    }) as History['pushState'];
+    window.history.replaceState = ((...args: Parameters<History['replaceState']>) => {
+      originalReplaceState(...args);
+      window.dispatchEvent(new Event(urlChangeEventName));
+    }) as History['replaceState'];
+
+    syncFromWindowLocation();
+    window.addEventListener('popstate', syncFromWindowLocation);
+    window.addEventListener('hashchange', syncFromWindowLocation);
+    window.addEventListener(urlChangeEventName, syncFromWindowLocation);
+
+    return () => {
+      window.history.pushState = originalPushState;
+      window.history.replaceState = originalReplaceState;
+      window.removeEventListener('popstate', syncFromWindowLocation);
+      window.removeEventListener('hashchange', syncFromWindowLocation);
+      window.removeEventListener(urlChangeEventName, syncFromWindowLocation);
+    };
+  }, [supportsUrlQueryState, topicToggleOptions]);
+
+  useEffect(() => {
+    if (!supportsUrlQueryState || !viewModeReady) return;
+    const queryViewMode = urlQueryState.viewMode;
+    if (!queryViewMode) return;
+    setViewMode((current) => (current === queryViewMode ? current : queryViewMode));
+  }, [supportsUrlQueryState, urlQueryState.viewMode, viewModeReady]);
+
   const normalizedQuery = query.trim().toLowerCase();
   const searchCorpus = searchEpisodes && searchEpisodes.length ? searchEpisodes : episodes;
+  const hasTopicCoverage = episodes.some((episode) => Boolean(episode.primaryTopicSlug));
+  const topicFilteredEpisodes = effectiveTopicFilter && hasTopicCoverage
+    ? episodes.filter((episode) => episode.primaryTopicSlug === effectiveTopicFilter)
+    : episodes;
   const filteredEpisodes = useMemo(() => {
-    const source = normalizedQuery ? searchCorpus : episodes;
+    const source = normalizedQuery ? searchCorpus : topicFilteredEpisodes;
     const sortedEpisodes = [...source].sort(byPublishedDate(sortOrder));
     if (!normalizedQuery) return sortedEpisodes;
     return sortedEpisodes.filter((episode) => {
@@ -717,7 +798,7 @@ export function EpisodesBrowser({
       const inEpisodeNumber = episode.episodeNumber !== null && `${episode.episodeNumber}`.includes(normalizedQuery);
       return inTitle || inEpisodeNumber;
     });
-  }, [episodes, normalizedQuery, searchCorpus, sortOrder]);
+  }, [normalizedQuery, searchCorpus, sortOrder, topicFilteredEpisodes]);
 
   useEffect(() => {
     if (!normalizedQuery) {
@@ -799,24 +880,44 @@ export function EpisodesBrowser({
     ? filteredEpisodes.filter((episode) => episode.slug !== featuredEpisode.slug)
     : filteredEpisodes;
   const isSearching = !!normalizedQuery;
+  const effectivePageSize = pagination?.pageSize;
+  const derivedTotalPages = pagination
+    ? Math.max(
+      1,
+      effectivePageSize && effectivePageSize > 0
+        ? Math.ceil(allStandardEpisodes.length / effectivePageSize)
+        : pagination.totalPages
+    )
+    : 1;
+  const requestedPage = pagination
+    ? (supportsUrlQueryState ? urlQueryState.page : pagination.page)
+    : 1;
+  const currentPage = pagination ? Math.min(requestedPage, derivedTotalPages) : 1;
+  const effectivePreservedSearchParams = useMemo(() => {
+    if (!supportsUrlQueryState) return preservedSearchParams;
+    const params = new URLSearchParams();
+    if (urlQueryState.viewMode) params.set('view', urlQueryState.viewMode);
+    if (effectiveTopicFilter) params.set('topic', effectiveTopicFilter);
+    return params.size ? params : undefined;
+  }, [effectiveTopicFilter, preservedSearchParams, supportsUrlQueryState, urlQueryState.viewMode]);
   const pagedStandardEpisodes = useMemo(() => {
-    if (!pagination?.pageSize) return allStandardEpisodes;
-    const start = Math.max(0, (pagination.page - 1) * pagination.pageSize);
-    return allStandardEpisodes.slice(start, start + pagination.pageSize);
-  }, [allStandardEpisodes, pagination?.page, pagination?.pageSize]);
+    if (!pagination || !effectivePageSize) return allStandardEpisodes;
+    const start = Math.max(0, (currentPage - 1) * effectivePageSize);
+    return allStandardEpisodes.slice(start, start + effectivePageSize);
+  }, [allStandardEpisodes, currentPage, effectivePageSize, pagination]);
   const standardEpisodes = isSearching
     ? allStandardEpisodes
     : pagination
       ? pagedStandardEpisodes
       : allStandardEpisodes.slice(0, visibleCount);
   const listHash = sectionId ? `#${sectionId}` : undefined;
-  const nextPageHref = pagination && pagination.page < pagination.totalPages
-    ? pageHref(basePath, pagination.page + 1, preservedSearchParams, listHash)
+  const nextPageHref = pagination && currentPage < derivedTotalPages
+    ? pageHref(basePath, currentPage + 1, effectivePreservedSearchParams, listHash)
     : null;
   const hasMore = !isSearching && (pagination ? Boolean(nextPageHref) : visibleCount < allStandardEpisodes.length);
-  const hrefForPage = (page: number) => pageHref(basePath, page, preservedSearchParams, listHash);
+  const hrefForPage = (page: number) => pageHref(basePath, page, effectivePreservedSearchParams, listHash);
   const hrefForTopic = (topic: string | null) => {
-    const params = new URLSearchParams(preservedSearchParams?.toString() || '');
+    const params = new URLSearchParams(effectivePreservedSearchParams?.toString() || '');
     params.delete('page');
     if (topic) params.set('topic', topic);
     else params.delete('topic');
@@ -824,7 +925,7 @@ export function EpisodesBrowser({
     return `${basePath}${query ? `?${query}` : ''}`;
   };
   const activeTopicOption =
-    topicToggleOptions.find((option) => option.value === topicFilter) ||
+    topicToggleOptions.find((option) => option.value === effectiveTopicFilter) ||
     topicToggleOptions.find((option) => option.value === null) ||
     topicToggleOptions[0] ||
     null;
@@ -834,7 +935,7 @@ export function EpisodesBrowser({
     const href = hrefForTopic(nextTopicValue);
     router.replace(href, { scroll: false });
   };
-  const currentListHref = pagination ? hrefForPage(pagination.page) : pageHref(basePath, 1, preservedSearchParams, listHash);
+  const currentListHref = pagination ? hrefForPage(currentPage) : pageHref(basePath, 1, effectivePreservedSearchParams, listHash);
   const episodeDetailHref = (episodeSlug: string) => {
     if (!currentListHref || currentListHref === '/episodes') return `/episodes/${episodeSlug}`;
     const params = new URLSearchParams();
@@ -889,7 +990,7 @@ export function EpisodesBrowser({
           <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-carnival-ink/15 bg-white shadow-[0_14px_30px_rgba(0,0,0,0.12)]">
             <ul role="listbox" aria-label="Episode topic filters" className="max-h-72 overflow-y-auto p-1">
               {topicToggleOptions.map((option) => {
-                const isActive = option.value === null ? !topicFilter : topicFilter === option.value;
+                const isActive = option.value === null ? !effectiveTopicFilter : effectiveTopicFilter === option.value;
                 return (
                   <li key={option.value || 'all'} role="option" aria-selected={isActive}>
                     <button
@@ -1031,10 +1132,10 @@ export function EpisodesBrowser({
 
             {middleSlot}
 
-            {!isSearching && pagination && pagination.totalPages > 1 ? (
+            {!isSearching && pagination && derivedTotalPages > 1 ? (
               <CompactPagination
-                page={pagination.page}
-                totalPages={pagination.totalPages}
+                page={currentPage}
+                totalPages={derivedTotalPages}
                 hrefForPage={hrefForPage}
                 ariaLabel="Episodes pagination"
                 className="pt-4"

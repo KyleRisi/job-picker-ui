@@ -636,34 +636,43 @@ export function WorkspaceEpisodesTable({
       ...episode,
       rowType: 'live_episode'
     }));
+    const liveEpisodeIds = new Set(liveRows.map((episode) => episode.id));
 
-    const draftMappedRows: WorkspaceEpisodeTableRow[] = draftRows.map((draft) => ({
-      id: draft.id,
-      slug: '',
-      title: draft.title,
-      seasonNumber: null,
-      episodeNumber: null,
-      publishedAt: draft.expectedPublishDate || draft.updatedAt,
-      description: '',
-      descriptionHtml: '',
-      audioUrl: '',
-      artworkUrl: draft.artworkUrl || null,
-      duration: null,
-      sourceUrl: null,
-      primaryTopicName: draft.primaryTopicName || null,
-      seoTitle: draft.seoTitle || null,
-      metaDescription: draft.metaDescription || null,
-      seoScore: draft.seoScore ?? null,
-      hasTranscript: draft.hasTranscript === true,
-      rowType: 'prepublish_draft',
-      draftId: draft.id,
-      draftStatus: draft.status,
-      normalizedTitle: draft.normalizedTitle,
-      reviewReason: draft.reviewReason,
-      matchedEpisodeId: draft.matchedEpisodeId,
-      expectedPublishDate: draft.expectedPublishDate,
-      allowTitleCollision: draft.allowTitleCollision
-    }));
+    const draftMappedRows: WorkspaceEpisodeTableRow[] = draftRows
+      .filter((draft) => {
+        // Once a draft is attached and its live episode exists in this table load,
+        // keep a single canonical row (the live episode row) to avoid duplication.
+        if (draft.status !== 'attached') return true;
+        if (!draft.matchedEpisodeId) return true;
+        return !liveEpisodeIds.has(draft.matchedEpisodeId);
+      })
+      .map((draft) => ({
+        id: draft.id,
+        slug: '',
+        title: draft.title,
+        seasonNumber: null,
+        episodeNumber: null,
+        publishedAt: draft.expectedPublishDate || draft.updatedAt,
+        description: '',
+        descriptionHtml: '',
+        audioUrl: '',
+        artworkUrl: draft.artworkUrl || null,
+        duration: null,
+        sourceUrl: null,
+        primaryTopicName: draft.primaryTopicName || null,
+        seoTitle: draft.seoTitle || null,
+        metaDescription: draft.metaDescription || null,
+        seoScore: draft.seoScore ?? null,
+        hasTranscript: draft.hasTranscript === true,
+        rowType: 'prepublish_draft',
+        draftId: draft.id,
+        draftStatus: draft.status,
+        normalizedTitle: draft.normalizedTitle,
+        reviewReason: draft.reviewReason,
+        matchedEpisodeId: draft.matchedEpisodeId,
+        expectedPublishDate: draft.expectedPublishDate,
+        allowTitleCollision: draft.allowTitleCollision
+      }));
 
     return [...liveRows, ...draftMappedRows];
   }, [episodes, draftRows]);

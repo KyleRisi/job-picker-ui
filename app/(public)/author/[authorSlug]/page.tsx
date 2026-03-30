@@ -3,26 +3,22 @@ import { unstable_cache } from 'next/cache';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { cache } from 'react';
+import { cache, Suspense } from 'react';
 import { BlogPostCard } from '@/components/blog/blog-post-card';
 import { CompactPagination } from '@/components/compact-pagination';
 import { CompactEpisodeRow, EpisodeCard } from '@/components/episodes-browser';
 import { JoinPatreonCta } from '@/components/join-patreon-cta';
 import { listAuthorArchive } from '@/lib/blog/data';
-import { getAuthorEpisodeList, type AuthorEpisodeListItem } from '@/lib/episodes';
+import { getAuthorEpisodeList } from '@/lib/episodes';
 import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 import { createSupabaseAdminClient } from '@/lib/supabase';
+import { AuthorHubClient } from './author-hub-client';
 
 export const revalidate = 300;
+export const dynamicParams = true;
 
 type Params = {
   authorSlug: string;
-};
-
-type SearchParams = {
-  tab?: string | string[];
-  page?: string | string[];
-  view?: string | string[];
 };
 
 const EPISODES_PAGE_SIZE = 12;
@@ -31,10 +27,6 @@ const AUTHOR_PAGE_REVALIDATE_SECONDS = 300;
 function isMissingRelationError(error: unknown) {
   const code = `${(error as { code?: string })?.code || ''}`;
   return code === 'PGRST205' || code === '42P01';
-}
-
-function toTimingMs(value: number) {
-  return Number(value.toFixed(1));
 }
 
 function resolveAuthorHeroImage(slug: string, name: string, fallbackImageUrl: string | null) {
@@ -93,28 +85,6 @@ const getAuthorEpisodeIdsCached = unstable_cache(
   { revalidate: AUTHOR_PAGE_REVALIDATE_SECONDS }
 );
 
-const getAuthorEpisodeCountCached = unstable_cache(
-  async (authorId: string) => {
-    const supabase = createSupabaseAdminClient();
-    try {
-      const { count, error } = await supabase
-        .from('podcast_episode_editorial')
-        .select('episode_id', { count: 'exact', head: true })
-        .eq('author_id', authorId)
-        .eq('is_visible', true)
-        .eq('is_archived', false);
-
-      if (error) throw error;
-      return count || 0;
-    } catch (error) {
-      if (isMissingRelationError(error)) return 0;
-      throw error;
-    }
-  },
-  ['author-episode-count-v1'],
-  { revalidate: AUTHOR_PAGE_REVALIDATE_SECONDS }
-);
-
 const getAuthorEpisodeListForAuthorCached = unstable_cache(
   async (episodeIdsKey: string) => {
     if (!episodeIdsKey) return [];
@@ -137,6 +107,25 @@ const loadAuthorArchive = cache(async (authorSlug: string) => {
   if (!fallback || fallback === normalized) return null;
   return getAuthorArchivePageOneCached(fallback);
 });
+
+export async function generateStaticParams() {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase.from('blog_authors').select('slug').eq('is_active', true);
+  if (error) {
+    console.error('[author-page] generateStaticParams failed', error);
+    return [];
+  }
+
+  const slugs = Array.from(
+    new Set(
+      (data || [])
+        .map((row: { slug: string | null }) => `${row.slug || ''}`.trim().toLowerCase())
+        .filter(Boolean)
+    )
+  );
+
+  return slugs.map((authorSlug) => ({ authorSlug }));
+}
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const archive = await loadAuthorArchive(params.authorSlug);
@@ -169,94 +158,36 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   };
 }
 
-export default async function AuthorHubPage({
-  params,
-  searchParams
-}: {
-  params: Params;
-  searchParams: SearchParams;
-}) {
-  const routeStart = performance.now();
-  const timing = {
-    authorArchiveMs: 0,
-    authorEpisodeCountMs: 0,
-    authorEpisodeIdsMs: 0,
-    authorEpisodeListMs: 0,
-    renderAssemblyMs: 0,
-    totalRouteMs: 0
-  };
-
-  const archiveStart = performance.now();
+export default async function AuthorHubPage({ params }: { params: Params }) {
   const archive = await loadAuthorArchive(params.authorSlug);
-  timing.authorArchiveMs = toTimingMs(performance.now() - archiveStart);
   if (!archive) notFound();
 
-  const tabValue = Array.isArray(searchParams.tab) ? searchParams.tab[0] : searchParams.tab;
-  const activeTab = tabValue === 'blogs' ? 'blogs' : 'episodes';
-  let episodes: AuthorEpisodeListItem[] = [];
-  let episodesCount = 0;
+  const episodeIds = await getAuthorEpisodeIdsCached(archive.author.id);
+  const episodes = episodeIds.length ? await getAuthorEpisodeListForAuthorCached(episodeIds.join(',')) : [];
+  const episodesCount = episodes.length;
 
-  if (activeTab === 'blogs') {
-    // Keep badge counts without paying the full episode resolution cost on blog-only views.
-    const episodeCountStart = performance.now();
-    episodesCount = await getAuthorEpisodeCountCached(archive.author.id);
-    timing.authorEpisodeCountMs = toTimingMs(performance.now() - episodeCountStart);
-  } else {
-    const episodeIdsStart = performance.now();
-    const episodeIds = await getAuthorEpisodeIdsCached(archive.author.id);
-    timing.authorEpisodeIdsMs = toTimingMs(performance.now() - episodeIdsStart);
-    const episodeListStart = performance.now();
-    episodes = episodeIds.length ? await getAuthorEpisodeListForAuthorCached(episodeIds.join(',')) : [];
-    timing.authorEpisodeListMs = toTimingMs(performance.now() - episodeListStart);
-    episodesCount = episodes.length;
-  }
-
-  const renderAssemblyStart = performance.now();
   const blogs = archive.items;
   const blogsCount = archive.pagination.total;
   const totalCount = episodesCount + blogsCount;
-  const viewValue = Array.isArray(searchParams.view) ? searchParams.view[0] : searchParams.view;
-  const activeEpisodeView = viewValue === 'grid' ? 'grid' : 'compact';
-  const pageValueRaw = Array.isArray(searchParams.page) ? searchParams.page[0] : searchParams.page;
-  const pageValue = Number.parseInt(`${pageValueRaw || '1'}`, 10);
-  const requestedPage = Number.isFinite(pageValue) && pageValue > 0 ? pageValue : 1;
-  const episodeTotalPages = Math.max(1, Math.ceil(episodesCount / EPISODES_PAGE_SIZE));
-  const currentEpisodePage = Math.min(requestedPage, episodeTotalPages);
-  const episodePageStart = (currentEpisodePage - 1) * EPISODES_PAGE_SIZE;
-  const pagedEpisodes = episodes.slice(episodePageStart, episodePageStart + EPISODES_PAGE_SIZE);
   const heroImageUrl = resolveAuthorHeroImage(archive.author.slug, archive.author.name, archive.author.image_url || null);
   const instagramUrl = resolveInstagramUrl(archive.author.slug, archive.author.name);
-  const episodePageHref = (page: number) => {
-    const params = new URLSearchParams();
-    params.set('tab', 'episodes');
-    if (page > 1) params.set('page', `${page}`);
-    if (activeEpisodeView === 'grid') params.set('view', 'grid');
-    const query = params.toString();
-    return `/author/${archive.author.slug}${query ? `?${query}` : ''}`;
+  const episodeTotalPages = Math.max(1, Math.ceil(episodesCount / EPISODES_PAGE_SIZE));
+  const episodePages = Array.from({ length: episodeTotalPages }, (_, index) => index + 1);
+
+  const buildEpisodesHref = ({ page, view }: { page: number; view: 'grid' | 'compact' }) => {
+    const query = new URLSearchParams();
+    query.set('tab', 'episodes');
+    if (page > 1) query.set('page', `${page}`);
+    if (view === 'grid') query.set('view', 'grid');
+    return `/author/${archive.author.slug}?${query.toString()}`;
   };
-  const episodeViewHref = (view: 'grid' | 'compact') => {
-    const params = new URLSearchParams();
-    params.set('tab', 'episodes');
-    if (currentEpisodePage > 1) params.set('page', `${currentEpisodePage}`);
-    if (view === 'grid') params.set('view', 'grid');
-    const query = params.toString();
-    return `/author/${archive.author.slug}${query ? `?${query}` : ''}`;
-  };
-  timing.renderAssemblyMs = toTimingMs(performance.now() - renderAssemblyStart);
-  timing.totalRouteMs = toTimingMs(performance.now() - routeStart);
-  console.info(
-    '[perf][author-page]',
-    JSON.stringify({
-      slug: archive.author.slug,
-      tab: activeTab,
-      episodesCount,
-      blogsCount,
-      ...timing
-    })
-  );
 
   return (
-    <section className="-mb-8 space-y-0">
+    <section className="-mb-8 space-y-0" data-author-hub-root="true">
+      <Suspense fallback={null}>
+        <AuthorHubClient totalEpisodePages={episodeTotalPages} />
+      </Suspense>
+
       <section className="full-bleed relative -mt-8 overflow-hidden bg-carnival-ink text-white">
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <div className="absolute -left-24 top-1/3 h-80 w-80 rounded-full bg-carnival-red/25 blur-[120px]" />
@@ -312,22 +243,18 @@ export default async function AuthorHubPage({
 
               <div className="flex flex-wrap gap-2 pt-1">
                 <Link
-                  href={episodeViewHref(activeEpisodeView)}
-                  className={`inline-flex h-10 items-center justify-center rounded-full border px-6 text-base font-black tracking-tight transition ${
-                    activeTab === 'episodes'
-                      ? 'border-carnival-red bg-carnival-red text-white'
-                      : 'border-white/25 bg-transparent text-white/85 hover:bg-white/10'
-                  }`}
+                  href={buildEpisodesHref({ page: 1, view: 'compact' })}
+                  data-author-tab-link="true"
+                  data-author-tab-value="episodes"
+                  className="inline-flex h-10 items-center justify-center rounded-full border border-carnival-red bg-carnival-red px-6 text-base font-black tracking-tight text-white transition"
                 >
                   Episodes
                 </Link>
                 <Link
                   href={`/author/${archive.author.slug}?tab=blogs`}
-                  className={`inline-flex h-10 items-center justify-center rounded-full border px-6 text-base font-black tracking-tight transition ${
-                    activeTab === 'blogs'
-                      ? 'border-carnival-red bg-carnival-red text-white'
-                      : 'border-white/25 bg-transparent text-white/85 hover:bg-white/10'
-                  }`}
+                  data-author-tab-link="true"
+                  data-author-tab-value="blogs"
+                  className="inline-flex h-10 items-center justify-center rounded-full border border-white/25 bg-transparent px-6 text-base font-black tracking-tight text-white/85 transition hover:bg-white/10"
                 >
                   Blogs
                 </Link>
@@ -337,75 +264,99 @@ export default async function AuthorHubPage({
         </div>
       </section>
 
-      <section className="pt-8">
-        {activeTab === 'blogs' ? (
-          blogs.length ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {blogs.map((post) => (
-                <BlogPostCard key={post.id} post={post} compact />
-              ))}
-            </div>
-          ) : (
-            <p className="rounded-xl border border-carnival-ink/15 bg-white p-5 text-carnival-ink/70">No blogs are assigned to this author yet.</p>
-          )
-        ) : pagedEpisodes.length ? (
-          <div className="space-y-3">
-            <div className="flex justify-end">
-              <div className="flex items-center gap-1 rounded-lg border border-carnival-ink/15 bg-white p-1" role="radiogroup" aria-label="View mode">
-                <Link
-                  href={episodeViewHref('grid')}
-                  role="radio"
-                  aria-checked={activeEpisodeView === 'grid'}
-                  aria-label="Grid view"
-                  className={`flex h-7 w-7 items-center justify-center rounded-md transition ${
-                    activeEpisodeView === 'grid' ? 'bg-carnival-ink text-white' : 'text-carnival-ink/50 hover:text-carnival-ink'
-                  }`}
-                >
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
-                  </svg>
-                </Link>
-                <Link
-                  href={episodeViewHref('compact')}
-                  role="radio"
-                  aria-checked={activeEpisodeView === 'compact'}
-                  aria-label="Compact list view"
-                  className={`flex h-7 w-7 items-center justify-center rounded-md transition ${
-                    activeEpisodeView === 'compact' ? 'bg-carnival-ink text-white' : 'text-carnival-ink/50 hover:text-carnival-ink'
-                  }`}
-                >
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
-                  </svg>
-                </Link>
-              </div>
-            </div>
+      <section className="pt-8" data-author-tab-panel="episodes">
+        {episodes.length ? (
+          episodePages.map((pageNumber) => {
+            const pageStart = (pageNumber - 1) * EPISODES_PAGE_SIZE;
+            const pageEpisodes = episodes.slice(pageStart, pageStart + EPISODES_PAGE_SIZE);
 
-            {activeEpisodeView === 'grid' ? (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {pagedEpisodes.map((episode) => (
-                  <EpisodeCard key={episode.id} episode={episode} featured={false} />
-                ))}
+            return (
+              <div key={`episode-page-${pageNumber}`} data-author-episode-page={`${pageNumber}`} hidden={pageNumber !== 1}>
+                <div className="space-y-3">
+                  <div className="flex justify-end">
+                    <div className="flex items-center gap-1 rounded-lg border border-carnival-ink/15 bg-white p-1" role="radiogroup" aria-label="View mode">
+                      <Link
+                        href={buildEpisodesHref({ page: pageNumber, view: 'grid' })}
+                        data-author-view-link="true"
+                        data-author-view-value="grid"
+                        data-author-episode-page={`${pageNumber}`}
+                        role="radio"
+                        aria-checked="false"
+                        aria-label="Grid view"
+                        className="flex h-7 w-7 items-center justify-center rounded-md text-carnival-ink/50 transition hover:text-carnival-ink"
+                      >
+                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+                        </svg>
+                      </Link>
+                      <Link
+                        href={buildEpisodesHref({ page: pageNumber, view: 'compact' })}
+                        data-author-view-link="true"
+                        data-author-view-value="compact"
+                        data-author-episode-page={`${pageNumber}`}
+                        role="radio"
+                        aria-checked={pageNumber === 1 ? 'true' : 'false'}
+                        aria-label="Compact list view"
+                        className="flex h-7 w-7 items-center justify-center rounded-md bg-carnival-ink text-white transition"
+                      >
+                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+                        </svg>
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div data-author-episode-view="grid" data-author-episode-page={`${pageNumber}`} hidden>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      {pageEpisodes.map((episode) => (
+                        <EpisodeCard key={episode.id} episode={episode} featured={false} />
+                      ))}
+                    </div>
+                    {episodeTotalPages > 1 ? (
+                      <CompactPagination
+                        page={pageNumber}
+                        totalPages={episodeTotalPages}
+                        hrefForPage={(nextPage) => buildEpisodesHref({ page: nextPage, view: 'grid' })}
+                        ariaLabel="Episodes pagination"
+                        className="pt-4"
+                      />
+                    ) : null}
+                  </div>
+
+                  <div data-author-episode-view="compact" data-author-episode-page={`${pageNumber}`} hidden={pageNumber !== 1}>
+                    <div className="space-y-3">
+                      {pageEpisodes.map((episode) => (
+                        <CompactEpisodeRow key={episode.id} episode={episode} />
+                      ))}
+                    </div>
+                    {episodeTotalPages > 1 ? (
+                      <CompactPagination
+                        page={pageNumber}
+                        totalPages={episodeTotalPages}
+                        hrefForPage={(nextPage) => buildEpisodesHref({ page: nextPage, view: 'compact' })}
+                        ariaLabel="Episodes pagination"
+                        className="pt-4"
+                      />
+                    ) : null}
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {pagedEpisodes.map((episode) => (
-                  <CompactEpisodeRow key={episode.id} episode={episode} />
-                ))}
-              </div>
-            )}
-            {episodeTotalPages > 1 ? (
-              <CompactPagination
-                page={currentEpisodePage}
-                totalPages={episodeTotalPages}
-                hrefForPage={episodePageHref}
-                ariaLabel="Episodes pagination"
-                className="pt-4"
-              />
-            ) : null}
-          </div>
+            );
+          })
         ) : (
           <p className="rounded-xl border border-carnival-ink/15 bg-white p-5 text-carnival-ink/70">No episodes are assigned to this author yet.</p>
+        )}
+      </section>
+
+      <section className="pt-8" data-author-tab-panel="blogs" hidden>
+        {blogs.length ? (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {blogs.map((post) => (
+              <BlogPostCard key={post.id} post={post} compact />
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-xl border border-carnival-ink/15 bg-white p-5 text-carnival-ink/70">No blogs are assigned to this author yet.</p>
         )}
       </section>
 

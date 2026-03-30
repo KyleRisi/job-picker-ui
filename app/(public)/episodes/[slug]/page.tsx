@@ -15,6 +15,7 @@ import { breadcrumbsToJsonLd } from '@/lib/breadcrumbs';
 import {
   buildEpisodeBreadcrumbs,
   formatEpisodeDate,
+  listPublishedEpisodeSlugs,
   getResolvedEpisodeBySlug,
   resolveEpisodeSlugRedirect
 } from '@/lib/episodes';
@@ -25,10 +26,16 @@ import { resolveEpisodeSummary } from '@/lib/seo-page-copy';
 import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 
 export const revalidate = 900;
+export const dynamicParams = true;
 
 type Params = {
   slug: string;
 };
+
+export async function generateStaticParams() {
+  const slugs = await listPublishedEpisodeSlugs();
+  return slugs.map((slug) => ({ slug }));
+}
 
 function getSpotifyEpisodeUrl(title: string): string {
   const query = encodeURIComponent(`${title} The Compendium Podcast`);

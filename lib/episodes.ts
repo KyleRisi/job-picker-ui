@@ -1181,16 +1181,25 @@ export async function getResolvedEpisodes(options?: {
 
 export async function getResolvedEpisodeById(id: string, options?: { includeHidden?: boolean; includeBody?: boolean }) {
   const includeBody = options?.includeBody ?? true;
-  const rows = await queryEpisodeRows({ ids: [id], limit: 1, includeBody });
-  const items = await resolveEpisodesFromRows(rows, {
-    includeHidden: options?.includeHidden,
-    descriptionMaxLength: null,
-    includeBody
-  });
-  return items[0] || null;
+  const includeHidden = options?.includeHidden ?? false;
+
+  if (includeHidden) {
+    const rows = await queryEpisodeRows({ ids: [id], limit: 1, includeBody });
+    const items = await resolveEpisodesFromRows(rows, {
+      includeHidden: true,
+      descriptionMaxLength: null,
+      includeBody
+    });
+    return items[0] || null;
+  }
+
+  if (includeBody) {
+    return getCachedResolvedEpisodeByIdWithBody(id);
+  }
+  return getCachedResolvedEpisodeByIdNoBody(id);
 }
 
-export async function resolveEpisodeSlugRedirect(slug: string): Promise<EpisodeSlugRedirect | null> {
+async function resolveEpisodeSlugRedirectUncached(slug: string): Promise<EpisodeSlugRedirect | null> {
   const normalizedSlug = slugifyEpisodeText(slug);
   if (!normalizedSlug) return null;
   const supabase = await getSupabaseAdmin();
@@ -1219,9 +1228,16 @@ export async function resolveEpisodeSlugRedirect(slug: string): Promise<EpisodeS
   };
 }
 
-export async function getResolvedEpisodeBySlug(slug: string, options?: { includeHidden?: boolean; includeBody?: boolean }) {
-  const normalizedSlug = slugifyEpisodeText(slug);
-  if (!normalizedSlug) return null;
+const getCachedEpisodeSlugRedirect = unstable_cache(resolveEpisodeSlugRedirectUncached, ['episode-slug-redirect-v1'], {
+  revalidate: 900,
+  tags: ['redirects', 'episodes']
+});
+
+export async function resolveEpisodeSlugRedirect(slug: string): Promise<EpisodeSlugRedirect | null> {
+  return getCachedEpisodeSlugRedirect(slug);
+}
+
+async function getEpisodeIdBySlugUncached(normalizedSlug: string): Promise<string | null> {
   const supabase = await getSupabaseAdmin();
 
   try {
@@ -1234,7 +1250,7 @@ export async function getResolvedEpisodeBySlug(slug: string, options?: { include
     if (editorialError) throw editorialError;
 
     if (editorialMatch?.episode_id) {
-      return getResolvedEpisodeById(editorialMatch.episode_id, options);
+      return editorialMatch.episode_id;
     }
   } catch (error) {
     if (!isMissingRelationError(error)) throw error;
@@ -1247,8 +1263,75 @@ export async function getResolvedEpisodeBySlug(slug: string, options?: { include
     .limit(1)
     .maybeSingle();
   if (sourceError) throw sourceError;
-  if (!sourceMatch?.id) return null;
-  return getResolvedEpisodeById(sourceMatch.id, options);
+  return sourceMatch?.id || null;
+}
+
+const getCachedEpisodeIdBySlug = unstable_cache(getEpisodeIdBySlugUncached, ['episode-id-by-slug-v1'], {
+  revalidate: 900,
+  tags: ['episodes']
+});
+
+async function getResolvedEpisodeByIdUncached(id: string, includeBody: boolean, includeHidden: boolean) {
+  const rows = await queryEpisodeRows({ ids: [id], limit: 1, includeBody });
+  const items = await resolveEpisodesFromRows(rows, {
+    includeHidden,
+    descriptionMaxLength: null,
+    includeBody
+  });
+  return items[0] || null;
+}
+
+const getCachedResolvedEpisodeByIdNoBody = unstable_cache(
+  async (id: string) => getResolvedEpisodeByIdUncached(id, false, false),
+  ['resolved-episode-by-id-no-body-v1'],
+  {
+    revalidate: 900,
+    tags: ['episodes']
+  }
+);
+
+const getCachedResolvedEpisodeByIdWithBody = unstable_cache(
+  async (id: string) => getResolvedEpisodeByIdUncached(id, true, false),
+  ['resolved-episode-by-id-with-body-v1'],
+  {
+    revalidate: 900,
+    tags: ['episodes']
+  }
+);
+
+export async function getResolvedEpisodeBySlug(slug: string, options?: { includeHidden?: boolean; includeBody?: boolean }) {
+  const normalizedSlug = slugifyEpisodeText(slug);
+  if (!normalizedSlug) return null;
+  const includeBody = options?.includeBody ?? true;
+  const includeHidden = options?.includeHidden ?? false;
+
+  const episodeId = includeHidden
+    ? await getEpisodeIdBySlugUncached(normalizedSlug)
+    : await getCachedEpisodeIdBySlug(normalizedSlug);
+  if (!episodeId) return null;
+
+  if (includeHidden) {
+    return getResolvedEpisodeByIdUncached(episodeId, includeBody, true);
+  }
+
+  if (includeBody) return getCachedResolvedEpisodeByIdWithBody(episodeId);
+  return getCachedResolvedEpisodeByIdNoBody(episodeId);
+}
+
+const getCachedPublishedEpisodeSlugs = unstable_cache(
+  async (): Promise<string[]> => {
+    const episodes = await getResolvedEpisodes({ includeHidden: false, descriptionMaxLength: 120 });
+    return [...new Set(episodes.map((episode) => `${episode.slug || ''}`.trim()).filter(Boolean))];
+  },
+  ['published-episode-slugs-v1'],
+  {
+    revalidate: 900,
+    tags: ['episodes']
+  }
+);
+
+export async function listPublishedEpisodeSlugs(): Promise<string[]> {
+  return getCachedPublishedEpisodeSlugs();
 }
 
 async function getFallbackEpisodes(options: GetPodcastEpisodesOptions = {}): Promise<PodcastEpisode[]> {

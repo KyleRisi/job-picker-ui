@@ -11,8 +11,6 @@ import {
   resolveHomepageV2EnvironmentFromHost
 } from '@/lib/homepage-v2/env';
 
-type SearchParamMap = Record<string, string | string[] | undefined>;
-
 function resolvePreviewCanonical(host: string): string | null {
   if (!host) return null;
   if (!isHomepageV2PreviewHostAllowed(host)) return null;
@@ -36,11 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function HomepageV2PreviewPage({
-  searchParams
-}: {
-  searchParams?: SearchParamMap;
-}) {
+export default async function HomepageV2PreviewPage() {
   const host = normalizeHost(headers().get('host') || '');
   if (!host) notFound();
   if (!isHomepageV2PreviewHostAllowed(host)) notFound();
@@ -48,5 +42,5 @@ export default async function HomepageV2PreviewPage({
 
   const environment = resolveHomepageV2EnvironmentFromHost(host);
 
-  return <HomepageV2 environment={environment} pagePath="/preview/homepage-v2" searchParams={searchParams} />;
+  return <HomepageV2 environment={environment} pagePath="/preview/homepage-v2" />;
 }

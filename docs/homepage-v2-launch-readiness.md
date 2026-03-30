@@ -2,25 +2,17 @@
 
 ## Launch Control Path
 
-Homepage swap logic for `/` is controlled in:
+Homepage and preview logic are controlled in:
 
 - `app/(public)/page.tsx`
 - `lib/homepage-v2/env.ts`
 
-Runtime condition for serving homepage v2 at `/`:
-
-- `HOMEPAGE_V2_LIVE=true`
-- `HOMEPAGE_V2_GATE_PASSED=true`
-
-If either is false, `/` serves homepage v1.
+Canonical `/` now serves the current homepage implementation directly.
+Preview gating remains host-based on `/preview/homepage-v2`.
 
 ## Hardening Implemented
 
-`app/(public)/page.tsx` now exports:
-
-- `dynamic = 'force-dynamic'`
-
-This prevents the root route from being statically frozen at build time and ensures launch flags are evaluated at request time.
+Canonical `/` is expected to be cacheable (ISR/static-capable) and should not rely on request-time homepage version toggles.
 
 ## Required Pre-Launch Domain Normalization Checks
 
@@ -77,4 +69,3 @@ Expected:
 
 - canonical is `https://www.thecompendiumpodcast.com`
 - robots is `index, follow`
-

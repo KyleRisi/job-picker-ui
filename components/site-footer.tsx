@@ -177,6 +177,7 @@ export function SiteFooter({ showTopBorder = true }: { showTopBorder?: boolean }
                 <li><Link href={SUGGESTIONS_URL} className={footerLinkClassName()}>Suggestions</Link></li>
                 <li><Link href="/jobs" className={footerLinkClassName()}>Jobs</Link></li>
                 <li><Link href="/reviews" className={footerLinkClassName()}>Reviews</Link></li>
+                <li><Link href="/blog" className={footerLinkClassName()}>Blog</Link></li>
                 <li><Link href="/merch" className={footerLinkClassName()}>Merch</Link></li>
               </ul>
             </nav>

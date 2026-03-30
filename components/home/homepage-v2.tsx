@@ -19,6 +19,7 @@ import { HOMEPAGE_V2_PAGE_VERSION } from '@/lib/homepage-v2/tracking';
 import { HomepageV2EventTracker } from '@/components/home/homepage-v2-event-tracker';
 import { HomepageEpisodeCard } from '@/components/home/homepage-episode-card';
 import { HomepageTopicCard } from '@/components/home/homepage-topic-card';
+import { HomepageNewsletterStatusNotice } from '@/components/home/homepage-newsletter-status-notice';
 import { ReviewsSection } from '@/components/reviews-section';
 
 const SPOTIFY_URL = 'https://open.spotify.com/show/30Hh0xbotgbIyCL5tJE4zJ';
@@ -86,17 +87,10 @@ export const homepageV2Metadata: Metadata = {
   }
 };
 
-type SearchParamMap = Record<string, string | string[] | undefined>;
-
 type CuratedCardView = {
   card: HomepageV2CuratedCard;
   episode: PodcastEpisode | null;
 };
-
-function parseSearchParam(value: string | string[] | undefined): string {
-  if (Array.isArray(value)) return `${value[0] || ''}`.trim();
-  return `${value || ''}`.trim();
-}
 
 function truncate(value: string, maxLength: number): string {
   const normalized = `${value || ''}`.replace(/\s+/g, ' ').trim();
@@ -141,38 +135,6 @@ function eventAttrs(eventName: string, properties: Record<string, string> = {}) 
       Object.entries(properties).map(([key, value]) => [`data-homepage-v2-${key}`, value])
     )
   };
-}
-
-function newsletterMessage(status: string): { tone: 'success' | 'error'; text: string } | null {
-  if (status === 'success') {
-    return {
-      tone: 'success',
-      text: 'You are on the list. Weekly episode alerts are now heading your way.'
-    };
-  }
-
-  if (status === 'duplicate') {
-    return {
-      tone: 'success',
-      text: 'You are already subscribed with that email address.'
-    };
-  }
-
-  if (status === 'rate_limited') {
-    return {
-      tone: 'error',
-      text: 'Too many signup attempts right now. Please wait and try again shortly.'
-    };
-  }
-
-  if (status === 'invalid' || status === 'error') {
-    return {
-      tone: 'error',
-      text: 'Please enter a valid email address and try again.'
-    };
-  }
-
-  return null;
 }
 
 function pillarDisplayName(pillar: HomepageV2Pillar): string {
@@ -281,12 +243,10 @@ function renderCuratedCard(args: {
 
 export async function HomepageV2({
   environment,
-  pagePath,
-  searchParams
+  pagePath
 }: {
   environment: HomepageV2Environment;
   pagePath: '/' | '/preview/homepage-v2';
-  searchParams?: SearchParamMap;
 }) {
   let episodes: PodcastEpisode[] = [];
   let reviews: PublicReview[] = [];
@@ -336,8 +296,6 @@ export async function HomepageV2({
   const latestEpisode = episodes[0] || null;
   const startHereCards = resolveCuratedCardViews(content.startHereCards, episodes);
   const popularCards = resolveCuratedCardViews(content.popularCards, episodes);
-  const newsletterStatus = newsletterMessage(parseSearchParam(searchParams?.newsletter));
-
   const sectionBadgeClass = 'inline-block rounded-full bg-carnival-red px-3 py-1 text-[11px] font-black uppercase tracking-wider text-white';
   const explorePanelClass = 'relative mx-auto max-w-6xl px-6 py-20 md:px-8 md:py-28';
   const exploreTopics = [
@@ -888,17 +846,7 @@ export async function HomepageV2({
                 Join mailing list
               </button>
             </form>
-            {newsletterStatus ? (
-              <p
-                className={`mt-3 rounded-md px-3 py-2 text-sm font-medium ${
-                  newsletterStatus.tone === 'success'
-                    ? 'border border-emerald-300 bg-emerald-50 text-emerald-700'
-                    : 'border border-rose-300 bg-rose-50 text-rose-700'
-                }`}
-              >
-                {newsletterStatus.text}
-              </p>
-            ) : null}
+            <HomepageNewsletterStatusNotice />
           </div>
         </div>
       </section>

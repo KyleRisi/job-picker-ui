@@ -6,13 +6,14 @@ import { notFound } from 'next/navigation';
 import { cache, Suspense } from 'react';
 import { BlogPostCard } from '@/components/blog/blog-post-card';
 import { CompactPagination } from '@/components/compact-pagination';
-import { CompactEpisodeRow, EpisodeCard } from '@/components/episodes-browser';
+import { CompactEpisodeRow } from '@/components/episodes-browser';
 import { JoinPatreonCta } from '@/components/join-patreon-cta';
 import { listAuthorArchive } from '@/lib/blog/data';
-import { getAuthorEpisodeList } from '@/lib/episodes';
+import { getAuthorEpisodeList, type AuthorEpisodeListItem } from '@/lib/episodes';
 import { buildCanonicalAndSocialMetadata } from '@/lib/seo-metadata';
 import { createSupabaseAdminClient } from '@/lib/supabase';
 import { AuthorHubClient } from './author-hub-client';
+import { AuthorHubQueryRenderer } from './author-hub-query-renderer';
 
 export const revalidate = 300;
 export const dynamicParams = true;
@@ -172,7 +173,7 @@ export default async function AuthorHubPage({ params }: { params: Params }) {
   const heroImageUrl = resolveAuthorHeroImage(archive.author.slug, archive.author.name, archive.author.image_url || null);
   const instagramUrl = resolveInstagramUrl(archive.author.slug, archive.author.name);
   const episodeTotalPages = Math.max(1, Math.ceil(episodesCount / EPISODES_PAGE_SIZE));
-  const episodePages = Array.from({ length: episodeTotalPages }, (_, index) => index + 1);
+  const canonicalEpisodes = episodes.slice(0, EPISODES_PAGE_SIZE);
 
   const buildEpisodesHref = ({ page, view }: { page: number; view: 'grid' | 'compact' }) => {
     const query = new URLSearchParams();
@@ -266,83 +267,63 @@ export default async function AuthorHubPage({ params }: { params: Params }) {
 
       <section className="pt-8" data-author-tab-panel="episodes">
         {episodes.length ? (
-          episodePages.map((pageNumber) => {
-            const pageStart = (pageNumber - 1) * EPISODES_PAGE_SIZE;
-            const pageEpisodes = episodes.slice(pageStart, pageStart + EPISODES_PAGE_SIZE);
-
-            return (
-              <div key={`episode-page-${pageNumber}`} data-author-episode-page={`${pageNumber}`} hidden={pageNumber !== 1}>
-                <div className="space-y-3">
-                  <div className="flex justify-end">
-                    <div className="flex items-center gap-1 rounded-lg border border-carnival-ink/15 bg-white p-1" role="radiogroup" aria-label="View mode">
-                      <Link
-                        href={buildEpisodesHref({ page: pageNumber, view: 'grid' })}
-                        data-author-view-link="true"
-                        data-author-view-value="grid"
-                        data-author-episode-page={`${pageNumber}`}
-                        role="radio"
-                        aria-checked="false"
-                        aria-label="Grid view"
-                        className="flex h-7 w-7 items-center justify-center rounded-md text-carnival-ink/50 transition hover:text-carnival-ink"
-                      >
-                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
-                        </svg>
-                      </Link>
-                      <Link
-                        href={buildEpisodesHref({ page: pageNumber, view: 'compact' })}
-                        data-author-view-link="true"
-                        data-author-view-value="compact"
-                        data-author-episode-page={`${pageNumber}`}
-                        role="radio"
-                        aria-checked={pageNumber === 1 ? 'true' : 'false'}
-                        aria-label="Compact list view"
-                        className="flex h-7 w-7 items-center justify-center rounded-md bg-carnival-ink text-white transition"
-                      >
-                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
-                        </svg>
-                      </Link>
-                    </div>
-                  </div>
-
-                  <div data-author-episode-view="grid" data-author-episode-page={`${pageNumber}`} hidden>
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                      {pageEpisodes.map((episode) => (
-                        <EpisodeCard key={episode.id} episode={episode} featured={false} />
-                      ))}
-                    </div>
-                    {episodeTotalPages > 1 ? (
-                      <CompactPagination
-                        page={pageNumber}
-                        totalPages={episodeTotalPages}
-                        hrefForPage={(nextPage) => buildEpisodesHref({ page: nextPage, view: 'grid' })}
-                        ariaLabel="Episodes pagination"
-                        className="pt-4"
-                      />
-                    ) : null}
-                  </div>
-
-                  <div data-author-episode-view="compact" data-author-episode-page={`${pageNumber}`} hidden={pageNumber !== 1}>
-                    <div className="space-y-3">
-                      {pageEpisodes.map((episode) => (
-                        <CompactEpisodeRow key={episode.id} episode={episode} />
-                      ))}
-                    </div>
-                    {episodeTotalPages > 1 ? (
-                      <CompactPagination
-                        page={pageNumber}
-                        totalPages={episodeTotalPages}
-                        hrefForPage={(nextPage) => buildEpisodesHref({ page: nextPage, view: 'compact' })}
-                        ariaLabel="Episodes pagination"
-                        className="pt-4"
-                      />
-                    ) : null}
+          <>
+            <div data-author-episodes-canonical="true">
+              <div className="space-y-3">
+                <div className="flex justify-end">
+                  <div className="flex items-center gap-1 rounded-lg border border-carnival-ink/15 bg-white p-1" role="radiogroup" aria-label="View mode">
+                    <Link
+                      href={buildEpisodesHref({ page: 1, view: 'grid' })}
+                      role="radio"
+                      aria-checked="false"
+                      aria-label="Grid view"
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-carnival-ink/50 transition hover:text-carnival-ink"
+                    >
+                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" />
+                      </svg>
+                    </Link>
+                    <Link
+                      href={buildEpisodesHref({ page: 1, view: 'compact' })}
+                      role="radio"
+                      aria-checked="true"
+                      aria-label="Compact list view"
+                      className="flex h-7 w-7 items-center justify-center rounded-md bg-carnival-ink text-white transition"
+                    >
+                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+                      </svg>
+                    </Link>
                   </div>
                 </div>
+
+                <div className="space-y-3">
+                  {canonicalEpisodes.map((episode) => (
+                    <CompactEpisodeRow key={episode.id} episode={episode} />
+                  ))}
+                </div>
+                {episodeTotalPages > 1 ? (
+                  <CompactPagination
+                    page={1}
+                    totalPages={episodeTotalPages}
+                    hrefForPage={(nextPage) => buildEpisodesHref({ page: nextPage, view: 'compact' })}
+                    ariaLabel="Episodes pagination"
+                    className="pt-4"
+                  />
+                ) : null}
               </div>
-            );
-          })
+            </div>
+
+            <div data-author-episodes-query-region="true">
+              <Suspense fallback={null}>
+                <AuthorHubQueryRenderer
+                  authorSlug={archive.author.slug}
+                  episodes={episodes as AuthorEpisodeListItem[]}
+                  pageSize={EPISODES_PAGE_SIZE}
+                />
+              </Suspense>
+            </div>
+          </>
         ) : (
           <p className="rounded-xl border border-carnival-ink/15 bg-white p-5 text-carnival-ink/70">No episodes are assigned to this author yet.</p>
         )}

@@ -4,6 +4,16 @@ import { listMediaAssets } from '@/lib/blog/data';
 import { uploadBlogMediaFromBuffer } from '@/lib/blog/storage';
 
 export const dynamic = 'force-dynamic';
+const MAX_MEDIA_UPLOAD_BYTES = 10 * 1024 * 1024;
+
+function formatBytes(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const value = bytes / (1024 ** exponent);
+  const precision = value >= 10 || exponent === 0 ? 0 : 1;
+  return `${value.toFixed(precision)} ${units[exponent]}`;
+}
 
 export async function GET(req: Request) {
   try {
@@ -28,6 +38,11 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const file = formData.get('file');
     if (!(file instanceof File)) return badRequest('Upload a file.');
+    if (!file.type?.startsWith('image/')) return badRequest('Only image files are supported.');
+    if (!file.size) return badRequest('Uploaded file is empty.');
+    if (file.size > MAX_MEDIA_UPLOAD_BYTES) {
+      return badRequest(`Image is too large (${formatBytes(file.size)}). Maximum upload size is ${formatBytes(MAX_MEDIA_UPLOAD_BYTES)}.`, 413);
+    }
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const asset = await uploadBlogMediaFromBuffer({

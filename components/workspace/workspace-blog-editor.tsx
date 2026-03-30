@@ -96,6 +96,97 @@ function toPodcastEpisodeCard(episode: WorkspaceEpisodeOption): PodcastEpisode {
 
 const WORKSPACE_DRAFT_STORAGE_PREFIX = 'workspace-blog-editor-draft:';
 const WORKSPACE_EPISODE_DRAFT_STORAGE_PREFIX = 'workspace-episode-editor-draft:';
+const MAX_MEDIA_UPLOAD_BYTES = 10 * 1024 * 1024;
+const MAX_IMAGE_DIMENSION = 2400;
+const IMAGE_COMPRESSION_QUALITY = 0.82;
+const NON_RESIZABLE_MIME_TYPES = new Set(['image/gif', 'image/svg+xml']);
+
+function formatBytes(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const value = bytes / (1024 ** exponent);
+  const precision = value >= 10 || exponent === 0 ? 0 : 1;
+  return `${value.toFixed(precision)} ${units[exponent]}`;
+}
+
+function replaceFileExtension(fileName: string, extension: string) {
+  const safeExtension = extension.replace(/^\.+/, '') || 'bin';
+  const stem = fileName.replace(/\.[^.]+$/, '') || 'image';
+  return `${stem}.${safeExtension}`;
+}
+
+async function readImageDimensions(file: File): Promise<{ width: number; height: number; image: HTMLImageElement }> {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new window.Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('Unable to read image dimensions.'));
+      img.src = objectUrl;
+    });
+    return { width: image.naturalWidth || image.width, height: image.naturalHeight || image.height, image };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality?: number): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), mimeType, quality);
+  });
+}
+
+async function prepareImageForUpload(file: File): Promise<{ file: File; notice?: string }> {
+  if (!file.type?.startsWith('image/')) {
+    throw new Error('Only image files are supported.');
+  }
+  if (!file.size) {
+    throw new Error('Selected image is empty.');
+  }
+  if (NON_RESIZABLE_MIME_TYPES.has(file.type)) {
+    if (file.size > MAX_MEDIA_UPLOAD_BYTES) {
+      throw new Error(`Image is too large (${formatBytes(file.size)}). Maximum upload size is ${formatBytes(MAX_MEDIA_UPLOAD_BYTES)}.`);
+    }
+    return { file };
+  }
+
+  let prepared = file;
+  let notice = '';
+
+  try {
+    const { width, height, image } = await readImageDimensions(file);
+    const largestDimension = Math.max(width, height);
+    const scale = largestDimension > MAX_IMAGE_DIMENSION ? (MAX_IMAGE_DIMENSION / largestDimension) : 1;
+    const targetWidth = Math.max(1, Math.round(width * scale));
+    const targetHeight = Math.max(1, Math.round(height * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+      const compressed = await canvasToBlob(canvas, 'image/webp', IMAGE_COMPRESSION_QUALITY);
+      if (compressed && compressed.size > 0 && compressed.size < file.size) {
+        prepared = new File(
+          [compressed],
+          replaceFileExtension(file.name, 'webp'),
+          { type: compressed.type || 'image/webp' }
+        );
+        notice = `Image optimized (${formatBytes(file.size)} -> ${formatBytes(prepared.size)}).`;
+      }
+    }
+  } catch {
+    // If optimization fails, continue with original file and rely on server-side validation.
+  }
+
+  if (prepared.size > MAX_MEDIA_UPLOAD_BYTES) {
+    throw new Error(`Image is too large (${formatBytes(prepared.size)}). Maximum upload size is ${formatBytes(MAX_MEDIA_UPLOAD_BYTES)}.`);
+  }
+
+  return { file: prepared, notice: notice || undefined };
+}
 
 function createStructuredBlock(type: BlogContentBlock['type']): BlogContentBlock {
   const id = crypto.randomUUID();
@@ -990,8 +1081,10 @@ function StructuredBlockNodeView({
       setInlineImageUploading(true);
       setInlineImageUploadMessage('');
       try {
+        const prepared = await prepareImageForUpload(file);
         const formData = new FormData();
-        formData.set('file', file);
+        formData.set('file', prepared.file, prepared.file.name);
+        if (prepared.notice) setInlineImageUploadMessage(prepared.notice);
         const response = await fetch('/api/admin/blog/media', { method: 'POST', body: formData });
         const raw = await response.text();
         let data: any = {};
@@ -1012,8 +1105,8 @@ function StructuredBlockNodeView({
         setPreviewAsset(uploaded);
         updateAttributes({ block: prefillImageBlockFromAsset(imageBlock, uploaded) });
         setInlineImageUploadMessage('');
-      } catch {
-        setInlineImageUploadMessage('Network error while uploading image.');
+      } catch (error) {
+        setInlineImageUploadMessage(error instanceof Error ? error.message : 'Network error while uploading image.');
       } finally {
         setInlineImageUploading(false);
       }
@@ -3168,8 +3261,10 @@ export function WorkspaceBlogEditor({
     setHeroImageUploading(true);
     setHeroImageMessage('');
     try {
+      const prepared = await prepareImageForUpload(file);
       const formData = new FormData();
-      formData.set('file', file);
+      formData.set('file', prepared.file, prepared.file.name);
+      if (prepared.notice) setHeroImageMessage(prepared.notice);
       const response = await fetch('/api/admin/blog/media', { method: 'POST', body: formData });
       const raw = await response.text();
       let data: any = {};
@@ -3194,8 +3289,8 @@ export function WorkspaceBlogEditor({
       setFeaturedImageAltSynced(asset.alt_text_default || '');
       setHeroImageMessage('');
       setIsDirty(true);
-    } catch {
-      setHeroImageMessage('Network error while uploading image.');
+    } catch (error) {
+      setHeroImageMessage(error instanceof Error ? error.message : 'Network error while uploading image.');
     } finally {
       setHeroImageUploading(false);
     }

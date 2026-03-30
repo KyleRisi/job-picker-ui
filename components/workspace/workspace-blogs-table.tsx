@@ -133,7 +133,7 @@ const ALL_COLUMNS: ColumnDefinition[] = [
     width: 180,
     headClassName: 'whitespace-nowrap',
     cellClassName: 'whitespace-nowrap text-slate-700',
-    render: (post) => post.taxonomies?.categories?.[0]?.name || '-'
+    render: (post) => post.discovery?.primaryTopicName || post.taxonomies?.categories?.[0]?.name || '-'
   },
   {
     key: 'publishedAt',

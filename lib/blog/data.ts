@@ -163,6 +163,7 @@ export type BlogPostRecord = {
 type SupabaseClient = ReturnType<typeof createSupabaseAdminClient>;
 type DiscoveryAssignmentState = BlogPostWriteInput['discovery'] & {
   termNames: string[];
+  primaryTopicName: string | null;
 };
 type DiscoveryTermType = 'topic' | 'theme' | 'entity' | 'case' | 'event' | 'collection' | 'series';
 type DiscoveryTermRow = {
@@ -544,7 +545,8 @@ function createEmptyDiscoveryAssignments(): DiscoveryAssignmentState {
     eventIds: [],
     collectionIds: [],
     seriesIds: [],
-    termNames: []
+    termNames: [],
+    primaryTopicName: null
   };
 }
 
@@ -573,6 +575,7 @@ async function getDiscoveryForPosts(
     if (termType === 'topic') {
       if (row.is_primary || !state.primaryTopicId) {
         state.primaryTopicId = termId;
+        state.primaryTopicName = termName || state.primaryTopicName;
       } else if (!state.topicIds.includes(termId)) {
         state.topicIds.push(termId);
       }

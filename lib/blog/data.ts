@@ -164,6 +164,7 @@ type SupabaseClient = ReturnType<typeof createSupabaseAdminClient>;
 type DiscoveryAssignmentState = BlogPostWriteInput['discovery'] & {
   termNames: string[];
   primaryTopicName: string | null;
+  primaryTopicSlug: string | null;
 };
 type DiscoveryTermType = 'topic' | 'theme' | 'entity' | 'case' | 'event' | 'collection' | 'series';
 type DiscoveryTermRow = {
@@ -546,7 +547,8 @@ function createEmptyDiscoveryAssignments(): DiscoveryAssignmentState {
     collectionIds: [],
     seriesIds: [],
     termNames: [],
-    primaryTopicName: null
+    primaryTopicName: null,
+    primaryTopicSlug: null
   };
 }
 
@@ -557,7 +559,7 @@ async function getDiscoveryForPosts(
   if (!postIds.length) return new Map<string, DiscoveryAssignmentState>();
   const { data, error } = await supabase
     .from('blog_post_discovery_terms')
-    .select('blog_post_id, term_id, is_primary, sort_order, discovery_terms!inner(term_type, name, is_active)')
+    .select('blog_post_id, term_id, is_primary, sort_order, discovery_terms!inner(term_type, name, slug, is_active)')
     .in('blog_post_id', postIds)
     .eq('discovery_terms.is_active', true)
     .order('sort_order', { ascending: true });
@@ -568,6 +570,7 @@ async function getDiscoveryForPosts(
     const state = map.get(row.blog_post_id) || createEmptyDiscoveryAssignments();
     const termId = `${row.term_id}`;
     const termName = `${row.discovery_terms?.name || ''}`.trim();
+    const termSlug = `${row.discovery_terms?.slug || ''}`.trim();
     const termType = row.discovery_terms?.term_type as DiscoveryTermType;
     if (termName && !state.termNames.includes(termName)) {
       state.termNames.push(termName);
@@ -576,6 +579,7 @@ async function getDiscoveryForPosts(
       if (row.is_primary || !state.primaryTopicId) {
         state.primaryTopicId = termId;
         state.primaryTopicName = termName || state.primaryTopicName;
+        state.primaryTopicSlug = termSlug || state.primaryTopicSlug;
       } else if (!state.topicIds.includes(termId)) {
         state.topicIds.push(termId);
       }
@@ -2108,24 +2112,45 @@ export async function listPublishedBlogPostsFeed(params?: {
       return { items: [], nextOffset: offset, hasMore: false, total: 0 };
     }
 
-    const { data: category, error: categoryError } = await supabase
-      .from('categories')
+    const { data: discoveryTerm, error: discoveryTermError } = await supabase
+      .from('discovery_terms')
       .select('id')
+      .eq('term_type', 'topic')
       .eq('slug', normalizedCategorySlug)
+      .eq('is_active', true)
       .maybeSingle();
-    if (categoryError) throw categoryError;
-    if (!category) {
-      return { items: [], nextOffset: offset, hasMore: false, total: 0 };
+    if (discoveryTermError) throw discoveryTermError;
+
+    if (discoveryTerm) {
+      const { data: discoveryLinks, error: discoveryLinksError } = await supabase
+        .from('blog_post_discovery_terms')
+        .select('blog_post_id')
+        .eq('term_id', discoveryTerm.id)
+        .eq('is_primary', true);
+      if (discoveryLinksError) throw discoveryLinksError;
+
+      filteredPostIds = Array.from(new Set((discoveryLinks || []).map((item) => item.blog_post_id)));
+    } else {
+      const { data: category, error: categoryError } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('slug', normalizedCategorySlug)
+        .maybeSingle();
+      if (categoryError) throw categoryError;
+      if (!category) {
+        return { items: [], nextOffset: offset, hasMore: false, total: 0 };
+      }
+
+      const { data: categoryLinks, error: categoryLinksError } = await supabase
+        .from('blog_post_categories')
+        .select('post_id')
+        .eq('category_id', category.id);
+      if (categoryLinksError) throw categoryLinksError;
+
+      filteredPostIds = Array.from(new Set((categoryLinks || []).map((item) => item.post_id)));
     }
 
-    const { data: categoryLinks, error: categoryLinksError } = await supabase
-      .from('blog_post_categories')
-      .select('post_id')
-      .eq('category_id', category.id);
-    if (categoryLinksError) throw categoryLinksError;
-
-    filteredPostIds = Array.from(new Set((categoryLinks || []).map((item) => item.post_id)));
-    if (!filteredPostIds.length) {
+    if (!filteredPostIds?.length) {
       return { items: [], nextOffset: offset, hasMore: false, total: 0 };
     }
   }

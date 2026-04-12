@@ -64,15 +64,15 @@ function resolveTopicCardBackgroundUrl(slug: string): string | null {
 
 export const homepageV2Metadata: Metadata = {
   title: {
-    absolute: 'True Crime, History & Incredible People | The Compendium'
+    absolute: 'True Crime, History & Strange True Stories | The Compendium'
   },
   description:
-    'A weekly podcast covering true crime, history and incredible people. Start with standout episodes and listen on Spotify or Apple Podcasts.',
+    'A weekly podcast covering true crime, history and strange true stories. Start with standout episodes and listen on Spotify or Apple Podcasts.',
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'True Crime, History & Incredible People | The Compendium',
+    title: 'True Crime, History & Strange True Stories | The Compendium',
     description:
-      'A weekly podcast covering true crime, history and incredible people. Start with standout episodes and listen on Spotify or Apple Podcasts.',
+      'A weekly podcast covering true crime, history and strange true stories. Start with standout episodes and listen on Spotify or Apple Podcasts.',
     url: '/',
     siteName: 'The Compendium Podcast',
     type: 'website',
@@ -80,9 +80,9 @@ export const homepageV2Metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'True Crime, History & Incredible People | The Compendium',
+    title: 'True Crime, History & Strange True Stories | The Compendium',
     description:
-      'A weekly podcast covering true crime, history and incredible people. Start with standout episodes and listen on Spotify or Apple Podcasts.',
+      'A weekly podcast covering true crime, history and strange true stories. Start with standout episodes and listen on Spotify or Apple Podcasts.',
     images: ['/The Compendium Main.jpg']
   }
 };
@@ -156,7 +156,7 @@ function PodcastJsonLd({ episodes }: { episodes: PodcastEpisode[] }) {
     '@type': 'PodcastSeries',
     name: 'The Compendium Podcast',
     description:
-      'A weekly podcast covering true crime, fascinating history, and incredible people. Hosted by Kyle Risi and Adam Cox.',
+      'A weekly podcast covering true crime, fascinating history, and strange true stories. Hosted by Kyle Risi and Adam Cox.',
     url: siteUrl,
     image: `${siteUrl}/The%20Compendium%20Main.jpg`,
     author: [
@@ -334,7 +334,7 @@ export async function HomepageV2({
         </div>
 
         <div className="relative mx-auto grid max-w-6xl gap-0 px-4 pb-8 pt-8 md:grid-cols-[400px_1fr] md:items-center md:pb-10 md:pt-20">
-          <div className="mx-auto w-full max-w-[230px] md:mx-0 md:max-w-none">
+          <div className="mx-auto w-full max-w-[290px] md:mx-0 md:max-w-none">
             <Image
               src="/The Compendium Main.jpg"
               alt="The Compendium Podcast artwork"
@@ -342,7 +342,7 @@ export async function HomepageV2({
               height={360}
               className="rounded-lg border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
               priority
-              sizes="(max-width: 768px) 230px, 460px"
+              sizes="(max-width: 768px) 290px, 460px"
             />
           </div>
 
@@ -352,7 +352,7 @@ export async function HomepageV2({
               The Compendium Podcast
             </h1>
             <p className="mt-3 whitespace-nowrap text-xs font-black uppercase tracking-[0.06em] text-carnival-gold md:text-base md:tracking-[0.1em]">
-              True Crime • History • Incredible People
+              True Crime • History • Strange True Stories
             </p>
             <p className="mt-5 text-base leading-relaxed text-white/90">
               {content.heroSupportingCopy}
@@ -415,8 +415,8 @@ export async function HomepageV2({
         <div className="mx-auto max-w-6xl px-4 py-12 md:py-16">
           <header className="mb-6 space-y-2">
             <span className={sectionBadgeClass}>Start Here</span>
-            <h2 className="text-3xl font-black text-carnival-ink md:text-4xl">New to the Circus? Start Here</h2>
-            <p className="text-carnival-ink/80">Three brilliant first listens - one from each pillar.</p>
+            <h2 className="text-3xl font-black text-carnival-ink md:text-4xl">New to the Circus?</h2>
+            <p className="text-carnival-ink/80">Start with these three brilliant listener favourites we&apos;ve picked to help you explore the show.</p>
           </header>
           <div className="grid gap-5 md:grid-cols-3">
             {startHereCards.map((item, index) => renderCuratedCard({
@@ -484,7 +484,7 @@ export async function HomepageV2({
           <header className="mb-6 space-y-2">
             <span className={sectionBadgeClass}>Why Listen</span>
             <h2 className="text-3xl font-black text-carnival-ink md:text-4xl">Why Freaks Keep Coming Back</h2>
-            <p className="text-carnival-ink/80">Built for curious minds who want the good stuff without a 10-episode slog.</p>
+            <p className="text-carnival-ink/80">The Compendium is built for curious minds who want all the good stuff without a 10-episode commitment.</p>
           </header>
 
           <div className="grid gap-4 md:grid-cols-3">
@@ -534,7 +534,7 @@ export async function HomepageV2({
           <header className="mb-6 space-y-2">
             <span className={sectionBadgeClass}>Latest</span>
             <h2 className="text-3xl font-black text-carnival-ink md:text-4xl">Latest Episode</h2>
-            <p className="text-carnival-ink/80">Fresh from the big top.</p>
+            <p className="text-carnival-ink/80">Enjoy the latest addition to the catalogue.</p>
           </header>
 
           <article className="card grid gap-6 md:grid-cols-[220px_1fr] md:items-center">

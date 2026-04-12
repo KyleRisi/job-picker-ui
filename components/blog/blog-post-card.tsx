@@ -15,6 +15,7 @@ type BlogPostCardPost = {
   reading_time_minutes: number | null;
   featured_image: Pick<MediaAssetRecord, 'storage_path' | 'alt_text_default'> | null;
   taxonomies?: { categories?: Array<{ id: string; name: string; slug: string }> };
+  discovery?: { primaryTopicName?: string | null; primaryTopicSlug?: string | null } | null;
   author?: { name: string; slug: string } | null;
 };
 
@@ -32,11 +33,13 @@ export function BlogPostCard({
   excerptNoSnippet?: boolean;
 }) {
   const imageUrl = post.featured_image ? getStoragePublicUrl(post.featured_image.storage_path) : null;
-  const category = post.taxonomies?.categories?.[0];
-  const categoryPublicPath = category
+  const legacyCategory = post.taxonomies?.categories?.[0];
+  const topicName = post.discovery?.primaryTopicName || legacyCategory?.name || null;
+  const topicSlug = post.discovery?.primaryTopicSlug || legacyCategory?.slug || null;
+  const categoryPublicPath = topicSlug
     ? resolveTaxonomyPublicPath({
         termType: 'topic',
-        slug: category.slug,
+        slug: topicSlug,
         entitySubtype: null
       })
     : null;
@@ -65,9 +68,9 @@ export function BlogPostCard({
           </Link>
         ) : null}
         <div className="space-y-3 p-4">
-          {category && categoryPublicPath ? (
+          {topicName && categoryPublicPath ? (
             <Link href={categoryPublicPath} className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide transition ${categoryClass}`}>
-              {category.name}
+              {topicName}
             </Link>
           ) : null}
           <h3 className="text-xl font-black leading-tight">
@@ -100,9 +103,9 @@ export function BlogPostCard({
         </div>
       ) : null}
       <div className="space-y-3 p-6">
-        {category && categoryPublicPath ? (
+        {topicName && categoryPublicPath ? (
           <Link href={categoryPublicPath} className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide transition ${categoryClass}`}>
-            {category.name}
+            {topicName}
           </Link>
         ) : null}
         <h2 className={featured ? 'text-3xl font-black' : 'text-2xl font-black'}>

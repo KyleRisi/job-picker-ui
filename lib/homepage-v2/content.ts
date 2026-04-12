@@ -129,7 +129,7 @@ export function buildHomepageV2AutoSeedContent(episodes: PodcastEpisode[], revie
 
   const content = {
     heroSupportingCopy:
-      'A weekly true crime and history podcast about strange true stories, dark history, and remarkable people.',
+      'A weekly podcast uncovering dark history, bizarre crimes, remarkable lives, and real stories stranger than fiction — all told in one gripping, stand-alone listen.',
     startHereCards,
     popularCards: popularPool.slice(0, 5),
     reviewQuotes: reviewQuotes.length === 2

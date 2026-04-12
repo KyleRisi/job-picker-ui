@@ -33,16 +33,18 @@ export function HomepageEpisodeCard({
   secondaryLinkProps
 }: HomepageEpisodeCardProps) {
   return (
-    <article className="card flex h-full flex-col overflow-hidden !p-0">
-      <div className="relative aspect-square w-full overflow-hidden">
-        <Image
-          src={artworkSrc}
-          alt={artworkAlt}
-          fill
-          sizes="(max-width: 768px) 100vw, 320px"
-          className="object-contain"
-          loading="lazy"
-        />
+    <article className="card flex h-full flex-col overflow-hidden !border-0 !p-0">
+      <div className="p-3">
+        <div className="relative aspect-square w-full overflow-hidden rounded-lg">
+          <Image
+            src={artworkSrc}
+            alt={artworkAlt}
+            fill
+            sizes="(max-width: 768px) 100vw, 320px"
+            className="object-contain"
+            loading="lazy"
+          />
+        </div>
       </div>
       <div className="flex flex-1 flex-col p-4 md:p-5">
         <p className="text-xs font-black uppercase tracking-wider text-carnival-red">{eyebrow}</p>

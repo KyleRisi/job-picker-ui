@@ -20,6 +20,7 @@ type ListingPost = {
   reading_time_minutes: number | null;
   featured_image: MediaAssetRecord | null;
   taxonomies: { categories: Array<{ id: string; name: string; slug: string }> };
+  discovery?: { primaryTopicName?: string | null; primaryTopicSlug?: string | null } | null;
   author?: { name: string; slug: string } | null;
 };
 
@@ -48,6 +49,7 @@ function postMatchesSearch(post: ListingPost, normalizedQuery: string) {
     post.excerpt || '',
     post.excerpt_auto || '',
     post.author?.name || '',
+    post.discovery?.primaryTopicName || '',
     ...post.taxonomies.categories.map((category) => category.name)
   ];
 
@@ -56,7 +58,8 @@ function postMatchesSearch(post: ListingPost, normalizedQuery: string) {
 
 function FeaturedPostSlide({ post }: { post: ListingPost }) {
   const imageUrl = post.featured_image ? getStoragePublicUrl(post.featured_image.storage_path) : null;
-  const category = post.taxonomies.categories[0];
+  const legacyCategory = post.taxonomies.categories[0];
+  const topicName = post.discovery?.primaryTopicName || legacyCategory?.name || null;
 
   return (
     <article className="min-w-[84%] snap-start sm:min-w-[62%] md:min-w-0">
@@ -75,7 +78,7 @@ function FeaturedPostSlide({ post }: { post: ListingPost }) {
         ) : null}
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 space-y-2 p-4 sm:p-5">
-          {category ? <p className="text-xs font-black uppercase tracking-wide text-white/80">{category.name}</p> : null}
+          {topicName ? <p className="text-xs font-black uppercase tracking-wide text-white/80">{topicName}</p> : null}
           <h2 className="line-clamp-2 text-xl font-black leading-tight text-white sm:text-2xl">{post.title}</h2>
           <div className="flex flex-wrap items-center gap-3 text-xs text-white/85">
             {post.published_at ? <span>{featuredDateFormatter.format(new Date(post.published_at))}</span> : null}
@@ -125,7 +128,10 @@ export function BlogListingPage({
 
   for (const post of orderedPosts) {
     const timestamp = postTimestamp(post);
-    for (const category of post.taxonomies.categories) {
+    const discoveryPrimary = post.discovery?.primaryTopicName && post.discovery?.primaryTopicSlug
+      ? [{ name: post.discovery.primaryTopicName, slug: post.discovery.primaryTopicSlug }]
+      : post.taxonomies.categories;
+    for (const category of discoveryPrimary) {
       const current = categoryMap.get(category.slug) || {
         name: category.name,
         slug: category.slug,

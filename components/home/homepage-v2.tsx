@@ -204,7 +204,6 @@ function renderCuratedCard(args: {
   const title = `${episode?.title || 'Featured episode'}`.trim();
   const rawDescription = `${card.customBlurb || episode?.description || ''}`.replace(/\s+/g, ' ').trim();
   const blurb = truncate(card.customBlurb || episode?.description || '', section === 'start_here' ? 190 : 160);
-  const excerptClampClass = section === 'start_here' ? 'line-clamp-2 md:line-clamp-5' : 'line-clamp-3 md:line-clamp-5';
   const mobileSummary = rawDescription;
   const publishedDate = formatFullPublishedDate(episode?.publishedAt);
   const mobileMeta = [
@@ -224,7 +223,6 @@ function renderCuratedCard(args: {
       blurb={blurb}
       mobileSummary={mobileSummary}
       mobileMeta={mobileMeta}
-      excerptClampClass={excerptClampClass}
       primaryLinkProps={eventAttrs(eventName, {
         section,
         destination: 'episode_page',

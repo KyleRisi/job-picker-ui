@@ -112,6 +112,9 @@ export type AuthorEpisodeListItem = {
   id: string;
   slug: string;
   title: string;
+  authorName: string | null;
+  authorSlug: string | null;
+  primaryTopicName: string | null;
   description: string;
   publishedAt: string;
   episodeNumber: number | null;
@@ -136,6 +139,7 @@ type AuthorEpisodeListRow = {
 
 type AuthorEpisodeListEditorialRow = {
   episode_id: string;
+  author_id: string | null;
   web_title: string | null;
   web_slug: string | null;
   excerpt: string | null;
@@ -921,6 +925,8 @@ function episodeBaseFromResolved(episode: ResolvedPodcastEpisode): PodcastEpisod
     id: episode.id,
     slug: episode.slug,
     title: episode.title,
+    authorName: episode.authorName || null,
+    authorSlug: episode.authorSlug || null,
     primaryTopicName: episode.primaryTopic?.name ?? null,
     primaryTopicPath: episode.primaryTopic?.path ?? null,
     primaryTopicSlug: episode.primaryTopic?.slug ?? null,
@@ -953,6 +959,26 @@ async function resolveEpisodesFromRows(
     loadRelatedEpisodesForSources(supabase, episodeIds),
     loadRelatedPostsForEpisodes(supabase, episodeIds)
   ]);
+  const authorIds = [...new Set(
+    [...editorialMap.values()]
+      .map((row) => `${row.author_id || ''}`.trim())
+      .filter(Boolean)
+  )];
+  const authorMap = new Map<string, { name: string; slug: string | null }>();
+  if (authorIds.length) {
+    const { data: authorRows, error: authorRowsError } = await supabase
+      .from('blog_authors')
+      .select('id, name, slug')
+      .in('id', authorIds);
+    if (authorRowsError) throw authorRowsError;
+    for (const row of (authorRows || []) as Array<{ id: string; name: string; slug: string | null }>) {
+      if (!row?.id) continue;
+      authorMap.set(row.id, {
+        name: row.name || '',
+        slug: row.slug || null
+      });
+    }
+  }
 
   const targetEpisodeIds = [...new Set(
     [...relationshipsMap.values()].flatMap((rowsForSource) => rowsForSource.map((row) => row.target_episode_id))
@@ -1014,6 +1040,8 @@ async function resolveEpisodesFromRows(
         id: row.id,
         slug,
         title,
+        authorName: editorial?.author_id ? (authorMap.get(editorial.author_id)?.name || null) : null,
+        authorSlug: editorial?.author_id ? (authorMap.get(editorial.author_id)?.slug || null) : null,
         seasonNumber: row.season_number,
         episodeNumber: row.episode_number,
         publishedAt: source.publishedAt,
@@ -1092,7 +1120,7 @@ async function loadAuthorEpisodeListEditorialRows(supabase: SupabaseAdminClient,
   if (!episodeIds.length) return new Map<string, AuthorEpisodeListEditorialRow>();
   const { data, error } = await supabase
     .from('podcast_episode_editorial')
-    .select('episode_id, web_title, web_slug, excerpt, hero_image_url, is_visible, is_archived')
+    .select('episode_id, author_id, web_title, web_slug, excerpt, hero_image_url, is_visible, is_archived')
     .in('episode_id', episodeIds);
   if (error) {
     if (isMissingRelationError(error)) return new Map();
@@ -1101,15 +1129,62 @@ async function loadAuthorEpisodeListEditorialRows(supabase: SupabaseAdminClient,
   return new Map(((data || []) as AuthorEpisodeListEditorialRow[]).map((row) => [row.episode_id, row]));
 }
 
+async function loadPrimaryTopicNamesForEpisodes(
+  supabase: SupabaseAdminClient,
+  episodeIds: string[]
+): Promise<Map<string, string>> {
+  if (!episodeIds.length) return new Map();
+  const { data: links, error: linksError } = await supabase
+    .from('episode_discovery_terms')
+    .select('episode_id, term_id, is_primary, sort_order')
+    .in('episode_id', episodeIds);
+  if (linksError) {
+    if (isMissingRelationError(linksError)) return new Map();
+    throw linksError;
+  }
+
+  const primaryLinks = ((links || []) as Array<{ episode_id: string; term_id: string; is_primary: boolean; sort_order: number | null }>)
+    .filter((row) => row.is_primary)
+    .sort((a, b) => {
+      const left = Number.isFinite(a.sort_order as number) ? (a.sort_order as number) : Number.MAX_SAFE_INTEGER;
+      const right = Number.isFinite(b.sort_order as number) ? (b.sort_order as number) : Number.MAX_SAFE_INTEGER;
+      return left - right;
+    });
+  if (!primaryLinks.length) return new Map();
+
+  const termIds = [...new Set(primaryLinks.map((row) => row.term_id).filter(Boolean))];
+  const { data: terms, error: termsError } = await supabase
+    .from('discovery_terms')
+    .select('id, name')
+    .in('id', termIds);
+  if (termsError) throw termsError;
+  const termNameMap = new Map<string, string>(((terms || []) as Array<{ id: string; name: string }>).map((row) => [row.id, row.name]));
+
+  const map = new Map<string, string>();
+  for (const row of primaryLinks) {
+    if (map.has(row.episode_id)) continue;
+    const name = termNameMap.get(row.term_id);
+    if (!name) continue;
+    map.set(row.episode_id, name);
+  }
+  return map;
+}
+
 export async function getAuthorEpisodeList(options?: {
   ids?: string[];
   descriptionMaxLength?: number | null;
+  authorName?: string | null;
+  authorSlug?: string | null;
 }): Promise<AuthorEpisodeListItem[]> {
   const rows = await queryAuthorEpisodeListRows(options?.ids || []);
   if (!rows.length) return [];
 
   const supabase = await getSupabaseAdmin();
-  const editorialMap = await loadAuthorEpisodeListEditorialRows(supabase, rows.map((row) => row.id));
+  const episodeIds = rows.map((row) => row.id);
+  const [editorialMap, primaryTopicNameMap] = await Promise.all([
+    loadAuthorEpisodeListEditorialRows(supabase, episodeIds),
+    loadPrimaryTopicNamesForEpisodes(supabase, episodeIds)
+  ]);
 
   const items = rows
     .map((row) => {
@@ -1129,6 +1204,9 @@ export async function getAuthorEpisodeList(options?: {
         id: row.id,
         slug: `${editorial?.web_slug || row.slug}`.trim(),
         title: `${editorial?.web_title || row.title}`.trim(),
+        authorName: options?.authorName || null,
+        authorSlug: options?.authorSlug || null,
+        primaryTopicName: primaryTopicNameMap.get(row.id) || null,
         description,
         publishedAt,
         episodeNumber: row.episode_number,
@@ -1351,6 +1429,8 @@ async function getFallbackEpisodes(options: GetPodcastEpisodesOptions = {}): Pro
     id: episode.id,
     slug: episode.slug,
     title: episode.title,
+    authorName: null,
+    authorSlug: null,
     seasonNumber: episode.seasonNumber,
     episodeNumber: episode.episodeNumber,
     publishedAt: episode.publishedAt,

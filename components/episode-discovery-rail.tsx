@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { EpisodeCard } from '@/components/episodes-browser';
+import { GridEpisodeCard } from '@/components/episodes-browser';
 import type { PodcastEpisode } from '@/lib/podcast-shared';
 
 const DESKTOP_INITIAL_VISIBLE_COUNT = 6;
@@ -37,7 +37,7 @@ export function EpisodeDiscoveryRail({
           <div className="flex snap-x snap-mandatory gap-4 pl-[max(1rem,calc((100vw-72rem)/2+1rem))]">
             {episodes.map((episode) => (
               <div key={episode.id} className="w-[320px] min-w-[320px] snap-start sm:w-[340px] sm:min-w-[340px] lg:w-[380px] lg:min-w-[380px]">
-                <EpisodeCard episode={episode} featured={false} />
+                <GridEpisodeCard episode={episode} />
               </div>
             ))}
           </div>
@@ -48,7 +48,7 @@ export function EpisodeDiscoveryRail({
         <div className="grid grid-cols-3 justify-between gap-4">
           {desktopEpisodes.map((episode) => (
             <div key={episode.id} className="w-[360px]">
-              <EpisodeCard episode={episode} featured={false} />
+              <GridEpisodeCard episode={episode} />
             </div>
           ))}
         </div>

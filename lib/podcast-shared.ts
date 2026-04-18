@@ -2,6 +2,8 @@ export type PodcastEpisode = {
   id: string;
   slug: string;
   title: string;
+  authorName?: string | null;
+  authorSlug?: string | null;
   primaryTopicName?: string | null;
   primaryTopicPath?: string | null;
   primaryTopicSlug?: string | null;

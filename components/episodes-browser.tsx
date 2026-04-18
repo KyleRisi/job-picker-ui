@@ -20,7 +20,7 @@ import { TrackedPatreonCtaLink } from '@/components/tracked-patreon-cta-link';
 
 type EpisodeListItem = Pick<
   PodcastEpisode,
-  'id' | 'slug' | 'title' | 'description' | 'publishedAt' | 'episodeNumber' | 'audioUrl' | 'artworkUrl' | 'duration'
+  'id' | 'slug' | 'title' | 'authorName' | 'authorSlug' | 'primaryTopicName' | 'description' | 'publishedAt' | 'episodeNumber' | 'audioUrl' | 'artworkUrl' | 'duration'
 >;
 
 function toExcerpt(value: string, maxLength: number): string {
@@ -32,6 +32,18 @@ function toExcerpt(value: string, maxLength: number): string {
 
 function episodeDateLabel(episode: EpisodeListItem): string {
   return formatEpisodeDate(episode.publishedAt);
+}
+
+function formatEpisodeDurationLabel(value: string | number | null | undefined): string | null {
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    return normalized || null;
+  }
+  if (!Number.isFinite(value) || (value as number) <= 0) return null;
+  const totalMinutes = Math.floor((value as number) / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 }
 
 function getSpotifyEpisodeUrl(title: string): string {
@@ -154,7 +166,8 @@ export function EpisodeCard({
   showInlinePlayer = true,
   detailHref,
   detailCtaLabel = 'View Episode',
-  minimalCard = false
+  minimalCard = false,
+  nonFeaturedLayout = 'default'
 }: {
   episode: EpisodeListItem;
   featured: boolean;
@@ -171,11 +184,14 @@ export function EpisodeCard({
   detailHref?: string;
   detailCtaLabel?: string;
   minimalCard?: boolean;
+  nonFeaturedLayout?: 'default' | 'title-by-artwork';
 }) {
   const sourcePageType = resolveSourcePageType(typeof window === 'undefined' ? null : window.location.pathname);
   const sourcePagePath = currentPathWithSearch();
   const excerpt = toExcerpt(episode.description, featured ? 480 : 220);
+  const durationLabel = formatEpisodeDurationLabel(episode.duration);
   const resolvedDetailHref = detailHref || `/episodes/${episode.slug}`;
+  const useTitleByArtworkLayout = !featured && nonFeaturedLayout === 'title-by-artwork';
   const spotifyEpisodeUrl = getSpotifyEpisodeUrl(episode.title);
   const applePodcastsEpisodeUrl = getApplePodcastsEpisodeUrl(episode.title);
   const visibleTaxonomyChips = useMemo(
@@ -197,7 +213,7 @@ export function EpisodeCard({
       aria-label={`Podcast episode ${episode.title}`}
     >
       <div className={featured ? 'flex flex-col gap-0 sm:flex-row sm:items-stretch' : 'flex h-full flex-col'}>
-        <div className={featured ? 'aspect-square w-full sm:w-[360px] lg:w-[420px] sm:flex-none sm:self-stretch' : 'aspect-square'}>
+        <div className={featured ? 'aspect-square w-full sm:w-[360px] lg:w-[420px] sm:flex-none sm:self-stretch' : 'hidden'}>
           {episode.artworkUrl ? (
             <Link href={resolvedDetailHref} className="relative block h-full w-full">
               {featured ? (
@@ -254,30 +270,85 @@ export function EpisodeCard({
               <p className="text-right">{episodeDateLabel(episode)}</p>
             </div>
           ) : (
-          <div className={featured ? 'flex items-center gap-2' : 'flex w-full items-center justify-between gap-2 pb-1'}>
-            <p className="text-xs font-bold uppercase tracking-wide text-carnival-ink/70">{episodeDateLabel(episode)}</p>
-            {!featured && episode.episodeNumber !== null ? (
-              <span className="rounded-full bg-carnival-red px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                Episode {episode.episodeNumber}
-              </span>
-            ) : null}
-          </div>
+            <div className="mb-2 flex items-start gap-3">
+              <div className="relative h-24 w-24 flex-none overflow-hidden rounded-lg">
+                {episode.artworkUrl ? (
+                  <Link href={resolvedDetailHref} className="relative block h-full w-full">
+                    <Image
+                      src={episode.artworkUrl}
+                      alt={`Artwork for ${episode.title}`}
+                      fill
+                      sizes="96px"
+                      className="object-cover"
+                    />
+                  </Link>
+                ) : (
+                  <Link
+                    href={resolvedDetailHref}
+                    className="flex h-full w-full items-center justify-center bg-carnival-ink/10 p-2 text-center text-[10px] font-semibold text-carnival-ink/70"
+                  >
+                    No artwork
+                  </Link>
+                )}
+              </div>
+              <div className="min-w-0 flex-1 space-y-1 pt-0.5">
+                {useTitleByArtworkLayout ? (
+                  <>
+                    <h2 className="line-clamp-3 text-[0.98rem] font-black leading-tight text-carnival-ink sm:text-[1.06rem]">
+                      <Link href={resolvedDetailHref} className="text-carnival-ink no-underline transition hover:text-carnival-ink/70">
+                        {episode.title}
+                      </Link>
+                    </h2>
+                    {episode.primaryTopicName ? (
+                      <span className="inline-block max-w-full truncate whitespace-nowrap rounded-full bg-carnival-red px-2 py-0.5 text-[11px] font-semibold text-white">
+                        {episode.primaryTopicName}
+                      </span>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    {episode.primaryTopicName ? (
+                      <span className="inline-block max-w-full truncate whitespace-nowrap rounded-full bg-carnival-red px-2 py-0.5 text-[11px] font-semibold text-white">
+                        {episode.primaryTopicName}
+                      </span>
+                    ) : null}
+                    <p className="text-xs font-semibold text-carnival-ink/75">{episodeDateLabel(episode)}</p>
+                    {durationLabel ? <p className="text-xs font-semibold text-carnival-ink/75">{durationLabel}</p> : null}
+                    {episode.authorName && episode.authorSlug ? (
+                      <Link
+                        href={`/author/${episode.authorSlug}`}
+                        className="text-xs font-semibold text-carnival-ink/75 transition hover:text-carnival-red"
+                      >
+                        {episode.authorName}
+                      </Link>
+                    ) : (
+                      <p className="text-xs font-semibold text-carnival-ink/75">{episode.authorName || 'The Compendium Podcast'}</p>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           )}
-          <h2
-            className={`mt-2 font-black leading-tight text-carnival-ink ${
-              featured
-                ? featuredDesktopTextLarger
-                  ? 'text-[1.2rem] md:text-[1.85rem] lg:text-[2.1rem]'
-                  : 'text-[1.2rem]'
-                : minimalCard
-                  ? 'text-[1.2rem]'
-                  : 'min-h-[3.2rem] text-[1.2rem]'
-            }`}
-          >
-            <Link href={resolvedDetailHref} className="!text-carnival-ink !no-underline transition hover:!text-carnival-red">
-              <span>{episode.title}</span>
-            </Link>
-          </h2>
+          {!useTitleByArtworkLayout ? (
+            <h2
+              className={`mt-2 font-black leading-tight text-carnival-ink ${
+                featured
+                  ? featuredDesktopTextLarger
+                    ? 'text-[1.2rem] md:text-[1.85rem] lg:text-[2.1rem]'
+                    : 'text-[1.2rem]'
+                  : minimalCard
+                    ? 'text-[1.03rem] sm:text-[1.125rem]'
+                    : 'min-h-[3.2rem] text-[1.03rem] sm:text-[1.125rem]'
+              }`}
+            >
+              <Link
+                href={resolvedDetailHref}
+                className="text-carnival-ink no-underline transition hover:text-carnival-ink/70"
+              >
+                <span>{episode.title}</span>
+              </Link>
+            </h2>
+          ) : null}
           {!minimalCard ? (
             <p
               className={`mt-3 text-carnival-ink/80 ${
@@ -285,10 +356,13 @@ export function EpisodeCard({
                   ? featuredDesktopTextLarger
                     ? 'text-[0.8rem] leading-5 line-clamp-5 whitespace-normal md:text-[1rem] md:leading-7 lg:text-[1.125rem]'
                     : 'text-[0.8rem] leading-5 line-clamp-5 whitespace-normal'
-                  : 'min-h-[6rem] text-[0.85rem] leading-6 line-clamp-4 whitespace-normal'
+                  : 'min-h-[6rem] text-[0.8rem] leading-5 line-clamp-4 whitespace-normal sm:text-[0.85rem] sm:leading-6'
               }`}
             >
-              <Link href={resolvedDetailHref} className="!text-inherit !no-underline transition hover:!text-carnival-red">
+              <Link
+                href={resolvedDetailHref}
+                className="text-inherit no-underline transition hover:text-carnival-ink/65"
+              >
                 {excerpt}
               </Link>
             </p>
@@ -385,9 +459,21 @@ export function EpisodeCard({
   );
 }
 
+export function GridEpisodeCard({
+  episode,
+  detailHref,
+  nonFeaturedLayout
+}: {
+  episode: EpisodeListItem;
+  detailHref?: string;
+  nonFeaturedLayout?: 'default' | 'title-by-artwork';
+}) {
+  return <EpisodeCard episode={episode} featured={false} detailHref={detailHref} nonFeaturedLayout={nonFeaturedLayout} />;
+}
+
 export function EpisodesGrid({
   episodes,
-  className = 'grid gap-4 md:grid-cols-2 xl:grid-cols-3'
+  className = 'grid gap-4 min-[600px]:grid-cols-2 min-[1000px]:grid-cols-3'
 }: {
   episodes: PodcastEpisode[];
   className?: string;
@@ -395,7 +481,7 @@ export function EpisodesGrid({
   return (
     <div className={className}>
       {episodes.map((episode) => (
-        <EpisodeCard key={episode.slug} episode={episode} featured={false} />
+        <GridEpisodeCard key={episode.slug} episode={episode} />
       ))}
     </div>
   );
@@ -496,7 +582,7 @@ export function CompactEpisodeRow({
 
   return (
     <article
-      className="relative cursor-pointer overflow-hidden rounded-2xl border border-carnival-ink/10 bg-white shadow-[0_10px_26px_rgba(0,0,0,0.10)] transition hover:shadow-lg"
+      className="relative cursor-pointer overflow-hidden rounded-xl bg-white shadow-[0_10px_26px_rgba(0,0,0,0.10)] transition hover:shadow-lg"
       aria-label={`Podcast episode ${episode.title}`}
       role="link"
       tabIndex={0}
@@ -507,83 +593,75 @@ export function CompactEpisodeRow({
         openDetails();
       }}
     >
-      <div className="flex items-start gap-4 px-4 py-4 sm:items-center sm:gap-6 sm:px-6 sm:py-5">
+      <div className="flex h-24 items-stretch gap-3 pr-4 sm:h-28 sm:gap-5 sm:pr-6 lg:h-32 lg:gap-6 lg:pr-7 xl:h-36">
         {/* Artwork column */}
-        <div className="flex flex-none flex-col items-start">
-          <div className="relative h-24 w-24 overflow-hidden rounded-xl sm:h-24 sm:w-24">
-            {episode.artworkUrl ? (
-              <button
-                ref={artworkButtonRef}
-                type="button"
-                className="relative block h-full w-full"
-                aria-label={playing ? 'Pause episode' : 'Play episode'}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  void togglePlay(artworkButtonRef.current || event.currentTarget);
-                }}
-              >
-                <Image
-                  src={episode.artworkUrl}
-                  alt=""
-                  fill
-                  sizes="96px"
-                  className="object-cover"
-                />
-              </button>
-            ) : (
-              <button
-                ref={artworkButtonRef}
-                type="button"
-                className="h-full w-full bg-carnival-ink/10"
-                aria-label={playing ? 'Pause episode' : 'Play episode'}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  void togglePlay(artworkButtonRef.current || event.currentTarget);
-                }}
-              />
-            )}
-            {/* Play button overlaid on artwork */}
+        <div className="relative h-full w-24 flex-none overflow-hidden rounded-l-xl sm:w-28 lg:w-32 xl:w-36">
+          {episode.artworkUrl ? (
             <button
+              ref={artworkButtonRef}
               type="button"
+              className="relative block h-full w-full"
+              aria-label={playing ? 'Pause episode' : 'Play episode'}
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 void togglePlay(artworkButtonRef.current || event.currentTarget);
               }}
-              className={`absolute left-1/2 top-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-white shadow-lg transition sm:h-8 sm:w-8 ${
-                playing ? 'bg-carnival-red/90' : 'bg-carnival-red hover:bg-carnival-red/80'
-              }`}
-              aria-label={playing ? 'Pause' : 'Play'}
             >
-              {playing ? (
-                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current sm:h-3.5 sm:w-3.5"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
-              ) : (
-                <svg viewBox="0 0 24 24" className="ml-0.5 h-3.5 w-3.5 fill-current sm:h-3.5 sm:w-3.5"><path d="M8 5v14l11-7z" /></svg>
-              )}
+              <Image
+                src={episode.artworkUrl}
+                alt=""
+                fill
+                sizes="(max-width: 639px) 34vw, 96px"
+                className="object-cover"
+              />
             </button>
-          </div>
+          ) : (
+            <button
+              ref={artworkButtonRef}
+              type="button"
+              className="h-full w-full bg-carnival-ink/10"
+              aria-label={playing ? 'Pause episode' : 'Play episode'}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                void togglePlay(artworkButtonRef.current || event.currentTarget);
+              }}
+            />
+          )}
+          {/* Play button overlaid on artwork */}
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              void togglePlay(artworkButtonRef.current || event.currentTarget);
+            }}
+            className={`absolute left-1/2 top-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-white shadow-lg transition sm:h-8 sm:w-8 ${
+              playing ? 'bg-carnival-red/90' : 'bg-carnival-red hover:bg-carnival-red/80'
+            }`}
+            aria-label={playing ? 'Pause' : 'Play'}
+          >
+            {playing ? (
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current sm:h-3.5 sm:w-3.5"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+            ) : (
+              <svg viewBox="0 0 24 24" className="ml-0.5 h-3.5 w-3.5 fill-current sm:h-3.5 sm:w-3.5"><path d="M8 5v14l11-7z" /></svg>
+            )}
+          </button>
         </div>
 
         {/* Info */}
-        <div className="min-w-0 flex-1">
-          <div className="flex w-full items-center justify-end gap-2 sm:justify-between">
-            {episode.episodeNumber !== null ? (
-              <span className="rounded-full bg-carnival-red px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                <span className="sm:hidden">EP {episode.episodeNumber}</span>
-                <span className="hidden sm:inline">Episode {episode.episodeNumber}</span>
-              </span>
-            ) : null}
-            <p className="hidden text-right text-xs font-semibold uppercase tracking-wide text-carnival-ink/60 sm:block">{episodeDateLabel(episode)}</p>
-          </div>
-          <h2 className="mt-1 text-sm font-bold leading-snug text-carnival-ink min-[450px]:text-lg sm:text-xl">
-            <Link href={resolvedDetailHref} className="transition hover:text-carnival-red">
+        <div className="flex min-w-0 flex-1 flex-col items-start justify-center py-2 text-left sm:py-3">
+          <h2 className="mt-1 line-clamp-2 text-[12px] font-semibold leading-[1.05] text-carnival-ink min-[450px]:text-xs sm:text-sm lg:text-base">
+            <Link
+              href={resolvedDetailHref}
+              className="block leading-[1.05] transition hover:text-carnival-ink/70"
+            >
               {episode.title}
             </Link>
           </h2>
-          <p data-nosnippet={excerptNoSnippet ? '' : undefined} className="mt-1.5 hidden line-clamp-2 text-xs leading-relaxed text-carnival-ink/75 sm:block sm:text-sm">
-            {toExcerpt(episode.description, 200)}
+          <p data-nosnippet={excerptNoSnippet ? '' : undefined} className="mt-1.5 line-clamp-3 text-[11px] leading-tight text-carnival-ink/75 sm:text-xs sm:leading-relaxed lg:text-[13px]">
+            {toExcerpt(episode.description, 420)}
           </p>
         </div>
       </div>
@@ -1015,6 +1093,7 @@ export function EpisodesBrowser({
     </div>
   ) : null;
   const showControlPanel = showSearch || Boolean(topicFilterControl);
+  const gridLayoutVariant: 'default' | 'title-by-artwork' = basePath === '/episodes' ? 'title-by-artwork' : 'default';
   const searchPanel = (
     <div className="flex flex-col gap-2 min-[820px]:flex-row min-[820px]:items-center">
       {topicFilterControl}
@@ -1091,13 +1170,13 @@ export function EpisodesBrowser({
             {!viewModeReady ? (
               <div className="h-24 rounded-xl border border-carnival-ink/10 bg-white/70" aria-hidden="true" />
             ) : viewMode === 'grid' ? (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-4 min-[600px]:grid-cols-2 min-[1000px]:grid-cols-3">
                 {standardEpisodes.map((episode) => (
-                  <EpisodeCard
+                  <GridEpisodeCard
                     key={episode.slug}
                     episode={episode}
-                    featured={false}
                     detailHref={episodeDetailHref(episode.slug)}
+                    nonFeaturedLayout={gridLayoutVariant}
                   />
                 ))}
               </div>

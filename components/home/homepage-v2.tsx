@@ -221,6 +221,9 @@ function renderCuratedCard(args: {
       artworkSrc={findEpisodeArtwork(episode)}
       artworkAlt={episode ? `${episode.title} artwork` : 'Episode artwork'}
       eyebrow={card.pillarLabel || pillarDisplayName(card.pillar)}
+      publishedDate={publishedDate}
+      duration={episode?.duration || null}
+      authorName={episode?.authorName || null}
       blurb={blurb}
       mobileSummary={mobileSummary}
       mobileMeta={mobileMeta}

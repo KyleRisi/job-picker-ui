@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BlogPostCard } from '@/components/blog/blog-post-card';
 import { CompactPagination } from '@/components/compact-pagination';
-import { CompactEpisodeRow, EpisodeCard } from '@/components/episodes-browser';
+import { CompactEpisodeRow, GridEpisodeCard } from '@/components/episodes-browser';
 import { JoinPatreonCta } from '@/components/join-patreon-cta';
 import { ViewModeToggle, VIEW_MODE_STORAGE_KEY, type ViewMode } from '@/components/view-mode-toggle';
 import { pageHref } from '@/lib/pagination';
@@ -130,9 +130,9 @@ export function DiscoveryHubPage({
             </div>
             {hub.latestEpisodes.length ? (
               viewMode === 'grid' ? (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-4 min-[600px]:grid-cols-2 min-[1000px]:grid-cols-3">
                   {hub.latestEpisodes.map((episode) => (
-                    <EpisodeCard key={episode.id} episode={episode} featured={false} />
+                    <GridEpisodeCard key={episode.id} episode={episode} />
                   ))}
                 </div>
               ) : (

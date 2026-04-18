@@ -87,12 +87,14 @@ const getAuthorEpisodeIdsCached = unstable_cache(
 );
 
 const getAuthorEpisodeListForAuthorCached = unstable_cache(
-  async (episodeIdsKey: string) => {
+  async (episodeIdsKey: string, authorName: string, authorSlug: string) => {
     if (!episodeIdsKey) return [];
     const ids = episodeIdsKey.split(',').filter(Boolean);
     return getAuthorEpisodeList({
       ids,
-      descriptionMaxLength: 220
+      descriptionMaxLength: 220,
+      authorName,
+      authorSlug
     });
   },
   ['author-episode-list-v1'],
@@ -164,7 +166,9 @@ export default async function AuthorHubPage({ params }: { params: Params }) {
   if (!archive) notFound();
 
   const episodeIds = await getAuthorEpisodeIdsCached(archive.author.id);
-  const episodes = episodeIds.length ? await getAuthorEpisodeListForAuthorCached(episodeIds.join(',')) : [];
+  const episodes = episodeIds.length
+    ? await getAuthorEpisodeListForAuthorCached(episodeIds.join(','), archive.author.name, archive.author.slug)
+    : [];
   const episodesCount = episodes.length;
 
   const blogs = archive.items;

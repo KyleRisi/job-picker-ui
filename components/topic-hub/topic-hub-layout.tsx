@@ -209,6 +209,9 @@ export function TopicHubLayout({ hub, featuredEpisodes, groupedSections, config 
                       artworkSrc={episode.artworkUrl || '/The Compendium Main.jpg'}
                       artworkAlt={`${episode.title} artwork`}
                       eyebrow={episode.primaryTopicName || 'Featured episode'}
+                      publishedDate={formatFullPublishedDate(episode.publishedAt)}
+                      duration={episode.duration || null}
+                      authorName={episode.authorName || null}
                       blurb={episode.description}
                       mobileSummary={episode.description}
                       mobileMeta={[
@@ -271,6 +274,9 @@ export function TopicHubLayout({ hub, featuredEpisodes, groupedSections, config 
                         artworkSrc={episode.artworkUrl || '/The Compendium Main.jpg'}
                         artworkAlt={`${episode.title} artwork`}
                         eyebrow={episode.primaryTopicName || 'Featured episode'}
+                        publishedDate={formatFullPublishedDate(episode.publishedAt)}
+                        duration={episode.duration || null}
+                        authorName={episode.authorName || null}
                         blurb={episode.description}
                         mobileSummary={episode.description}
                         mobileMeta={[
@@ -309,6 +315,9 @@ export function TopicHubLayout({ hub, featuredEpisodes, groupedSections, config 
                         artworkSrc={episode.artworkUrl || '/The Compendium Main.jpg'}
                         artworkAlt={`${episode.title} artwork`}
                         eyebrow={episode.primaryTopicName || 'Featured episode'}
+                        publishedDate={formatFullPublishedDate(episode.publishedAt)}
+                        duration={episode.duration || null}
+                        authorName={episode.authorName || null}
                         blurb={episode.description}
                         mobileSummary={episode.description}
                         mobileMeta={[
@@ -349,6 +358,9 @@ export function TopicHubLayout({ hub, featuredEpisodes, groupedSections, config 
                     artworkSrc={episode.artworkUrl || '/The Compendium Main.jpg'}
                     artworkAlt={`${episode.title} artwork`}
                     eyebrow={episode.primaryTopicName || 'Featured episode'}
+                    publishedDate={formatFullPublishedDate(episode.publishedAt)}
+                    duration={episode.duration || null}
+                    authorName={episode.authorName || null}
                     blurb={episode.description}
                     mobileSummary={episode.description}
                     mobileMeta={[

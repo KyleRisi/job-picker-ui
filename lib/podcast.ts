@@ -429,7 +429,7 @@ async function getPodcastEpisodesFromDatabase(
 
     const editorialSelect = options.includeEditorialMeta
       ? 'podcast_episode_editorial(web_title, seo_title, meta_description, body_json, excerpt, author_id, focus_keyword)'
-      : 'podcast_episode_editorial(web_title)';
+      : 'podcast_episode_editorial(web_title, author_id)';
     const episodeSelectFields =
       'id,slug,title,season_number,episode_number,published_at,description_plain,description_html,audio_url,artwork_url,duration_seconds,source_url';
 
@@ -441,6 +441,33 @@ async function getPodcastEpisodesFromDatabase(
       .order('published_at', { ascending: false });
     if (error) return null;
     if (!data || data.length === 0) return null;
+
+    const episodeEditorialRows = data
+      .map((episode) => (Array.isArray(episode.podcast_episode_editorial)
+        ? episode.podcast_episode_editorial[0]
+        : episode.podcast_episode_editorial) as Record<string, any> | null)
+      .filter(Boolean) as Record<string, any>[];
+    const authorIds = [...new Set(
+      episodeEditorialRows
+        .map((row) => `${row.author_id || ''}`.trim())
+        .filter(Boolean)
+    )];
+    const authorMap = new Map<string, { name: string; slug: string | null }>();
+    if (authorIds.length) {
+      const { data: authorRows, error: authorRowsError } = await supabase
+        .from('blog_authors')
+        .select('id, name, slug')
+        .in('id', authorIds);
+      if (!authorRowsError) {
+        for (const row of (authorRows || []) as Array<{ id: string; name: string; slug: string | null }>) {
+          if (!row?.id) continue;
+          authorMap.set(row.id, {
+            name: row.name || '',
+            slug: row.slug || null
+          });
+        }
+      }
+    }
 
     // When editorial meta is requested, load primary topics and related episode presence in one batch.
     let primaryTopicMap = new Map<string, { name: string; slug: string; path: string | null }>();
@@ -470,6 +497,8 @@ async function getPodcastEpisodesFromDatabase(
         id: episode.id,
         slug: episode.slug,
         title: editorial?.web_title || episode.title,
+        authorName: editorial?.author_id ? (authorMap.get(editorial.author_id)?.name || null) : null,
+        authorSlug: editorial?.author_id ? (authorMap.get(editorial.author_id)?.slug || null) : null,
         seasonNumber: episode.season_number ?? null,
         episodeNumber: episode.episode_number ?? null,
         publishedAt: episode.published_at || new Date(0).toISOString(),
@@ -552,6 +581,8 @@ export async function getPodcastEpisodes(options: GetPodcastEpisodesOptions = {}
     id: episode.id,
     slug: episode.slug,
     title: episode.title,
+    authorName: null,
+    authorSlug: null,
     seasonNumber: episode.seasonNumber,
     episodeNumber: episode.episodeNumber,
     publishedAt: episode.publishedAt,

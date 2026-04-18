@@ -6,11 +6,10 @@ type HomepageEpisodeCardProps = {
   title: string;
   artworkSrc: string;
   artworkAlt: string;
-  eyebrow: string;
+  eyebrow?: string;
   blurb: string;
   mobileSummary?: string;
   mobileMeta?: string;
-  excerptClampClass?: string;
   primaryLabel?: string;
   secondaryLabel?: string;
   primaryLinkProps?: Record<string, string>;
@@ -22,55 +21,55 @@ export function HomepageEpisodeCard({
   title,
   artworkSrc,
   artworkAlt,
-  eyebrow,
+  eyebrow = '',
   blurb,
   mobileSummary = '',
-  mobileMeta = '',
-  excerptClampClass = 'line-clamp-3 md:line-clamp-5',
   primaryLabel = 'Listen now',
-  secondaryLabel = 'Episode page',
-  primaryLinkProps,
-  secondaryLinkProps
+  primaryLinkProps
 }: HomepageEpisodeCardProps) {
-  return (
-    <article className="card flex h-full flex-col overflow-hidden !border-0 !p-0">
-      <div className="p-3">
-        <div className="relative aspect-square w-full overflow-hidden rounded-lg">
-          <Image
-            src={artworkSrc}
-            alt={artworkAlt}
-            fill
-            sizes="(max-width: 768px) 100vw, 320px"
-            className="object-contain"
-            loading="lazy"
-          />
-        </div>
-      </div>
-      <div className="flex flex-1 flex-col p-4 md:p-5">
-        <p className="text-xs font-black uppercase tracking-wider text-carnival-red">{eyebrow}</p>
-        <h3 className="mt-1.5 line-clamp-3 text-lg font-black leading-tight text-carnival-ink md:mt-2 md:text-xl md:line-clamp-none">{title}</h3>
-        {mobileSummary ? (
-          <p className="mt-1 line-clamp-3 text-xs font-medium text-carnival-ink/70 md:hidden">{mobileSummary}</p>
-        ) : null}
-        {mobileMeta ? (
-          <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-carnival-ink/55 md:hidden">{mobileMeta}</p>
-        ) : null}
-        <p className={`mt-2 hidden text-sm leading-relaxed text-carnival-ink/80 md:mt-3 md:block ${excerptClampClass}`}>{blurb}</p>
+  const summary = `${mobileSummary || blurb || ''}`.replace(/\s+/g, ' ').trim();
+  const excerpt = summary || 'No description available for this episode yet.';
 
-        <div className="mt-auto grid grid-cols-2 items-center gap-2 pt-4 md:pt-5">
+  return (
+    <article className="h-full overflow-hidden rounded-2xl border border-carnival-ink/10 bg-white">
+      <div className="flex h-full flex-col p-4">
+        <div className="mb-2 flex items-start gap-3">
+          <div className="relative h-24 w-24 flex-none overflow-hidden rounded-lg">
+            <Image
+              src={artworkSrc}
+              alt={artworkAlt}
+              fill
+              sizes="96px"
+              className="object-cover"
+              loading="lazy"
+            />
+          </div>
+          <div className="min-w-0 flex-1 space-y-1 pt-0.5">
+            <h3 className="line-clamp-3 text-[0.98rem] font-black leading-tight text-carnival-ink sm:text-[1.06rem]">
+              <Link href={href} className="text-carnival-ink no-underline transition hover:text-carnival-ink/70">
+                {title}
+              </Link>
+            </h3>
+            {eyebrow ? (
+              <span className="inline-block max-w-full truncate whitespace-nowrap rounded-full bg-carnival-red px-2 py-0.5 text-[11px] font-semibold text-white">
+                {eyebrow}
+              </span>
+            ) : null}
+          </div>
+        </div>
+        <p className="mt-2 min-h-[6rem] line-clamp-4 text-[0.8rem] leading-5 text-carnival-ink/80 sm:text-[0.85rem] sm:leading-6">
+          <Link href={href} className="text-inherit no-underline transition hover:text-carnival-ink/65">
+            {excerpt}
+          </Link>
+        </p>
+
+        <div className="mt-auto pt-4">
           <Link
             href={href}
-            className="btn-primary h-10 w-full whitespace-nowrap md:h-11"
+            className="btn-primary h-10 w-full whitespace-nowrap"
             {...primaryLinkProps}
           >
             {primaryLabel}
-          </Link>
-          <Link
-            href={href}
-            className="inline-flex h-10 w-full items-center justify-center px-1 py-1 text-sm font-semibold text-carnival-ink/80 underline-offset-4 transition hover:text-carnival-red hover:underline md:h-11 md:rounded-md md:border md:border-carnival-ink/20 md:bg-white md:px-4 md:py-2 md:text-base md:text-carnival-ink md:no-underline md:hover:border-carnival-red/40"
-            {...secondaryLinkProps}
-          >
-            {secondaryLabel}
           </Link>
         </div>
       </div>

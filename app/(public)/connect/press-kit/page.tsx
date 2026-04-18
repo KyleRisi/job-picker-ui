@@ -329,7 +329,7 @@ export default async function PressKitPage() {
 
             {starterEpisodes.length > 0 ? (
               <div className="mt-6">
-                <EpisodesGrid episodes={starterEpisodes} className="grid gap-5 md:grid-cols-2 xl:grid-cols-3" />
+                <EpisodesGrid episodes={starterEpisodes} className="grid gap-5 min-[600px]:grid-cols-2 min-[1000px]:grid-cols-3" />
               </div>
             ) : (
               <p className="mt-5 rounded-xl border border-white/20 bg-white/5 p-4 text-sm font-semibold text-white/80">

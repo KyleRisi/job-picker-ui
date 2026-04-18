@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { CompactPagination } from '@/components/compact-pagination';
-import { CompactEpisodeRow, EpisodeCard } from '@/components/episodes-browser';
+import { CompactEpisodeRow, GridEpisodeCard } from '@/components/episodes-browser';
 import type { AuthorEpisodeListItem } from '@/lib/episodes';
 
 function parsePage(value: string | null, maxPages: number) {
@@ -78,9 +78,9 @@ export function AuthorHubQueryRenderer({
       </div>
 
       {view === 'grid' ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 min-[600px]:grid-cols-2 min-[1000px]:grid-cols-3">
           {pageEpisodes.map((episode) => (
-            <EpisodeCard key={episode.id} episode={episode} featured={false} />
+            <GridEpisodeCard key={episode.id} episode={episode} />
           ))}
         </div>
       ) : (

@@ -59,6 +59,8 @@ function titleCaseFromSlug(slug: string): string {
 function buildTopicToggleOptions(
   episodes: PodcastEpisode[]
 ): Array<{ label: string; value: string | null }> {
+  const priorityOrder = ['true-crime', 'history', 'incredible-people'];
+  const priorityRank = new Map(priorityOrder.map((slug, index) => [slug, index]));
   const fallbackTerms = new Map<string, string>();
   episodes.forEach((episode) => {
     const slug = normalizeTopicFilter(episode.primaryTopicSlug || undefined);
@@ -67,7 +69,12 @@ function buildTopicToggleOptions(
   });
 
   const fallbackOptions = [...fallbackTerms.entries()]
-    .sort((left, right) => left[1].localeCompare(right[1]))
+    .sort((left, right) => {
+      const leftRank = priorityRank.has(left[0]) ? (priorityRank.get(left[0]) as number) : Number.MAX_SAFE_INTEGER;
+      const rightRank = priorityRank.has(right[0]) ? (priorityRank.get(right[0]) as number) : Number.MAX_SAFE_INTEGER;
+      if (leftRank !== rightRank) return leftRank - rightRank;
+      return left[1].localeCompare(right[1]);
+    })
     .map(([value, label]) => ({ label, value }));
 
   if (!fallbackOptions.length) return [];
